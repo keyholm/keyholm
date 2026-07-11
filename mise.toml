@@ -1,0 +1,73 @@
+[tools]
+java = "25"
+gradle = "9.7.1"
+uv = "latest"
+"pipx:apksigcopier" = "latest"
+
+[task_config]
+cascade = true
+shell = "bash -c -o errexit"
+
+[tasks.refresh]
+description = "Refresh lockfiles and verification metadata"
+run = "gradle --refresh-dependencies --write-locks --write-verification-metadata sha256 check assembleDebug assembleRelease"
+
+[tasks.generate-keystore]
+description = "Generate the release signing keystore, storing its password in the Secret Service keyring, if it doesn't already exist"
+usage = '''
+arg "<keyring-entry>" help="title for the keyring entry holding the keystore password"
+'''
+run = '''
+set -euo pipefail
+entry="$usage_keyring_entry"
+keystore=app/release.keystore
+if [ -e "$keystore" ]; then
+  echo "$keystore already exists, skipping."
+  exit 0
+fi
+alias=keyholm
+password=$(head -c 24 /dev/urandom | base64 | tr '+/' '-_' | tr -d '=')
+printf '%s' "$password" | secret-tool store \
+  --label="$entry" \
+  package app.keyholm kind signing-key
+keytool -genkeypair \
+  -keystore "$keystore" \
+  -storepass "$password" \
+  -alias "$alias" \
+  -keypass "$password" \
+  -keyalg EC \
+  -groupname secp256r1 \
+  -validity 10000 \
+  -dname "CN=Keyholm"
+echo "Generated release signing key at $keystore, password stored in the keyring as $entry."
+echo "Back up both. Losing either means you can never publish an update signed the same way again."
+'''
+
+[tasks.sign-release]
+description = "Sign the unsigned reproducible release APK with the release key, then prove it differs only by the signature"
+usage = '''
+arg "[unsigned]" help="path to the unsigned release APK" default="app/build/outputs/apk/release/keyholm-unsigned.apk"
+'''
+run = '''
+set -euo pipefail
+unsigned="$usage_unsigned"
+apksigner=$(ls -d "$HOME"/Android/Sdk/build-tools/*/apksigner | sort -V | tail -1)
+export PATH="$(dirname "$apksigner"):$PATH"
+
+secret-tool lookup package app.keyholm kind signing-key | "$apksigner" sign \
+  --v1-signing-enabled false \
+  --v2-signing-enabled false \
+  --v3-signing-enabled true \
+  --v4-signing-enabled false \
+  --alignment-preserved \
+  --ks app/release.keystore \
+  --ks-key-alias keyholm \
+  --ks-pass stdin \
+  --out keyholm.apk \
+  "$unsigned"
+
+"$apksigner" verify --print-certs -v keyholm.apk
+apksigcopier compare keyholm.apk "$unsigned" --unsigned
+
+echo "OK: keyholm.apk is the reproducible build plus a v3 signature"
+'''

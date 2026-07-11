@@ -1,0 +1,57 @@
+package app.keyholm.store
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.dataStore
+import app.keyholm.store.proto.MigrationPlaceholdersProto
+import app.keyholm.webauthn.RpId
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import java.io.IOException
+
+private val Context.migrationDataStore: DataStore<MigrationPlaceholdersProto> by dataStore(
+    fileName = "migration_placeholders.pb",
+    serializer = MigrationPlaceholdersSerializer,
+    corruptionHandler = ReplaceFileCorruptionHandler { MigrationPlaceholdersProto.getDefaultInstance() },
+)
+
+class MigrationRepository internal constructor(
+    private val dataStore: DataStore<MigrationPlaceholdersProto>,
+) {
+    constructor(context: Context) : this(context.applicationContext.migrationDataStore)
+
+    val placeholders: Flow<List<MigrationPlaceholder>> =
+        dataStore.data
+            .map { proto -> proto.placeholdersList.map { it.toDomain() } }
+            .flowOn(Dispatchers.Default)
+
+    suspend fun addAll(records: List<MigrationPlaceholder>): Result<Unit> {
+        if (records.isEmpty()) return Result.success(Unit)
+        return write { it.toBuilder().addAllPlaceholders(records.map { r -> r.toProto() }).build() }
+    }
+
+    suspend fun delete(
+        rpId: RpId,
+        userName: String,
+    ): Result<Unit> =
+        write { current ->
+            val kept = current.placeholdersList.filterNot { it.rpId == rpId.value && it.userName == userName }
+            MigrationPlaceholdersProto.newBuilder().addAllPlaceholders(kept).build()
+        }
+
+    suspend fun saveAll(records: List<MigrationPlaceholder>): Result<Unit> =
+        write {
+            MigrationPlaceholdersProto.newBuilder().addAllPlaceholders(records.map { it.toProto() }).build()
+        }
+
+    private suspend fun write(transform: (MigrationPlaceholdersProto) -> MigrationPlaceholdersProto): Result<Unit> =
+        try {
+            dataStore.updateData(transform)
+            Result.success(Unit)
+        } catch (e: IOException) {
+            Result.failure(e)
+        }
+}

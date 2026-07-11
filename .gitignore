@@ -1,0 +1,13 @@
+/.gradle
+/.kotlin
+/local.properties
+/.idea
+/build
+/app/build
+/*.apk
+/*.sigstore.json
+
+/gradle/wrapper
+gradlew*
+
+/app/release.keystore

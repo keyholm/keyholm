@@ -1,0 +1,130 @@
+name: Update trust data
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-privileged-allowlist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Bump the pinned Bitwarden commit if its contents changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          url=$(grep --max-count=1 --fixed-strings \
+            raw.githubusercontent.com/bitwarden/android/ app/privileged_allowlist_sources.txt)
+          if [[ ! $url =~ ^(https://raw\.githubusercontent\.com/bitwarden/android)/([0-9a-f]{40})/(.+)$ ]]; then
+            echo "::error::app/privileged_allowlist_sources.txt has no Bitwarden URL pinned to a commit" >&2
+            exit 1
+          fi
+          repo=${BASH_REMATCH[1]}
+          pinned=${BASH_REMATCH[2]}
+          file=${BASH_REMATCH[3]}
+
+          latest=$(gh api "repos/bitwarden/android/commits?path=$file&per_page=1" --jq '.[0].sha')
+          if [ "$pinned" = "$latest" ]; then
+            echo "::notice title=Bitwarden pin::Unchanged at $pinned, already the latest commit touching $file"
+            exit 0
+          fi
+
+          for sha in "$pinned" "$latest"; do
+            curl --fail --silent --show-error --location \
+              --retry 5 --retry-delay 2 --retry-connrefused --max-time 30 \
+              --output "/tmp/bitwarden-$sha.json" "$repo/$sha/$file"
+          done
+          if diff --brief "/tmp/bitwarden-$pinned.json" "/tmp/bitwarden-$latest.json" >/dev/null; then
+            echo "::notice title=Bitwarden pin::Unchanged at $pinned, $latest touched $file but left it identical"
+            exit 0
+          fi
+
+          sed --in-place "s/$pinned/$latest/g" app/privileged_allowlist_sources.txt
+          echo "::notice title=Bitwarden pin::Moved $pinned to $latest"
+      - name: Merge the privileged allowlist sources
+        run: |
+          set -euo pipefail
+          apps=$(mktemp)
+          sed --expression='s/[[:space:]]//g' --expression='/^#/d' --expression='/^$/d' \
+            app/privileged_allowlist_sources.txt |
+            while read -r url; do
+              echo "fetching $url"
+              curl --fail --silent --show-error --location \
+                --retry 5 --retry-delay 2 --retry-connrefused --max-time 30 "$url" |
+                jq --compact-output --arg u "$url" \
+                  '(.apps | arrays | select(length > 0)) // error("\($u) has no non-empty apps array")' \
+                  >> "$apps"
+            done
+          jq --slurp '{apps: add}' "$apps" > /tmp/privileged_allowlist.json
+      - name: Open PR with the updated allowlist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cp /tmp/privileged_allowlist.json app/src/main/assets/privileged_allowlist.json
+          if git diff --quiet; then
+            echo "allowlist and pin are both current"
+            exit 0
+          fi
+          branch="update-privileged-allowlist-$(date +%Y%m%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --create "$branch"
+          git commit --all --message "chore: update privileged allowlist"
+          git push --set-upstream origin "$branch"
+          gh pr create \
+            --base "${{ github.ref_name }}" \
+            --head "$branch" \
+            --title "chore: update privileged allowlist" \
+            --body "The privileged apps list has changed."
+
+  check-community-assetlinks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Render each community relying party's asset links
+        run: |
+          set -euo pipefail
+          entries=$(mktemp)
+          sed --expression='s/[[:space:]]//g' --expression='/^#/d' --expression='/^$/d' \
+            app/community_rp_domains.txt |
+            while read -r domain; do
+              echo "fetching $domain"
+              curl --fail --silent --show-error --location \
+                --retry 5 --retry-delay 2 --retry-connrefused --max-time 30 \
+                "https://$domain/.well-known/assetlinks.json" |
+                jq --compact-output --arg d "$domain" \
+                  '{($d): (arrays // error("\($d) did not serve a JSON array"))}' >> "$entries"
+            done
+          jq --slurp 'add // {}' "$entries" > /tmp/community_assetlinks.json
+      - name: Compare against the vendored copy
+        id: diff
+        run: |
+          if diff --brief /tmp/community_assetlinks.json app/src/main/assets/community_assetlinks.json >/dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Open PR with the updated asset links
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp /tmp/community_assetlinks.json app/src/main/assets/community_assetlinks.json
+          branch="update-community-assetlinks-$(date +%Y%m%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --create "$branch"
+          git commit --all --message "chore: update community asset links"
+          git push --set-upstream origin "$branch"
+          gh pr create \
+            --base "${{ github.ref_name }}" \
+            --head "$branch" \
+            --title "chore: update community asset links" \
+            --body "A relying party in app/community_rp_domains.txt changed its .well-known/assetlinks.json."

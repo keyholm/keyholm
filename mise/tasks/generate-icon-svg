@@ -1,0 +1,171 @@
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["fonttools", "brotli", "uharfbuzz"]
+# ///
+#MISE description="Regenerate the README icon and title lockup from the adaptive launcher icon and the app's own title font and colour"
+import base64, urllib.request, xml.etree.ElementTree as ET
+from io import BytesIO
+from fontTools.ttLib import TTFont
+import uharfbuzz as hb
+
+A = "{http://schemas.android.com/apk/res/android}"
+AAPT = "{http://schemas.android.com/aapt}"
+RES = "app/src/main/res/drawable/"
+
+WORDMARK = "Keyholm"
+# MainScreen's top bar: 40dp icon, 12dp gap, titleLarge at 22sp in titleColor
+ICON = 40.0
+GAP = 12.0
+FONT_SIZE = 22.0
+LIGHT = "#2F5C8C"
+DARK = "#B0CCE8"
+
+# Android's adaptive-icon mask, defined on 100x100 over the visible inner 72x72 of the 108 viewport
+MASK = "M50,0 C10,0 0,10 0,50 C0,90 10,100 50,100 C90,100 100,90 100,50 C100,10 90,0 50,0 Z"
+UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
+
+
+def fetch(url):
+    return urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA})).read()
+
+
+def transform(group):
+    """A vector <group>'s pivot, rotation, scale and translation as an SVG transform."""
+    px, py = float(group.get(A + "pivotX", 0)), float(group.get(A + "pivotY", 0))
+    tx, ty = float(group.get(A + "translateX", 0)), float(group.get(A + "translateY", 0))
+    sx, sy = float(group.get(A + "scaleX", 1)), float(group.get(A + "scaleY", 1))
+    rotation = float(group.get(A + "rotation", 0))
+    ops = []
+    if (px + tx, py + ty) != (0, 0):
+        ops.append("translate(%g %g)" % (px + tx, py + ty))
+    if rotation:
+        ops.append("rotate(%g)" % rotation)
+    if (sx, sy) != (1, 1):
+        ops.append("scale(%g %g)" % (sx, sy))
+    if (px, py) != (0, 0):
+        ops.append("translate(%g %g)" % (-px, -py))
+    return " ".join(ops)
+
+
+def fill(path, defs):
+    """The path's fill as an SVG paint, adding its gradient to defs if it has one."""
+    gradient = path.find(AAPT + "attr/gradient")
+    if gradient is None:
+        return path.get(A + "fillColor")
+    name = "grad%d" % len(defs)
+    stops = "".join(
+        '\n      <stop offset="%s" stop-color="%s"/>' % (i.get(A + "offset"), i.get(A + "color"))
+        for i in gradient.findall("item")
+    )
+    defs.append(
+        '    <linearGradient id="%s" gradientUnits="userSpaceOnUse" x1="%s" y1="%s" x2="%s" y2="%s">%s\n    </linearGradient>'
+        % (name, gradient.get(A + "startX"), gradient.get(A + "startY"),
+           gradient.get(A + "endX"), gradient.get(A + "endY"), stops)
+    )
+    return "url(#%s)" % name
+
+
+def wrap(attrs, inner):
+    return ["<g%s>" % attrs] + ["  " + line for line in inner] + ["</g>"]
+
+
+def render(node, defs):
+    """The paths and groups under a <vector> or <group>, as SVG markup lines."""
+    lines = []
+    for child in node:
+        if child.tag == "path":
+            attrs = ' fill="%s"' % fill(child, defs)
+            if child.get(A + "fillType") == "evenOdd":
+                attrs += ' fill-rule="evenodd"'
+            if child.get(A + "fillAlpha"):
+                attrs += ' fill-opacity="%s"' % child.get(A + "fillAlpha")
+            lines.append('<path%s d="%s"/>' % (attrs, child.get(A + "pathData")))
+        elif child.tag == "group":
+            inner = render(child, defs)
+            for clip in reversed(child.findall("clip-path")):
+                name = "clip%d" % len(defs)
+                defs.append('    <clipPath id="%s">\n      <path d="%s"/>\n    </clipPath>'
+                            % (name, clip.get(A + "pathData")))
+                inner = wrap(' clip-path="url(#%s)"' % name, inner)
+            if transform(child):
+                inner = wrap(' transform="%s"' % transform(child), inner)
+            lines += inner
+    return lines
+
+
+def layers():
+    """The launcher icon's vector drawables as SVG <defs> and body markup."""
+    defs, body = [], []
+    for layer in ("ic_launcher_background.xml", "ic_launcher_foreground.xml"):
+        body += render(ET.parse(RES + layer).getroot(), defs)
+    return defs, body
+
+
+def roboto_subset():
+    """Roboto Regular cut down to the wordmark's glyphs: the app's title font, embeddable."""
+    css = fetch("https://fonts.googleapis.com/css2?family=Roboto:wght@400&text=" + WORDMARK).decode()
+    url = css.split("src: url(", 1)[1].split(")", 1)[0]
+    return fetch(url)
+
+
+defs, body = layers()
+woff2 = roboto_subset()
+
+font = TTFont(BytesIO(woff2))
+upm = font["head"].unitsPerEm
+cap = font["OS/2"].sCapHeight / upm
+raw = BytesIO()
+font.flavor = None  # harfbuzz has no woff2 support, so shape the decompressed font
+font.save(raw)
+buf = hb.Buffer()
+buf.add_str(WORDMARK)
+buf.guess_segment_properties()
+hb.shape(hb.Font(hb.Face(hb.Blob(raw.getvalue()))), buf)
+advance = sum(g.x_advance for g in buf.glyph_positions) / upm
+
+text_x = ICON + GAP
+baseline = ICON / 2 + cap * FONT_SIZE / 2  # cap-height box centred on the icon
+width = text_x + advance * FONT_SIZE
+
+icon_group = """  <g transform="scale(%.6f) translate(-18 -18)">
+    <g clip-path="url(#mask)">
+      %s
+    </g>
+  </g>""" % (ICON / 72.0, "\n      ".join(body))
+
+clip = """    <clipPath id="mask">
+      <path d="%s" transform="translate(18 18) scale(0.72)"/>
+    </clipPath>""" % MASK
+
+with open("docs/title.svg", "w") as f:
+    f.write("""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %.2f %.2f" width="%.2f" height="%.2f" role="img" aria-label="%s">
+  <title>%s</title>
+  <defs>
+%s
+%s
+    <style>
+      @font-face {
+        font-family: "Keyholm Title";
+        font-style: normal;
+        font-weight: 400;
+        src: url(data:font/woff2;base64,%s) format("woff2");
+      }
+      .wordmark {
+        font-family: "Keyholm Title", Roboto, system-ui, sans-serif;
+        font-size: %gpx;
+        fill: %s;
+      }
+      @media (prefers-color-scheme: dark) {
+        .wordmark { fill: %s; }
+      }
+    </style>
+  </defs>
+%s
+  <text class="wordmark" x="%.2f" y="%.2f">%s</text>
+</svg>
+""" % (width, ICON, width, ICON, WORDMARK, WORDMARK, "\n".join(defs), clip,
+       base64.b64encode(woff2).decode(), FONT_SIZE, LIGHT, DARK,
+       icon_group, text_x, baseline, WORDMARK))
+
+print("Wrote docs/title.svg (%.2f x %.2f)" % (width, ICON))

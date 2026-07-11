@@ -1,0 +1,34 @@
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+
+style:
+  MaxLineLength:
+    # Matches ktlint_official, which owns wrapping.
+    maxLineLength: 140
+  ReturnCount:
+    excludeGuardClauses: true
+  ForbiddenImport:
+    active: true
+    forbiddenImports:
+      - value: 'android.util.Log'
+        reason: 'Use Kermit: app.keyholm.util.logger() on a class, or Logger.withTag(...) at file scope.'
+  ForbiddenMethodCall:
+    active: true
+    methods:
+      - value: 'android.util.Log.v'
+        reason: 'Use Kermit instead of android.util.Log.'
+      - value: 'android.util.Log.d'
+        reason: 'Use Kermit instead of android.util.Log.'
+      - value: 'android.util.Log.i'
+        reason: 'Use Kermit instead of android.util.Log.'
+      - value: 'android.util.Log.w'
+        reason: 'Use Kermit instead of android.util.Log.'
+      - value: 'android.util.Log.e'
+        reason: 'Use Kermit instead of android.util.Log.'
+      - value: 'android.util.Log.wtf'
+        reason: 'Use Kermit instead of android.util.Log.'
+      - value: 'kotlin.io.print'
+        reason: 'Use Kermit instead of print/println.'
+      - value: 'kotlin.io.println'
+        reason: 'Use Kermit instead of print/println.'

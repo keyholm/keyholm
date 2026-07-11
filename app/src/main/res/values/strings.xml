@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Keyholm</string>
+    <string name="provider_label">Keyholm</string>
+    <string name="provider_settings_subtitle">Passkeys bound to this phone\'s secure hardware</string>
+</resources>

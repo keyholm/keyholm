@@ -1,0 +1,479 @@
+{
+  "amazon.com": [
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.helix.prod",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.mShop.android.shopping",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "in.amazon.mShop.android.shopping",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "cn.amazon.mShop.android",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.mShop.android.beta",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.mShop.android.business.shopping",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "in.amazon.mShop.android.business.shopping",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.mp3",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.avod.thirdpartyclient",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.kindle",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.kindlefs",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.clouddrive.photos",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.tails",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.audible.application",
+        "sha256_cert_fingerprints": [
+          "57:90:1D:5C:9F:67:44:F2:86:36:F9:8F:68:AE:5A:32:48:57:1C:0E:F6:10:47:0C:09:B0:8B:34:B6:B3:A8:0F"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.map.sample.one",
+        "sha256_cert_fingerprints": [
+          "4E:68:CA:A2:45:A7:CF:5E:8C:7D:3F:FB:96:A3:E1:EE:EA:01:71:6F:4F:03:79:99:2F:0B:BD:3D:62:45:FD:7C"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.wholefoods.wholefoodsmarket",
+        "sha256_cert_fingerprints": [
+          "8F:94:A9:06:A2:18:A7:A4:D4:61:3F:30:79:6F:76:A8:F4:CA:8D:90:22:C3:54:0D:D9:88:36:02:0E:82:F1:FA"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.eero.android",
+        "sha256_cert_fingerprints": [
+          "D5:BC:3E:11:83:AA:8B:29:E4:55:CE:33:56:77:BA:6F:32:B2:04:7A:15:F5:AA:E8:36:B2:A8:8D:D5:52:D6:86"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.eero.android.dogfood",
+        "sha256_cert_fingerprints": [
+          "E0:01:F0:D8:32:01:3E:73:64:4F:D9:3C:A2:0C:32:99:68:53:75:1E:71:8A:5F:69:E6:94:E7:EF:D9:0C:17:18"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.kuiper.app",
+        "sha256_cert_fingerprints": [
+          "98:43:35:6D:55:23:EF:10:41:07:3C:EA:EA:BC:A6:F4:DE:FF:64:4C:48:ED:8E:FA:C6:C3:EC:C9:2F:DF:97:F9"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.dee.app",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.dee.app.beta",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.sellermobile.android",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25",
+          "4E:68:CA:A2:45:A7:CF:5E:8C:7D:3F:FB:96:A3:E1:EE:EA:01:71:6F:4F:03:79:99:2F:0B:BD:3D:62:45:FD:7C"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.storm.lightning.client.aosp",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25",
+          "7C:AC:39:19:37:98:1B:61:34:BD:CE:1F:D9:83:4C:25:31:81:F5:AB:F9:1D:ED:60:78:21:0D:0F:91:AC:E3:60"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.mp3.galaxy",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.tahoe.grownups",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.swa.mobileapp",
+        "sha256_cert_fingerprints": [
+          "3C:E3:FE:C0:7F:B4:E7:4C:6E:F2:70:32:F9:81:70:6C:2B:45:B4:97:A6:F3:EA:24:54:C7:F4:35:D4:19:27:FC"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.swa.mobileapp.beta",
+        "sha256_cert_fingerprints": [
+          "3C:E3:FE:C0:7F:B4:E7:4C:6E:F2:70:32:F9:81:70:6C:2B:45:B4:97:A6:F3:EA:24:54:C7:F4:35:D4:19:27:FC"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.imdb.mobile",
+        "sha256_cert_fingerprints": [
+          "6A:87:E5:E4:45:64:D4:87:B1:B7:59:BE:FB:32:C8:C2:84:ED:0A:A8:ED:52:A2:77:AE:DC:AD:79:DE:28:A5:0D"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.imdb.pro.mobile.android",
+        "sha256_cert_fingerprints": [
+          "8C:F3:DA:0F:14:4A:2D:2F:B1:58:07:92:E1:3C:27:42:F3:13:93:7F:89:6A:5B:CC:A6:FC:DE:EE:C1:F6:0A:C8"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.relay",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25",
+          "7C:AC:39:19:37:98:1B:61:34:BD:CE:1F:D9:83:4C:25:31:81:F5:AB:F9:1D:ED:60:78:21:0D:0F:91:AC:E3:60"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.shopperpanel.android.mobile.app",
+        "sha256_cert_fingerprints": [
+          "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.amazon.warhol.android",
+        "sha256_cert_fingerprints": [
+          "3D:06:1E:F6:91:2A:7B:A8:6D:8D:A4:C8:39:B4:47:5A:1F:00:D3:01:07:FD:80:FB:DF:C2:D2:7E:C1:5C:D5:82"
+        ]
+      }
+    }
+  ],
+  "bitwarden.com": [
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.x8bit.bitwarden",
+        "sha256_cert_fingerprints": [
+          "24:E0:6C:04:C2:08:04:8F:19:F1:C9:93:B4:DD:A4:43:0E:A8:B0:6D:B8:37:5E:A0:E3:7B:83:46:96:B9:AC:3A",
+          "DE:6E:C9:14:31:55:79:95:29:7B:F3:E6:5B:C8:03:49:BC:60:3A:04:70:81:60:61:8C:86:BC:99:94:17:1C:90"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.x8bit.bitwarden.beta",
+        "sha256_cert_fingerprints": [
+          "9f:98:a3:2d:d9:01:7b:28:78:d7:71:05:ef:a0:32:77:c5:35:50:f2:53:7e:91:d6:03:9e:ae:8e:74:a0:54:94",
+          "3C:8F:03:C4:22:5B:C1:73:81:2D:EF:56:4F:7A:E8:A1:B3:EF:34:F1:BB:DC:C8:74:8D:AD:C3:9E:B0:A6:9F:74"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.x8bit.bitwarden.dev",
+        "sha256_cert_fingerprints": [
+          "04:18:FF:9B:3A:88:30:40:EE:3E:19:31:09:3A:7E:DC:A1:9B:2F:87:F4:55:38:8F:28:90:6B:F2:62:E3:2D:E7"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.bitwarden.testharness",
+        "sha256_cert_fingerprints": [
+          "6E:20:7F:4A:0F:14:EA:2D:23:39:D8:57:93:87:A6:1B:22:44:F7:C6:4F:9F:E0:FD:31:4D:02:D3:40:FB:AC:86"
+        ]
+      }
+    }
+  ]
+}

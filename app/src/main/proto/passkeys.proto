@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package app.keyholm.store.proto;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "app.keyholm.store.proto";
+option java_multiple_files = true;
+
+enum CoseAlgorithmProto {
+  COSE_ALGORITHM_PROTO_ES256 = 0;
+  COSE_ALGORITHM_PROTO_ED25519 = 1;
+  COSE_ALGORITHM_PROTO_ML_DSA_87 = 2;
+  COSE_ALGORITHM_PROTO_ML_DSA_65 = 3;
+}
+
+enum KeySecurityLevelProto {
+  KEY_SECURITY_LEVEL_PROTO_STRONGBOX = 0;
+  KEY_SECURITY_LEVEL_PROTO_TRUSTED_ENVIRONMENT = 1;
+}
+
+message PasskeyRecordsProto {
+  repeated PasskeyRecordProto records = 1;
+}
+
+message PasskeyRecordProto {
+  string credential_id = 1;
+  RelyingPartyProto rp = 2;
+  UserProto user = 3;
+  int32 sign_count = 4;
+  string calling_package = 5;
+  google.protobuf.Timestamp created_at = 6;
+  KeystoreProto keystore = 7;
+  google.protobuf.Timestamp pending_delete_at = 8;
+  google.protobuf.Timestamp last_used_at = 9;
+  bool likely_invalid = 10;
+}
+
+message RelyingPartyProto {
+  string id = 1;
+  string name = 2;
+}
+
+message UserProto {
+  string handle = 1;
+  string name = 2;
+  string display_name = 3;
+}
+
+message KeystoreProto {
+  CoseAlgorithmProto cose_algorithm = 1;
+  KeySecurityLevelProto security_level = 2;
+  optional PrfProto prf = 3;
+  bytes public_key_spki = 4;
+}
+
+message PrfProto {
+  KeySecurityLevelProto security_level = 1;
+}

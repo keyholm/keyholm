@@ -1,0 +1,16 @@
+<resources>
+    <style name="Theme.Keyholm" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">#3A6FF7</item>
+        <item name="colorPrimaryDark">#2A4FB0</item>
+        <item name="colorAccent">#3A6FF7</item>
+    </style>
+
+    <!-- Transparent with no title bar, only the biometric dialog should be visible -->
+    <style name="Theme.Keyholm.Transparent" parent="Theme.AppCompat.DayNight">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+</resources>

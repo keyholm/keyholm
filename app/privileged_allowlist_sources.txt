@@ -1,0 +1,2 @@
+https://www.gstatic.com/gpm-passkeys-privileged-apps/apps.json
+https://raw.githubusercontent.com/bitwarden/android/4e527f30979ae0d2897168e19be1855ff2ebbfbc/app/src/main/assets/fido2_privileged_community.json

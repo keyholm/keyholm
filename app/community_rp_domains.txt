@@ -1,0 +1,3 @@
+# Updated by .github/workflows/release.yaml
+amazon.com
+bitwarden.com
