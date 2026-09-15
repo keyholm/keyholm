@@ -170,15 +170,49 @@ private fun mainEntryProvider(
 }
 
 @Composable
+private fun MigrationImportReview(
+    review: ImportReview,
+    preferRpName: Boolean,
+    viewModel: MainViewModel,
+    snackbarHostState: SnackbarHostState,
+) {
+    val iconPack by viewModel.iconPacks.pack.collectAsStateWithLifecycle()
+    val activity = LocalActivity.current
+    val scope = rememberCoroutineScope()
+    MigrationImportReviewScreen(
+        entries = review.entries,
+        preferRpName = preferRpName,
+        iconPack = iconPack,
+        onConfirm = {
+            viewModel.imports.importList(
+                entries = review.entries,
+                onResult = { result ->
+                    val message = migrationImportResultMessage(result)
+                    scope.launch { snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Long) }
+                },
+                onFailure = {
+                    viewModel.reportError(ErrorMessages.CHECK_EXISTING_FAILED)
+                },
+            )
+            viewModel.imports.dismiss()
+        },
+        onCancel = {
+            when (review) {
+                is ImportReview.DeepLink -> activity?.finish()
+                is ImportReview.InApp -> viewModel.imports.dismiss()
+            }
+        },
+    )
+}
+
+@Composable
 private fun MainContent(importEntries: List<MigrationExportEntry>) {
     val viewModel: MainViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val importReview by viewModel.imports.review.collectAsStateWithLifecycle()
     val backStack = rememberNavBackStack(MainRoute)
     val density = LocalDensity.current
-    val activity = LocalActivity.current
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(importEntries) {
         if (importEntries.isNotEmpty()) viewModel.imports.request(ImportReview.DeepLink(importEntries))
@@ -200,29 +234,7 @@ private fun MainContent(importEntries: List<MigrationExportEntry>) {
             if (ready?.locked == true) {
                 LockScreen(viewModel, cryptoPrompt)
             } else if (review != null && ready != null) {
-                MigrationImportReviewScreen(
-                    entries = review.entries,
-                    preferRpName = ready.settings.preferRpName,
-                    onConfirm = {
-                        viewModel.imports.importList(
-                            entries = review.entries,
-                            onResult = { result ->
-                                val message = migrationImportResultMessage(result)
-                                scope.launch { snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Long) }
-                            },
-                            onFailure = {
-                                viewModel.reportError(ErrorMessages.CHECK_EXISTING_FAILED)
-                            },
-                        )
-                        viewModel.imports.dismiss()
-                    },
-                    onCancel = {
-                        when (review) {
-                            is ImportReview.DeepLink -> activity?.finish()
-                            is ImportReview.InApp -> viewModel.imports.dismiss()
-                        }
-                    },
-                )
+                MigrationImportReview(review, ready.settings.preferRpName, viewModel, snackbarHostState)
             } else {
                 MainNavDisplay(viewModel, cryptoPrompt, backStack, density, snackbarHostState)
             }

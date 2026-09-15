@@ -40,6 +40,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.keyholm.iconpack.IconPack
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.MigrationPlaceholder
@@ -188,7 +189,7 @@ private data class PasskeyListActions(
 
 private fun LazyListScope.migrationPlaceholderItems(
     placeholders: List<MigrationPlaceholder>,
-    preferRpName: Boolean,
+    display: PlaceholderRowDisplay,
     actions: PasskeyListActions,
 ) {
     if (!placeholders.isEmpty()) {
@@ -207,7 +208,7 @@ private fun LazyListScope.migrationPlaceholderItems(
     ) { placeholder ->
         MigrationPlaceholderItem(
             placeholder = placeholder,
-            preferRpName = preferRpName,
+            display = display,
             onClick = { actions.showMessage("Visit ${placeholder.rp.id.value} to recreate this passkey!") },
             onDismiss = {
                 actions.onDismissPlaceholder(placeholder)
@@ -221,6 +222,7 @@ private fun LazyListScope.migrationPlaceholderItems(
 @Composable
 private fun PasskeyListContent(
     uiState: MainUiState.Ready,
+    iconPack: IconPack?,
     innerPadding: PaddingValues,
     rowGeneration: MutableMap<CredentialId, Int>,
     actions: PasskeyListActions,
@@ -267,11 +269,11 @@ private fun PasskeyListContent(
         }
         passkeyItems(
             passkeys.value,
-            PasskeyRowDisplay(uiState.settings.compactView, uiState.settings.preferRpName),
+            PasskeyRowDisplay(uiState.settings.compactView, uiState.settings.preferRpName, iconPack),
             rowGeneration,
             actions.rows,
         )
-        migrationPlaceholderItems(placeholders.value, uiState.settings.preferRpName, actions)
+        migrationPlaceholderItems(placeholders.value, PlaceholderRowDisplay(uiState.settings.preferRpName, iconPack), actions)
     }
 }
 
@@ -286,6 +288,7 @@ fun MainScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val uiState = state as? MainUiState.Ready ?: return
+    val iconPack by viewModel.iconPacks.pack.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val rowGeneration = remember { mutableStateMapOf<CredentialId, Int>() }
 
@@ -344,7 +347,7 @@ fun MainScreen(
     }
 
     Scaffold(topBar = { MainTopBar(onOpenSettings) }) { innerPadding ->
-        PasskeyListContent(uiState, innerPadding, rowGeneration, listActions)
+        PasskeyListContent(uiState, iconPack, innerPadding, rowGeneration, listActions)
     }
 }
 

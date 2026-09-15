@@ -11,6 +11,10 @@ internal object ErrorMessages {
     const val UPDATE_FAILED = "Failed to update passkey, check device storage."
     const val SETTINGS_SAVE_FAILED = "Failed to update setting, check device storage."
     const val DENIAL_RECORD_FAILED = "Failed to record blocked app, check device storage."
+    const val ICON_PACK_NOT_A_PACK = "That file isn't an icon pack."
+    const val ICON_PACK_INSTALL_FAILED = "Failed to save icon pack, check device storage."
+    const val ICON_PACK_REMOVE_FAILED = "Failed to remove icon pack, check device storage."
+    const val ICON_PACK_LOAD_FAILED = "Couldn't load the installed icon pack."
 
     const val PLACEHOLDER_CLEANUP_FAILED =
         "Passkey created but failed to remove placeholder."

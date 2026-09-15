@@ -126,7 +126,6 @@ However, `root` cannot get to the passkey private key material or extract it.
 
 ### UX
 
-- icon packs
 - ordering/grouping options of some kind
 - since no play services means no signal API, support at least for editing the
   name/display name

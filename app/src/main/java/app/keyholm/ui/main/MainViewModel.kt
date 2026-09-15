@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import app.keyholm.iconpack.IconPackController
+import app.keyholm.iconpack.IconPackStorage
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.provider.isCredentialProviderEnabled
@@ -126,14 +128,16 @@ private data class StoresState(
 class MainViewModel internal constructor(
     application: Application,
     private val dispatcher: CoroutineDispatcher,
+    renderDispatcher: CoroutineDispatcher,
 ) : AndroidViewModel(application) {
-    constructor(application: Application) : this(application, Dispatchers.IO)
+    constructor(application: Application) : this(application, Dispatchers.IO, Dispatchers.Default)
 
     private val log = logger()
     private val settingsRepo = SettingsRepository(application)
     private val passkeyRepo = PasskeyRepository(application)
     private val migrationRepo = MigrationRepository(application)
     private val deniedAppsRepo = DeniedNativeAppRepository(application)
+    private val iconPackStorage = IconPackStorage(application, dispatcher, renderDispatcher)
 
     val errors: Flow<String>
 
@@ -229,6 +233,8 @@ class MainViewModel internal constructor(
         SettingsController(settingsRepo, viewModelScope, deniedAppsRepo, reportError)
 
     val imports = ImportReviewController(migrationRepo, passkeyRepo, viewModelScope)
+
+    val iconPacks = IconPackController(iconPackStorage, viewModelScope, reportError).also(::addCloseable)
 
     init {
         pendingDeletes.resume()

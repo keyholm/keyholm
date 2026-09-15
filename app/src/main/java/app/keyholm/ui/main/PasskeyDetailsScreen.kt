@@ -38,9 +38,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.keyholm.iconpack.IconPack
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.BackButton
+import app.keyholm.ui.common.RpIcon
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.common.rpDisplayName
 import app.keyholm.ui.common.rpLabel
@@ -58,6 +60,7 @@ private fun DetailRow(
     label: String,
     value: String,
     shape: Shape,
+    leadingContent: @Composable (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     ListItem(
@@ -74,6 +77,7 @@ private fun DetailRow(
             clipboard.setPrimaryClip(clip)
         },
         supportingContent = { Text(value, style = MaterialTheme.typography.bodySmall) },
+        leadingContent = leadingContent,
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {
@@ -132,13 +136,21 @@ private fun DetailsSection(
     record: PasskeyRecord,
     authenticators: Loadable<KeyAuthenticators>,
     preferRpName: Boolean,
+    iconPack: IconPack?,
     onViewAttestation: () -> Unit,
 ) {
     val df = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
     val algorithmName = record.keystore.coseAlgorithm.displayName
     val locationLabel = record.keystore.securityLevel.label
     Section(title = "Details") {
-        item { shape -> DetailRow("Relying party", rpLabel(record.rp, preferRpName), shape) }
+        item { shape ->
+            DetailRow(
+                "Relying party",
+                rpLabel(record.rp, preferRpName),
+                shape,
+                leadingContent = { RpIcon(iconPack, record.rp, preferRpName) },
+            )
+        }
         item { shape -> DetailRow("User", userLabel(record.user.name, record.user.displayName), shape) }
         item { shape -> DetailRow("Algorithm", algorithmName, shape) }
         item { shape -> DetailRow("Location", locationLabel, shape) }
@@ -240,6 +252,7 @@ internal fun PasskeyDetailsScreen(
     }
 
     val preferRpName = uiState.settings.preferRpName
+    val iconPack by viewModel.iconPacks.pack.collectAsStateWithLifecycle()
     Scaffold(topBar = { PasskeyDetailsTopBar(record.rp, preferRpName, onBack) }) { innerPadding ->
         Column(
             modifier =
@@ -255,6 +268,7 @@ internal fun PasskeyDetailsScreen(
                 record,
                 authenticators = authenticators,
                 preferRpName = preferRpName,
+                iconPack = iconPack,
                 onViewAttestation = { showAttestationDialog = true },
             )
             record.keystore.prfSecurityLevel?.let { PrfSection(it, authenticators) }

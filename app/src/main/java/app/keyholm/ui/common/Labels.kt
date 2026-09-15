@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import app.keyholm.webauthn.PackageName
 import app.keyholm.webauthn.RelyingParty
+import app.keyholm.webauthn.RpId
 import java.text.BreakIterator
 
 // Something I ran into while testing, some identity proxy defaults we should just ignore
@@ -52,3 +53,33 @@ internal fun Context.appLabel(packageName: PackageName): String =
             .loadLabel(packageManager)
             .toString()
     }.getOrDefault(packageName.value)
+
+private val GENERIC_RP_LABELS =
+    setOf(
+        "account",
+        "accounts",
+        "app",
+        "auth",
+        "id",
+        "login",
+        "m",
+        "my",
+        "secure",
+        "sign-in",
+        "signin",
+        "sso",
+        "www",
+    )
+
+private fun significantRpLabel(host: String): String =
+    host.split('.').firstOrNull { it.isNotEmpty() && it.lowercase() !in GENERIC_RP_LABELS } ?: host
+
+internal fun rpInitial(rpId: RpId): Char? = significantRpLabel(rpId.value).firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()
+
+internal fun rpInitial(
+    rp: RelyingParty,
+    preferRpName: Boolean,
+): Char? {
+    val name = if (preferRpName) rpDisplayName(rp) else null
+    return name?.substringBefore(' ')?.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar() ?: rpInitial(rp.id)
+}

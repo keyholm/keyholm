@@ -1,6 +1,7 @@
 package app.keyholm.ui.main
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Warning
@@ -39,7 +39,6 @@ import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -58,9 +57,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.keyholm.store.MigrationPlaceholder
+import app.keyholm.iconpack.IconPack
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.RecordLifecycle
+import app.keyholm.ui.common.RP_ICON_SIZE
+import app.keyholm.ui.common.RP_ICON_START
+import app.keyholm.ui.common.RpIcon
 import app.keyholm.ui.common.rpLabel
 import app.keyholm.ui.common.userLabel
 import kotlinx.coroutines.launch
@@ -76,10 +78,8 @@ private const val BOUNCE_OVERSHOOT_ROTATION = 12f
 private const val BOUNCE_IMPACT_MS = 80
 private const val GROWTH_IMPACT_MS = 180
 
-internal const val QUEUED_FOR_RECREATION_LABEL = "Queued for recreation"
-
 @Composable
-private fun SwipeToDeleteBackground(dismissState: SwipeToDismissBoxState) {
+internal fun SwipeToDeleteBackground(dismissState: SwipeToDismissBoxState) {
     SwipeActionBackground(
         dismissState = dismissState,
         arrangement = Arrangement.End,
@@ -228,6 +228,7 @@ private fun PasskeyListItemContent(
     Box(modifier = Modifier.fillMaxWidth()) {
         ListItem(
             supportingContent = { PasskeyListItemSupportingContent(record, display.compactView, df) },
+            leadingContent = { Spacer(Modifier.size(RP_ICON_SIZE)) },
             trailingContent = { Spacer(Modifier.size(48.dp)) },
             colors =
                 if (effectiveContentColor != null) {
@@ -251,6 +252,30 @@ private fun PasskeyListItemContent(
 }
 
 @Composable
+private fun rememberDeleteProgress(pendingDeleteAt: Instant): Animatable<Float, AnimationVector1D> {
+    val progress = remember(pendingDeleteAt) { Animatable(0f) }
+    LaunchedEffect(pendingDeleteAt) {
+        val remainingMs = Duration.between(Instant.now(), pendingDeleteAt).toMillis().coerceIn(0L, UNDO_WINDOW_MS)
+        progress.snapTo(1f - remainingMs.toFloat() / UNDO_WINDOW_MS)
+        progress.animateTo(1f, tween(remainingMs.toInt(), easing = LinearEasing))
+    }
+    return progress
+}
+
+private fun Modifier.tintSweptContent(
+    color: Color,
+    progress: () -> Float,
+) = graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        drawRect(
+            color = color,
+            size = size.copy(width = size.width * progress().coerceIn(0f, 1f)),
+            blendMode = BlendMode.SrcAtop,
+        )
+    }
+
+@Composable
 private fun PendingDeleteItem(
     record: PasskeyRecord,
     pendingDeleteAt: Instant,
@@ -258,16 +283,9 @@ private fun PendingDeleteItem(
     onCancelDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val progress = remember(pendingDeleteAt) { Animatable(0f) }
-    LaunchedEffect(pendingDeleteAt) {
-        val remainingMs = Duration.between(Instant.now(), pendingDeleteAt).toMillis().coerceIn(0L, UNDO_WINDOW_MS)
-        progress.snapTo(1f - remainingMs.toFloat() / UNDO_WINDOW_MS)
-        progress.animateTo(1f, tween(remainingMs.toInt(), easing = LinearEasing))
-    }
+    val progress = rememberDeleteProgress(pendingDeleteAt)
     val fillColor = MaterialTheme.colorScheme.error
     val baseColor = MaterialTheme.colorScheme.surfaceContainerHigh
-    val baseContentColor = MaterialTheme.colorScheme.onSurface
-    val fillContentColor = MaterialTheme.colorScheme.onError
     Card(
         modifier =
             modifier
@@ -279,26 +297,25 @@ private fun PendingDeleteItem(
                 },
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                    .drawWithContent {
-                        drawContent()
-                        // repaints just the glyph pixels the fill has already passed, alpha intact
-                        drawRect(
-                            color = fillContentColor,
-                            size = size.copy(width = size.width * progress.value.coerceIn(0f, 1f)),
-                            blendMode = BlendMode.SrcAtop,
-                        )
-                    },
-        ) {
-            PasskeyListItemContent(
-                record = record,
-                display = display,
-                onCancelDelete = onCancelDelete,
-                contentColor = baseContentColor,
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .tintSweptContent(MaterialTheme.colorScheme.onError) { progress.value },
+            ) {
+                PasskeyListItemContent(
+                    record = record,
+                    display = display,
+                    onCancelDelete = onCancelDelete,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            RpIcon(
+                display.iconPack,
+                record.rp,
+                display.preferRpName,
+                Modifier.align(Alignment.CenterStart).padding(start = RP_ICON_START),
             )
         }
     }
@@ -309,6 +326,7 @@ internal typealias DeleteConfirmationRequester = (DeleteConfirmationRequest) -> 
 internal data class PasskeyRowDisplay(
     val compactView: Boolean,
     val preferRpName: Boolean,
+    val iconPack: IconPack?,
 )
 
 internal data class PasskeyRowActions(
@@ -372,80 +390,15 @@ internal fun PasskeyItem(
                         },
                 ),
         ) {
-            PasskeyListItemContent(record = record, display = display)
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun MigrationPlaceholderItem(
-    placeholder: MigrationPlaceholder,
-    preferRpName: Boolean,
-    onClick: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val dismissState = rememberSwipeToDismissBoxState()
-
-    SwipeToDismissBox(
-        state = dismissState,
-        modifier = modifier,
-        enableDismissFromStartToEnd = false,
-        onDismiss = { direction ->
-            if (direction == SwipeToDismissBoxValue.EndToStart) {
-                onDismiss()
+            Box(modifier = Modifier.fillMaxWidth()) {
+                PasskeyListItemContent(record = record, display = display)
+                RpIcon(
+                    display.iconPack,
+                    record.rp,
+                    display.preferRpName,
+                    Modifier.align(Alignment.CenterStart).padding(start = RP_ICON_START),
+                )
             }
-        },
-        backgroundContent = { SwipeToDeleteBackground(dismissState) },
-    ) {
-        Card(
-            onClick = onClick,
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        ) {
-            MigrationPlaceholderCardBody(placeholder, preferRpName)
-        }
-    }
-}
-
-@Composable
-internal fun MigrationPlaceholderCardBody(
-    placeholder: MigrationPlaceholder,
-    preferRpName: Boolean,
-    showStatusIcon: Boolean = true,
-) {
-    val df = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
-    Box {
-        ListItem(
-            supportingContent = {
-                Column {
-                    Text(placeholder.userName)
-                    Text(
-                        "originally created " + df.format(Date.from(placeholder.originalCreatedAt)),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            },
-            leadingContent =
-                if (showStatusIcon) {
-                    { Spacer(Modifier.size(24.dp)) }
-                } else {
-                    null
-                },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        ) {
-            Text(rpLabel(placeholder.rp, preferRpName))
-        }
-        if (showStatusIcon) {
-            Icon(
-                Icons.Default.CheckBoxOutlineBlank,
-                contentDescription = "Not yet recreated on this device",
-                modifier =
-                    Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 16.dp),
-            )
         }
     }
 }

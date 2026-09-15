@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import app.keyholm.iconpack.IconPack
 import app.keyholm.store.MigrationExportEntry
 import app.keyholm.store.MigrationPlaceholder
 import app.keyholm.ui.common.rememberAppIcon
@@ -38,6 +39,7 @@ import java.time.Instant
 internal fun MigrationImportReviewScreen(
     entries: List<MigrationExportEntry>,
     preferRpName: Boolean,
+    iconPack: IconPack?,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -93,7 +95,7 @@ internal fun MigrationImportReviewScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                 ) {
-                    MigrationPlaceholderCardBody(placeholder, preferRpName, showStatusIcon = false)
+                    MigrationPlaceholderCardBody(placeholder, PlaceholderRowDisplay(preferRpName, iconPack))
                 }
             }
         }
