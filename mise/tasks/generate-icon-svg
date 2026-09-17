@@ -1,10 +1,11 @@
 #!/usr/bin/env -S uv run --quiet --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["fonttools", "brotli", "uharfbuzz"]
+# dependencies = ["fonttools", "brotli", "uharfbuzz", "cairosvg"]
 # ///
 #MISE description="Regenerate the README icon and title lockup from the adaptive launcher icon and the app's own title font and colour"
 import base64, urllib.request, xml.etree.ElementTree as ET
+import cairosvg
 from io import BytesIO
 from fontTools.ttLib import TTFont
 import uharfbuzz as hb
@@ -17,6 +18,7 @@ WORDMARK = "Keyholm"
 # MainScreen's top bar: 40dp icon, 12dp gap, titleLarge at 22sp in titleColor
 ICON = 40.0
 GAP = 12.0
+PNG = 512
 FONT_SIZE = 22.0
 LIGHT = "#2F5C8C"
 DARK = "#B0CCE8"
@@ -138,6 +140,33 @@ clip = """    <clipPath id="mask">
       <path d="%s" transform="translate(18 18) scale(0.72)"/>
     </clipPath>""" % MASK
 
+icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 18 72 72" width="72" height="72" role="img" aria-label="%s">
+  <title>%s</title>
+  <defs>
+%s
+%s
+  </defs>
+  <g clip-path="url(#mask)">
+    %s
+  </g>
+</svg>
+""" % (WORDMARK, WORDMARK, "\n".join(defs), clip, "\n    ".join(body))
+
+full_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 18 72 72" width="72" height="72" role="img" aria-label="%s">
+  <title>%s</title>
+  <defs>
+%s
+  </defs>
+  %s
+</svg>
+""" % (WORDMARK, WORDMARK, "\n".join(defs), "\n  ".join(body))
+
+with open("docs/icon.svg", "w") as f:
+    f.write(icon_svg)
+
+cairosvg.svg2png(bytestring=full_svg.encode(), write_to="docs/icon_full.png",
+                 output_width=PNG, output_height=PNG)
+
 with open("docs/title.svg", "w") as f:
     f.write("""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %.2f %.2f" width="%.2f" height="%.2f" role="img" aria-label="%s">
   <title>%s</title>
@@ -168,4 +197,6 @@ with open("docs/title.svg", "w") as f:
        base64.b64encode(woff2).decode(), FONT_SIZE, LIGHT, DARK,
        icon_group, text_x, baseline, WORDMARK))
 
+print("Wrote docs/icon.svg (72 x 72)")
+print("Wrote docs/icon_full.png (%d x %d)" % (PNG, PNG))
 print("Wrote docs/title.svg (%.2f x %.2f)" % (width, ICON))
