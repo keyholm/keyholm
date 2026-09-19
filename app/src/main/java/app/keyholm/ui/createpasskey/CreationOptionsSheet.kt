@@ -1,7 +1,6 @@
 package app.keyholm.ui.createpasskey
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -219,16 +218,10 @@ internal fun CreationOptionsSheet(
         )
     var includeAttestation by remember { mutableStateOf(prompt.attestation.initial) }
     var identifyAsKeyholm by remember { mutableStateOf(prompt.identity.initial) }
-    val sheetColor =
-        if (isSystemInDarkTheme()) {
-            MaterialTheme.colorScheme.surfaceBright
-        } else {
-            MaterialTheme.colorScheme.surface
-        }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         dragHandle = null,
-        containerColor = sheetColor,
+        containerColor = MaterialTheme.colorScheme.surfaceBright,
         sheetState =
             rememberBottomSheetState(
                 initialValue = SheetValue.Hidden,
