@@ -22,7 +22,6 @@ internal fun Section(
     description: String? = null,
     outerRadius: Dp = 16.dp,
     innerRadius: Dp = 4.dp,
-    dividerColor: Color = MaterialTheme.colorScheme.background,
     content: SectionScope.() -> Unit,
 ) {
     val scope = SectionScope().apply(content)
@@ -72,7 +71,7 @@ internal fun Section(
                         ),
                     )
                     if (index != scope.items.lastIndex && !attachedBelow) {
-                        HorizontalDivider(thickness = 2.dp, color = dividerColor)
+                        HorizontalDivider(thickness = 2.dp, color = Color.Transparent)
                     }
                 }
             }

@@ -28,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
@@ -231,7 +230,6 @@ internal fun CreationOptionsSheet(
         CreationOptionsSheetContent(
             prompt = prompt,
             explanation = explanation,
-            sheetColor = sheetColor,
             includeAttestation = includeAttestation,
             onIncludeAttestationChange = { includeAttestation = it },
             identifyAsKeyholm = identifyAsKeyholm,
@@ -245,7 +243,6 @@ internal fun CreationOptionsSheet(
 private fun CreationOptionsSheetContent(
     prompt: CreationOptionsPrompt,
     explanation: String,
-    sheetColor: Color,
     includeAttestation: Boolean,
     onIncludeAttestationChange: (Boolean) -> Unit,
     identifyAsKeyholm: Boolean,
@@ -259,7 +256,6 @@ private fun CreationOptionsSheetContent(
     )
     if (prompt.attestation is OptionChoice.Ask || prompt.identity is OptionChoice.Ask) {
         CreationTogglesSection(
-            sheetColor = sheetColor,
             askAttestation = prompt.attestation is OptionChoice.Ask,
             includeAttestation = includeAttestation,
             onIncludeAttestationChange = onIncludeAttestationChange,
@@ -271,7 +267,6 @@ private fun CreationOptionsSheetContent(
     AlgorithmSection(
         algorithms = prompt.algorithms,
         icon = icon,
-        sheetColor = sheetColor,
         onSelect = { onChoice(CreationChoice(it, includeAttestation, identifyAsKeyholm)) },
     )
     HorizontalDivider(
@@ -289,7 +284,6 @@ private fun CreationOptionsSheetContent(
 
 @Composable
 private fun CreationTogglesSection(
-    sheetColor: Color,
     askAttestation: Boolean,
     includeAttestation: Boolean,
     onIncludeAttestationChange: (Boolean) -> Unit,
@@ -301,7 +295,6 @@ private fun CreationTogglesSection(
         title = null,
         outerRadius = 28.dp,
         modifier = Modifier.padding(horizontal = 8.dp),
-        dividerColor = sheetColor,
     ) {
         if (askIdentity) {
             item { rowShape ->
@@ -332,14 +325,12 @@ private fun CreationTogglesSection(
 private fun AlgorithmSection(
     algorithms: List<WebAuthnAlgorithm>,
     icon: ImageBitmap,
-    sheetColor: Color,
     onSelect: (WebAuthnAlgorithm) -> Unit,
 ) {
     Section(
         title = null,
         outerRadius = 28.dp,
         modifier = Modifier.padding(horizontal = 8.dp),
-        dividerColor = sheetColor,
     ) {
         algorithms.forEach { algorithm ->
             item { rowShape ->
