@@ -41,6 +41,7 @@ import app.keyholm.ui.theme.KeyholmTheme
 import app.keyholm.util.logger
 import app.keyholm.webauthn.AttestationObject
 import app.keyholm.webauthn.AttestationObjects
+import app.keyholm.webauthn.AttestationResponse
 import app.keyholm.webauthn.AuthenticatorData
 import app.keyholm.webauthn.Caller
 import app.keyholm.webauthn.ClientDataJson
@@ -478,11 +479,14 @@ class Activity : FragmentActivity() {
         val responseJson =
             CredentialResponseJson.registrationResponseJson(
                 credentialId = pending.credentialId,
-                clientDataJSON = pending.clientDataJSON,
-                attestationObject = attestationObject,
-                authData = pending.authData,
-                spkiPublicKey = SpkiPublicKey(pending.generated.publicKey.encoded),
-                alg = pending.generated.coseAlgorithm.coseAlg,
+                response =
+                    AttestationResponse(
+                        clientDataJSON = pending.clientDataJSON,
+                        attestationObject = attestationObject,
+                        authData = pending.authData,
+                        spkiPublicKey = SpkiPublicKey(pending.generated.publicKey.encoded),
+                        algorithm = pending.generated.coseAlgorithm,
+                    ),
                 credPropsRequested = pending.info.credPropsRequested,
                 prf = prf,
             )

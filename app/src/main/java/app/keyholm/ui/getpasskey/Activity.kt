@@ -35,6 +35,7 @@ import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.appLabel
 import app.keyholm.ui.common.promptContent
 import app.keyholm.util.logger
+import app.keyholm.webauthn.AssertionResponse
 import app.keyholm.webauthn.AssetLinkStatement
 import app.keyholm.webauthn.AuthenticatorData
 import app.keyholm.webauthn.ClientDataHash
@@ -483,10 +484,13 @@ class Activity : FragmentActivity() {
         val responseJson =
             CredentialResponseJson.assertionResponseJson(
                 credentialId = signIn.record.credentialId,
-                clientDataJSON = signIn.clientDataJSON,
-                authData = signIn.authData,
-                derSignature = derSignature,
-                userHandle = signIn.record.user.handle,
+                response =
+                    AssertionResponse(
+                        clientDataJSON = signIn.clientDataJSON,
+                        authData = signIn.authData,
+                        derSignature = derSignature,
+                        userHandle = signIn.record.user.handle,
+                    ),
                 prfResults = prfResults,
             )
 

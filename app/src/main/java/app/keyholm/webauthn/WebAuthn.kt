@@ -511,7 +511,7 @@ private data class AssertionExtensionResults(
 )
 
 @Serializable
-private data class AttestationResponse(
+private data class AttestationResponsePayload(
     val clientDataJSON: String,
     val attestationObject: String,
     val authenticatorData: String,
@@ -526,7 +526,7 @@ private data class RegistrationResult(
     val rawId: String,
     val type: String,
     val authenticatorAttachment: String,
-    val response: AttestationResponse,
+    val response: AttestationResponsePayload,
     val clientExtensionResults: RegistrationExtensionResults,
 )
 
@@ -552,26 +552,37 @@ private const val PUBLIC_KEY_REGISTRATION_TYPE = "public-key"
 private const val PLATFORM_ATTACHMENT = "platform"
 private const val INTERNAL_TRANSPORT = "internal"
 
+data class AttestationResponse(
+    val clientDataJSON: ClientDataJson,
+    val attestationObject: AttestationObject,
+    val authData: AuthenticatorData,
+    val spkiPublicKey: SpkiPublicKey,
+    val algorithm: WebAuthnAlgorithm,
+)
+
+data class AssertionResponse(
+    val clientDataJSON: ClientDataJson,
+    val authData: AuthenticatorData,
+    val derSignature: DerSignature,
+    val userHandle: UserHandle,
+)
+
 object CredentialResponseJson {
     fun registrationResponseJson(
         credentialId: CredentialId,
-        clientDataJSON: ClientDataJson,
-        attestationObject: AttestationObject,
-        authData: AuthenticatorData,
-        spkiPublicKey: SpkiPublicKey,
-        alg: Int,
+        response: AttestationResponse,
         credPropsRequested: Boolean = false,
         prf: RegistrationPrf,
     ): String {
         val id = credentialId.b64
-        val response =
-            AttestationResponse(
-                clientDataJSON = B64.enc(clientDataJSON.bytes),
-                attestationObject = B64.enc(attestationObject.bytes),
-                authenticatorData = B64.enc(authData.bytes),
+        val payload =
+            AttestationResponsePayload(
+                clientDataJSON = B64.enc(response.clientDataJSON.bytes),
+                attestationObject = B64.enc(response.attestationObject.bytes),
+                authenticatorData = B64.enc(response.authData.bytes),
                 transports = listOf(INTERNAL_TRANSPORT),
-                publicKeyAlgorithm = alg,
-                publicKey = B64.enc(spkiPublicKey.bytes),
+                publicKeyAlgorithm = response.algorithm.coseAlg,
+                publicKey = B64.enc(response.spkiPublicKey.bytes),
             )
         val clientExtensionResults =
             RegistrationExtensionResults(
@@ -604,7 +615,7 @@ object CredentialResponseJson {
                 rawId = id,
                 type = PUBLIC_KEY_REGISTRATION_TYPE,
                 authenticatorAttachment = PLATFORM_ATTACHMENT,
-                response = response,
+                response = payload,
                 clientExtensionResults = clientExtensionResults,
             ),
         )
@@ -612,19 +623,16 @@ object CredentialResponseJson {
 
     fun assertionResponseJson(
         credentialId: CredentialId,
-        clientDataJSON: ClientDataJson,
-        authData: AuthenticatorData,
-        derSignature: DerSignature,
-        userHandle: UserHandle,
+        response: AssertionResponse,
         prfResults: PrfExtension.Results? = null,
     ): String {
         val id = credentialId.b64
-        val response =
+        val payload =
             AssertionResponsePayload(
-                clientDataJSON = B64.enc(clientDataJSON.bytes),
-                authenticatorData = B64.enc(authData.bytes),
-                signature = B64.enc(derSignature.bytes),
-                userHandle = userHandle.b64,
+                clientDataJSON = B64.enc(response.clientDataJSON.bytes),
+                authenticatorData = B64.enc(response.authData.bytes),
+                signature = B64.enc(response.derSignature.bytes),
+                userHandle = response.userHandle.b64,
             )
         val clientExtensionResults =
             AssertionExtensionResults(
@@ -641,7 +649,7 @@ object CredentialResponseJson {
                 rawId = id,
                 type = PUBLIC_KEY_REGISTRATION_TYPE,
                 authenticatorAttachment = PLATFORM_ATTACHMENT,
-                response = response,
+                response = payload,
                 clientExtensionResults = clientExtensionResults,
             ),
         )
