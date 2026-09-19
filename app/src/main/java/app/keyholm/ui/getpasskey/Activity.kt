@@ -244,14 +244,12 @@ class Activity : FragmentActivity() {
                 ?.firstOrNull()
         if (providerRequest == null || option == null) return SignInResult.Internal()
 
-        val credId = intent.credentialId()
-
         val records =
             passkeysOrLog().getOrElse {
                 return SignInResult.Interrupted(ErrorMessages.LOOKUP_FAILED)
             }
 
-        val record = records.firstOrNull { it.credentialId == credId }
+        val record = records.firstOrNull { it.credentialId == intent.credentialId() }
         if (record == null) return SignInResult.NoCredential()
 
         val request = parseRequestOptionsOrLog(option.requestJson, log)

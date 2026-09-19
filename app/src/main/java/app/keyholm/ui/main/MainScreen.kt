@@ -238,13 +238,13 @@ private fun PasskeyListContent(
     uiState: MainUiState.Ready,
     viewModel: MainViewModel,
     innerPadding: PaddingValues,
-    context: Context,
-    scope: CoroutineScope,
     snackbarHostState: SnackbarHostState,
     rowGeneration: MutableMap<CredentialId, Int>,
     requestDeleteConfirmation: DeleteConfirmationRequester,
     onOpenDetails: (PasskeyRecord) -> Unit,
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     LazyColumn(
         modifier =
             Modifier
@@ -311,7 +311,6 @@ fun MainScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val rowGeneration = remember { mutableStateMapOf<CredentialId, Int>() }
-    val scope = rememberCoroutineScope()
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
@@ -360,8 +359,6 @@ fun MainScreen(
             uiState,
             viewModel,
             innerPadding,
-            context,
-            scope,
             snackbarHostState,
             rowGeneration,
             requestDeleteConfirmation,
