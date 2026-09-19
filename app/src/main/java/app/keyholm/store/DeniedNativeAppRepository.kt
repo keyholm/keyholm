@@ -9,6 +9,7 @@ import app.keyholm.webauthn.AssetLinkStatement
 import app.keyholm.webauthn.CertFingerprint
 import app.keyholm.webauthn.PackageName
 import app.keyholm.webauthn.RpId
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -24,11 +25,12 @@ private val Context.deniedNativeAppsDataStore: DataStore<DeniedNativeAppsProto> 
 
 class DeniedNativeAppRepository internal constructor(
     private val dataStore: DataStore<DeniedNativeAppsProto>,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     constructor(context: Context) : this(context.applicationContext.deniedNativeAppsDataStore)
 
     val nativeApps: Flow<DeniedNativeApps> =
-        dataStore.data.map { it.toDomain() }.flowOn(Dispatchers.Default)
+        dataStore.data.map { it.toDomain() }.flowOn(dispatcher)
 
     val accepted: Flow<Map<RpId, List<AssetLinkStatement>>> = nativeApps.map { it.accepted }
 

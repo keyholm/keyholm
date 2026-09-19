@@ -8,6 +8,7 @@ import app.keyholm.store.readStore
 import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.webauthn.CredentialId
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -41,6 +42,7 @@ private fun PendingDeletes.cancelAll(): List<Pending> = getAndUpdate { emptyMap(
 class PendingDeleteController(
     private val passkeyRepo: PasskeyRepository,
     private val scope: CoroutineScope,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val onError: (String) -> Unit,
 ) {
     private val pending: PendingDeletes = MutableStateFlow(emptyMap())
@@ -56,7 +58,7 @@ class PendingDeleteController(
                     (record.lifecycle as? RecordLifecycle.PendingDelete)?.let { record to it.at }
                 }
             val (overdue, inFlight) = pendingFromStore.partition { (_, at) -> !at.isAfter(now) }
-            withContext(Dispatchers.IO) { overdue.forEach { (record, _) -> deleteKeyMaterial(record) } }
+            withContext(dispatcher) { overdue.forEach { (record, _) -> deleteKeyMaterial(record) } }
             overdue.forEach { (record, _) -> forget(record.credentialId) }
             inFlight.forEach { (record, at) -> arm(record, Duration.between(now, at).toMillis()) }
         }
@@ -77,7 +79,7 @@ class PendingDeleteController(
         val job =
             scope.launch {
                 delay(remainingMs)
-                withContext(Dispatchers.IO) { deleteKeyMaterial(record) }
+                withContext(dispatcher) { deleteKeyMaterial(record) }
                 forget(record.credentialId)
                 pending.update { it - record.credentialId }
             }

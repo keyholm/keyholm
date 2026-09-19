@@ -27,6 +27,7 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import app.keyholm.keystore.KeySecurityLevel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -95,6 +96,7 @@ internal fun AttestationDialog(
     securityLevel: KeySecurityLevel,
     fileName: String,
     onDismiss: () -> Unit,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -107,7 +109,7 @@ internal fun AttestationDialog(
             if (uri == null) return@rememberLauncherForActivityResult
             scope.launch {
                 val saved =
-                    withContext(Dispatchers.IO) {
+                    withContext(dispatcher) {
                         runCatching {
                             val stream = checkNotNull(context.contentResolver.openOutputStream(uri))
                             stream.use { it.write(pemText.toByteArray()) }

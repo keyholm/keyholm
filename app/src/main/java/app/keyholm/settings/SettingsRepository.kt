@@ -15,6 +15,7 @@ import app.keyholm.webauthn.AlgorithmPreference
 import app.keyholm.webauthn.IdentityPreference
 import app.keyholm.webauthn.MlDsaSupport
 import app.keyholm.webauthn.NativeAppTrust
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -58,6 +59,7 @@ data class Settings(
 
 class SettingsRepository(
     context: Context,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     private val appContext = context.applicationContext
     internal val dataStore = appContext.settingsDataStore
@@ -66,7 +68,7 @@ class SettingsRepository(
         dataStore.data
             .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
             .map { it.toSettings(appContext) }
-            .flowOn(Dispatchers.Default)
+            .flowOn(dispatcher)
 
     suspend fun reset(): Result<Unit> =
         try {

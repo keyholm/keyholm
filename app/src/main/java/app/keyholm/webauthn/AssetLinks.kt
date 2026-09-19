@@ -1,6 +1,5 @@
 package app.keyholm.webauthn
 
-import android.app.Application
 import android.content.Context
 import app.keyholm.util.logger
 import kotlinx.serialization.SerialName
@@ -54,16 +53,13 @@ internal fun parseCommunityAssetLinks(raw: String): Map<RpId, List<AssetLinkStat
 
 object CommunityAssetLinks {
     private val log = logger()
-    private var application: Application? = null
+    private var parsed: Map<RpId, List<AssetLinkStatement>>? = null
 
-    fun load(context: Context): Map<RpId, List<AssetLinkStatement>> {
-        if (application == null) application = context.applicationContext as Application
-        return parsed
-    }
+    fun load(context: Context): Map<RpId, List<AssetLinkStatement>> = parsed ?: read(context.applicationContext).also { parsed = it }
 
-    private val parsed: Map<RpId, List<AssetLinkStatement>> by lazy {
+    private fun read(context: Context): Map<RpId, List<AssetLinkStatement>> =
         try {
-            application!!.assets.open(ASSETS_FILE).use {
+            context.assets.open(ASSETS_FILE).use {
                 parseCommunityAssetLinks(it.readBytes().toString(Charsets.UTF_8))
             }
         } catch (e: IOException) {
@@ -73,5 +69,4 @@ object CommunityAssetLinks {
             log.e(e) { "couldn't parse $ASSETS_FILE, not trusting anyone from community list" }
             emptyMap()
         }
-    }
 }

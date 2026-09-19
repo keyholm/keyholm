@@ -172,14 +172,14 @@ enum class AlgorithmFamily(
 
 enum class MlDsaSupport { OFF, STRONGEST_ONLY, PREFER_STRONGEST, FIRST_OFFERED }
 
-sealed class AlgorithmPreference {
-    data object FirstOffered : AlgorithmPreference()
+sealed interface AlgorithmPreference {
+    data object FirstOffered : AlgorithmPreference
 
-    data object AlwaysAsk : AlgorithmPreference()
+    data object AlwaysAsk : AlgorithmPreference
 
     data class Prefer(
         val family: AlgorithmFamily,
-    ) : AlgorithmPreference()
+    ) : AlgorithmPreference
 }
 
 enum class ClientDataType(

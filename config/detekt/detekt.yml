@@ -8,6 +8,8 @@ style:
     maxLineLength: 140
   ReturnCount:
     excludeGuardClauses: true
+  ForbiddenVoid:
+    ignoreOverridden: true
   ForbiddenImport:
     active: true
     forbiddenImports:

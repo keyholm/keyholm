@@ -41,6 +41,7 @@ import app.keyholm.webauthn.WebAuthnAlgorithm
 import app.keyholm.webauthn.attestationRequested
 import app.keyholm.webauthn.parseCreationOptions
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -86,8 +87,12 @@ internal fun Intent.credentialId(): CredentialId =
         },
     )
 
-class Service : CredentialProviderService() {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+class Service internal constructor(
+    dispatcher: CoroutineDispatcher,
+) : CredentialProviderService() {
+    constructor() : this(Dispatchers.IO)
+
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val passkeyRepo by lazy { PasskeyRepository(applicationContext) }
     private val getEntries by lazy { GetCredentialEntries(applicationContext) }
     private val settingsRepo by lazy { SettingsRepository(applicationContext) }

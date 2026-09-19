@@ -6,6 +6,7 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.dataStore
 import app.keyholm.store.proto.PasskeyRecordsProto
 import app.keyholm.webauthn.CredentialId
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -33,13 +34,14 @@ private val Context.passkeyDataStore: DataStore<PasskeyRecordsProto> by dataStor
 
 class PasskeyRepository internal constructor(
     private val dataStore: DataStore<PasskeyRecordsProto>,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     constructor(context: Context) : this(context.applicationContext.passkeyDataStore)
 
     val passkeys: Flow<List<PasskeyRecord>> =
         dataStore.data
             .map { proto -> proto.recordsList.map { it.toDomain() } }
-            .flowOn(Dispatchers.Default)
+            .flowOn(dispatcher)
 
     suspend fun summary(): PasskeySummary = summarize(passkeys.first())
 

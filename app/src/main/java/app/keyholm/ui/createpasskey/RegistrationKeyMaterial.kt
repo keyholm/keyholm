@@ -97,8 +97,8 @@ internal class RegistrationKeyMaterial(
     suspend fun persist(record: PasskeyRecord): Registration<Unit> =
         passkeyRepo.add(record).fold(
             onSuccess = {
-                migrationRepo.delete(record.rp.id, record.user.name).onFailure {
-                    log.e(it) { "placeholder cleanup failed" }
+                migrationRepo.delete(record.rp.id, record.user.name).onFailure { error ->
+                    log.e(error) { "placeholder cleanup failed" }
                     Toast.makeText(context, ErrorMessages.PLACEHOLDER_CLEANUP_FAILED, Toast.LENGTH_LONG).show()
                 }
                 Registration.Ready(Unit)

@@ -172,10 +172,12 @@ class SecureKeyManager {
     }
 
     fun certificateChainPem(alias: KeyAlias): List<String> =
-        keyStore.getCertificateChain(alias.value)?.map { cert ->
-            val body = Base64.encodeToString(cert.encoded, Base64.NO_WRAP).chunked(64).joinToString("\n")
-            "-----BEGIN CERTIFICATE-----\n$body\n-----END CERTIFICATE-----"
-        } ?: emptyList()
+        keyStore
+            .getCertificateChain(alias.value)
+            ?.map { cert ->
+                val body = Base64.encodeToString(cert.encoded, Base64.NO_WRAP).chunked(64).joinToString("\n")
+                "-----BEGIN CERTIFICATE-----\n$body\n-----END CERTIFICATE-----"
+            }.orEmpty()
 
     companion object {
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
@@ -254,7 +256,7 @@ class SecureKeyManager {
                 )
             }
 
-            val chain = keyStore.getCertificateChain(alias.value)?.map { it.encoded } ?: emptyList()
+            val chain = keyStore.getCertificateChain(alias.value)?.map { it.encoded }.orEmpty()
             val publicKey = keyStore.getCertificate(alias.value)?.publicKey ?: keyPair.public
             return GeneratedCredential(publicKey, chain, algorithm, securityLevel)
         }

@@ -61,6 +61,7 @@ import app.keyholm.ui.main.Stored
 import app.keyholm.webauthn.CommunityAssetLinks
 import app.keyholm.webauthn.NativeAppTrust
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 private const val TITLE_SETTINGS = "Settings"
 private const val CONTENT_DESCRIPTION_HELP = "Help"
@@ -296,7 +297,7 @@ private fun ResetConfirmDialog(
         title = { Text(DIALOG_TITLE_RESET) },
         text = {
             if (passkeys is Stored.Available) {
-                Text(DIALOG_BODY_RESET_TEMPLATE.format(passkeys.value.size))
+                Text(DIALOG_BODY_RESET_TEMPLATE.format(Locale.ROOT, passkeys.value.size))
             } else {
                 Text(LOAD_ERROR)
             }

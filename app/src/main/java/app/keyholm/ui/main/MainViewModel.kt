@@ -21,6 +21,7 @@ import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
 import app.keyholm.webauthn.CredentialId
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -117,9 +118,12 @@ private data class StoresState(
     val nativeApps: Stored<DeniedNativeApps>,
 )
 
-class MainViewModel(
+class MainViewModel internal constructor(
     application: Application,
+    private val dispatcher: CoroutineDispatcher,
 ) : AndroidViewModel(application) {
+    constructor(application: Application) : this(application, Dispatchers.IO)
+
     private val log = logger()
     private val settingsRepo = SettingsRepository(application)
     private val passkeyRepo = PasskeyRepository(application)
@@ -136,7 +140,7 @@ class MainViewModel(
 
     private val deviceStatus: Flow<DeviceStatus> =
         refreshTicks.map {
-            withContext(Dispatchers.IO) {
+            withContext(dispatcher) {
                 val context = getApplication<Application>()
                 val secureElement = SecureKeyManager.isSecureElementAvailable(context)
                 setCredentialProviderComponentEnabled(context, secureElement)
@@ -185,7 +189,7 @@ class MainViewModel(
         }
 
     val pendingDeletes =
-        PendingDeleteController(passkeyRepo, viewModelScope) { actionErrors.trySend(it) }
+        PendingDeleteController(passkeyRepo, viewModelScope, dispatcher) { actionErrors.trySend(it) }
 
     val uiState: StateFlow<MainUiState> =
         combine(
@@ -228,7 +232,7 @@ class MainViewModel(
         details.value = PasskeyDetails.Open(record.credentialId, Loadable.Loading, Loadable.Loading)
         viewModelScope.launch {
             val pem =
-                withContext(Dispatchers.IO) {
+                withContext(dispatcher) {
                     runCatching { SecureKeyManager().certificateChainPem(record.keyAlias) }
                 }
             val attestation: Loadable<AttestationInfo> =
@@ -243,7 +247,7 @@ class MainViewModel(
         }
         viewModelScope.launch {
             val read =
-                withContext(Dispatchers.IO) {
+                withContext(dispatcher) {
                     runCatching {
                         val keyManager = SecureKeyManager()
                         val mainKey =
@@ -283,7 +287,7 @@ class MainViewModel(
     fun resetEverything() {
         pendingDeletes.clear()
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { SecureKeyManager().deleteAllKeys() }
+            withContext(dispatcher) { SecureKeyManager().deleteAllKeys() }
             val failure =
                 listOf(
                     passkeyRepo.saveAll(emptyList()),

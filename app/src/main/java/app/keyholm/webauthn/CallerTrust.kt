@@ -8,6 +8,7 @@ import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.B64
 import app.keyholm.util.sha256
 import co.touchlab.kermit.Logger
+import java.util.Locale
 
 private val log = Logger.withTag("app.keyholm.webauthn.CallerTrust")
 
@@ -154,7 +155,7 @@ object PrivilegedAllowlist {
             .use { it.readBytes().toString(Charsets.UTF_8) }
 }
 
-private fun ByteArray.toColonHex(): String = joinToString(":") { "%02X".format(it) }
+private fun ByteArray.toColonHex(): String = joinToString(":") { "%02X".format(Locale.ROOT, it) }
 
 private fun Signature.fingerprint(): CertFingerprint = CertFingerprint.of(sha256(toByteArray()).toColonHex())
 

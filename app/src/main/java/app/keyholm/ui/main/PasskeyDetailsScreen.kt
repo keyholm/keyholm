@@ -51,6 +51,7 @@ import app.keyholm.webauthn.CredentialId
 import com.google.protobuf.ByteString
 import java.text.DateFormat
 import java.util.Date
+import java.util.Locale
 
 private const val TOAST_COPIED = "Copied to clipboard"
 
@@ -124,7 +125,10 @@ private fun AttestationRow(
     }
 }
 
-private fun credentialKeyFingerprint(spki: ByteString): String = sha256(spki.toByteArray()).joinToString(":") { "%02X".format(it) }
+private fun credentialKeyFingerprint(spki: ByteString): String =
+    sha256(spki.toByteArray()).joinToString(":") {
+        "%02X".format(Locale.ROOT, it)
+    }
 
 @Composable
 private fun DetailsSection(

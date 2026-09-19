@@ -152,6 +152,11 @@ detekt {
     baseline = rootProject.file("config/detekt/baseline.xml")
     buildUponDefaultConfig = true
     parallel = true
+    ignoredBuildTypes.addAll("debug", "staging")
+}
+
+tasks.named("check") {
+    dependsOn("detektMain")
 }
 
 dependencies {

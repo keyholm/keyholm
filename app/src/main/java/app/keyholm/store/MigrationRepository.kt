@@ -6,6 +6,7 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.dataStore
 import app.keyholm.store.proto.MigrationPlaceholdersProto
 import app.keyholm.webauthn.RpId
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -20,13 +21,14 @@ private val Context.migrationDataStore: DataStore<MigrationPlaceholdersProto> by
 
 class MigrationRepository internal constructor(
     private val dataStore: DataStore<MigrationPlaceholdersProto>,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     constructor(context: Context) : this(context.applicationContext.migrationDataStore)
 
     val placeholders: Flow<List<MigrationPlaceholder>> =
         dataStore.data
             .map { proto -> proto.placeholdersList.map { it.toDomain() } }
-            .flowOn(Dispatchers.Default)
+            .flowOn(dispatcher)
 
     suspend fun addAll(records: List<MigrationPlaceholder>): Result<Unit> {
         if (records.isEmpty()) return Result.success(Unit)
@@ -44,7 +46,7 @@ class MigrationRepository internal constructor(
 
     suspend fun saveAll(records: List<MigrationPlaceholder>): Result<Unit> =
         write {
-            MigrationPlaceholdersProto.newBuilder().addAllPlaceholders(records.map { it.toProto() }).build()
+            MigrationPlaceholdersProto.newBuilder().addAllPlaceholders(records.map { placeholder -> placeholder.toProto() }).build()
         }
 
     private suspend fun write(transform: (MigrationPlaceholdersProto) -> MigrationPlaceholdersProto): Result<Unit> =
