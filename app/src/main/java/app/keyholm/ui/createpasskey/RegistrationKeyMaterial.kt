@@ -18,7 +18,6 @@ import app.keyholm.util.logger
 import app.keyholm.webauthn.ClientDataHash
 import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.KeyAlias
-import app.keyholm.webauthn.RpId
 import app.keyholm.webauthn.SigningInput
 import app.keyholm.webauthn.WebAuthn
 import app.keyholm.webauthn.WebAuthnAlgorithm
@@ -44,31 +43,35 @@ internal class RegistrationKeyMaterial(
         }
 
     fun create(
-        alias: KeyAlias,
-        clientDataHash: ClientDataHash,
-        rpId: RpId,
+        registration: RegistrationContext,
         credentialId: CredentialId,
-        algorithm: WebAuthnAlgorithm,
-        prfRequested: Boolean,
-        identifyAsKeyholm: Boolean,
+        clientDataHash: ClientDataHash,
         createAuthenticators: AuthenticatorPolicy,
         invalidateOnBiometricEnrollment: Boolean,
     ): Registration<KeyMaterial> {
+        val alias = credentialId.signingKeyAlias
+        val algorithm = registration.algorithm
         val authenticators =
             when (val r = resolveAuthenticators(createAuthenticators)) {
                 is Registration.Failed -> return r
                 is Registration.Ready -> r.value
             }
+        val request =
+            SecureKeyManager.CredentialKeyRequest(
+                alias = alias,
+                attestationChallenge = clientDataHash,
+                algorithm = algorithm,
+                authenticators = authenticators,
+                invalidateOnBiometricEnrollment = invalidateOnBiometricEnrollment,
+            )
         val generated =
-            when (
-                val r = generateKey(alias, clientDataHash, algorithm, authenticators, invalidateOnBiometricEnrollment)
-            ) {
+            when (val r = generateKey(request)) {
                 is Outcome.Failure -> return Registration.Internal(r.toastMessage)
                 is Outcome.Success -> r.value
             }
-        val aaguid = if (identifyAsKeyholm) WebAuthn.KEYHOLM_AAGUID else WebAuthn.ZERO_AAGUID
+        val aaguid = if (registration.identifyAsKeyholm) WebAuthn.KEYHOLM_AAGUID else WebAuthn.ZERO_AAGUID
         val authData =
-            WebAuthn.registrationAuthData(rpId, credentialId, generated.publicKey, aaguid, algorithm)
+            WebAuthn.registrationAuthData(registration.info.rp.id, credentialId, generated.publicKey, aaguid, algorithm)
         val toSign = SigningInput(authData.bytes + clientDataHash.bytes)
         val signature =
             when (val r = signFor(alias, algorithm)) {
@@ -77,7 +80,13 @@ internal class RegistrationKeyMaterial(
             }
         val prfSecurityLevel =
             when (
-                val r = generatePrfKey(credentialId, authenticators, invalidateOnBiometricEnrollment, prfRequested)
+                val r =
+                    generatePrfKey(
+                        credentialId,
+                        authenticators,
+                        invalidateOnBiometricEnrollment,
+                        registration.info.prfRequested,
+                    )
             ) {
                 is Outcome.Failure -> return Registration.Internal(r.toastMessage)
                 is Outcome.Success -> r.value
@@ -128,23 +137,9 @@ internal class RegistrationKeyMaterial(
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
         }
 
-    private fun generateKey(
-        alias: KeyAlias,
-        clientDataHash: ClientDataHash,
-        algorithm: WebAuthnAlgorithm,
-        keystoreAuthenticators: AuthenticatorPolicy,
-        invalidateOnBiometricEnrollment: Boolean,
-    ): Outcome<SecureKeyManager.GeneratedCredential> =
+    private fun generateKey(request: SecureKeyManager.CredentialKeyRequest): Outcome<SecureKeyManager.GeneratedCredential> =
         try {
-            Outcome.Success(
-                keyManager.generateCredentialKey(
-                    alias,
-                    clientDataHash,
-                    algorithm,
-                    keystoreAuthenticators,
-                    invalidateOnBiometricEnrollment,
-                ),
-            )
+            Outcome.Success(keyManager.generateCredentialKey(request))
         } catch (e: SecureElementUnavailableException) {
             Outcome.Failure(e.message)
         } catch (e: GeneralSecurityException) {

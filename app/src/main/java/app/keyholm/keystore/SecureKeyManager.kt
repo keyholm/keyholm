@@ -40,15 +40,19 @@ class SecureKeyManager {
         val securityLevel: KeySecurityLevel,
     )
 
+    data class CredentialKeyRequest(
+        val alias: KeyAlias,
+        val attestationChallenge: ClientDataHash,
+        val algorithm: WebAuthnAlgorithm,
+        val authenticators: AuthenticatorPolicy,
+        val invalidateOnBiometricEnrollment: Boolean,
+    )
+
     private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
 
-    fun generateCredentialKey(
-        alias: KeyAlias,
-        attestationChallenge: ClientDataHash,
-        algorithm: WebAuthnAlgorithm,
-        authenticatorTypes: AuthenticatorPolicy,
-        invalidateOnBiometricEnrollment: Boolean,
-    ): GeneratedCredential {
+    fun generateCredentialKey(request: CredentialKeyRequest): GeneratedCredential {
+        val alias = request.alias
+        val algorithm = request.algorithm
         val keyAlgorithm = keyAlgorithmFor(algorithm)
 
         fun generate(strongBox: Boolean) =
@@ -57,14 +61,7 @@ class SecureKeyManager {
                 keyAlgorithm,
                 alias,
                 algorithm,
-                buildCredentialKeySpec(
-                    alias,
-                    attestationChallenge,
-                    algorithm,
-                    authenticatorTypes,
-                    invalidateOnBiometricEnrollment,
-                    strongBox,
-                ),
+                buildCredentialKeySpec(request, strongBox),
             )
 
         fun fallbackFromStrongBox(e: Exception): GeneratedCredential {
@@ -197,22 +194,18 @@ class SecureKeyManager {
             }
 
         private fun buildCredentialKeySpec(
-            alias: KeyAlias,
-            attestationChallenge: ClientDataHash,
-            algorithm: WebAuthnAlgorithm,
-            authenticatorTypes: AuthenticatorPolicy,
-            invalidateOnBiometricEnrollment: Boolean,
+            request: CredentialKeyRequest,
             strongBox: Boolean,
         ): KeyGenParameterSpec {
             val builder =
                 KeyGenParameterSpec
-                    .Builder(alias.value, KeyProperties.PURPOSE_SIGN)
+                    .Builder(request.alias.value, KeyProperties.PURPOSE_SIGN)
                     .setUnlockedDeviceRequired(true)
                     .setUserAuthenticationRequired(true)
-                    .setUserAuthenticationParameters(0, authenticatorTypes.keystoreMask)
-                    .setInvalidatedByBiometricEnrollment(invalidateOnBiometricEnrollment)
-                    .setAttestationChallenge(attestationChallenge.bytes)
-            when (algorithm) {
+                    .setUserAuthenticationParameters(0, request.authenticators.keystoreMask)
+                    .setInvalidatedByBiometricEnrollment(request.invalidateOnBiometricEnrollment)
+                    .setAttestationChallenge(request.attestationChallenge.bytes)
+            when (request.algorithm) {
                 WebAuthnAlgorithm.ES256 -> {
                     builder
                         .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))

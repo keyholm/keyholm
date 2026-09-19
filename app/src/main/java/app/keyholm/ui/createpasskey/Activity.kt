@@ -325,17 +325,8 @@ class Activity : FragmentActivity() {
 
         val material =
             keyMaterial
-                .create(
-                    alias,
-                    clientDataHash,
-                    registration.info.rpId,
-                    credentialId,
-                    registration.algorithm,
-                    registration.info.prfRequested,
-                    registration.identifyAsKeyholm,
-                    offer.authenticators,
-                    offer.invalidateOnBiometricEnrollment,
-                ).orFail { failCreateCredential(it.toException(), it.toastMessage) } ?: return
+                .create(registration, credentialId, clientDataHash, offer.authenticators, offer.invalidateOnBiometricEnrollment)
+                .orFail { failCreateCredential(it.toException(), it.toastMessage) } ?: return
 
         val pending = buildPendingRegistration(registration, material, clientDataJSON, credentialId, alias)
 
