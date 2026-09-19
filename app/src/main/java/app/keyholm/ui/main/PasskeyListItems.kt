@@ -427,7 +427,7 @@ internal fun MigrationPlaceholderCardBody(
                 } else {
                     null
                 },
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         ) {
             Text(placeholder.rpId.value)
         }

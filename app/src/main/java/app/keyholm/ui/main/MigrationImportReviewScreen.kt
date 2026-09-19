@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import app.keyholm.store.MigrationExportEntry
 import app.keyholm.store.MigrationPlaceholder
 import app.keyholm.ui.common.rememberAppIcon
-import app.keyholm.ui.theme.titleColor
 import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,7 +54,7 @@ internal fun MigrationImportReviewScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Import", color = titleColor) },
+                title = { Text("Import") },
                 navigationIcon = {
                     Image(
                         bitmap = rememberAppIcon(),
@@ -70,7 +69,7 @@ internal fun MigrationImportReviewScreen(
                 modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Nevermind") }
+                OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Cancel") }
                 Button(onClick = onConfirm, modifier = Modifier.weight(1f)) { Text("Import") }
             }
         },

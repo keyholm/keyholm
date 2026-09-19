@@ -155,11 +155,7 @@ internal fun StatusRow(
 internal fun SecureElementStatusRow(isAvailable: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (!isAvailable) {
-            Icon(
-                imageVector = Icons.Default.Error,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-            )
+            Icon(imageVector = Icons.Default.Error, contentDescription = null)
             Spacer(Modifier.width(8.dp))
         }
         Text(
@@ -174,7 +170,10 @@ internal fun StatusCard(
     isAvailable: Boolean,
     onOpenSettings: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+    ) {
         Column(
             Modifier.padding(
                 start = 16.dp,

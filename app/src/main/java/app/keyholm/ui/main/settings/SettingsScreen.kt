@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -25,10 +24,8 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.AuthenticatorsResolution
+import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.common.resolveCreateAuthenticators
@@ -65,7 +63,6 @@ import app.keyholm.webauthn.NativeAppTrust
 import kotlinx.coroutines.launch
 
 private const val TITLE_SETTINGS = "Settings"
-private const val CONTENT_DESCRIPTION_BACK = "Back"
 private const val CONTENT_DESCRIPTION_HELP = "Help"
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,17 +74,7 @@ private fun SettingsTopBar(
     TopAppBar(
         title = { Text(TITLE_SETTINGS) },
         navigationIcon = {
-            FilledIconButton(
-                onClick = onBack,
-                modifier = Modifier.padding(start = 16.dp, end = 8.dp),
-                colors =
-                    IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = CONTENT_DESCRIPTION_BACK)
-            }
+            BackButton(onBack)
         },
         actions = {
             IconButton(onClick = onOpenHelp) {
@@ -110,7 +97,7 @@ private fun StatusSection(uiState: MainUiState.Ready) {
     Section(title = SECTION_TITLE_STATUS) {
         item { shape ->
             Column(
-                Modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainer).padding(16.dp),
+                Modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(16.dp),
             ) {
                 StatusRow(
                     isOk = uiState.device.tee,
@@ -160,7 +147,7 @@ private fun NativeAppTrustSection(
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                         }
                     },
-                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                     verticalAlignment = Alignment.CenterVertically,
                     shapes = ListItemDefaults.shapes(shape = shape),
                 ) {
@@ -236,7 +223,7 @@ private fun NativeAppTrustRow(
                 }
             }
         },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {
@@ -259,7 +246,7 @@ private fun ResetSection(
                 selected = false,
                 onClick = { viewModel.settings.resetSettings() },
                 leadingContent = { Icon(Icons.Default.Replay, contentDescription = null) },
-                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                 verticalAlignment = Alignment.CenterVertically,
                 shapes = ListItemDefaults.shapes(shape = shape),
             ) {
@@ -280,7 +267,7 @@ private fun ResetSection(
                         tint = MaterialTheme.colorScheme.error,
                     )
                 },
-                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                 verticalAlignment = Alignment.CenterVertically,
                 shapes = ListItemDefaults.shapes(shape = shape),
             ) {

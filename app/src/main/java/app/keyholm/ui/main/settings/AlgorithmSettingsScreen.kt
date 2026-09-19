@@ -86,7 +86,7 @@ private fun AlgorithmSwitchRow(
                 enabled = offersSomethingWithout(uiState, family),
             )
         },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {
@@ -248,7 +248,7 @@ private fun AlgorithmPreferenceRow(
         trailingContent = {
             AlgorithmPreferenceDropdown(expanded, { expanded = it }, canChoose, currentLabel, options, onSelect)
         },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {

@@ -102,7 +102,7 @@ private fun AuthenticatorIdentityRow(
                 }
             }
         },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {
@@ -133,7 +133,7 @@ private fun BiometricsRow(
                 enabled = uiState.settings.createAuthenticators != AuthenticatorPolicy.Biometric,
             )
         },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {
@@ -170,7 +170,7 @@ private fun DeviceCredentialRow(
                 enabled = uiState.settings.createAuthenticators != AuthenticatorPolicy.DeviceCredential,
             )
         },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {
@@ -196,7 +196,7 @@ private fun InvalidateOnEnrollmentRow(
                 onCheckedChange = viewModel.settings::setInvalidateOnBiometricEnrollment,
             )
         },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {

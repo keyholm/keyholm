@@ -11,15 +11,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +32,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +44,7 @@ import app.keyholm.store.DeniedNativeAppInfo
 import app.keyholm.store.DeniedNativeAppKey
 import app.keyholm.store.exceptionKeys
 import app.keyholm.store.toExceptionKeys
+import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.appLabel
 import app.keyholm.ui.main.LoadErrorCard
 import app.keyholm.ui.main.MainUiState
@@ -72,17 +70,7 @@ private fun ExceptionsTopBar(onBack: () -> Unit) {
     TopAppBar(
         title = { Text(TITLE_EXCEPTIONS) },
         navigationIcon = {
-            FilledIconButton(
-                onClick = onBack,
-                modifier = Modifier.padding(start = 16.dp, end = 8.dp),
-                colors =
-                    IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
+            BackButton(onBack)
         },
     )
 }
@@ -287,7 +275,7 @@ private fun ExceptionCard(
                     }
                 }
             },
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         ) {
             val context = LocalContext.current
             val label = remember(packageName) { context.appLabel(packageName) }

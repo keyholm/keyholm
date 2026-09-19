@@ -31,7 +31,7 @@ private fun CompactViewRow(
                 onCheckedChange = viewModel.settings::setCompactView,
             )
         },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {
@@ -55,7 +55,7 @@ private fun PreferRpNameRow(
             )
         },
         supportingContent = { Text(DESCRIPTION_PREFER_RP_NAME, style = MaterialTheme.typography.bodySmall) },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {

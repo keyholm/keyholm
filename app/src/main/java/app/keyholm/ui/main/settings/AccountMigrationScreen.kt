@@ -117,7 +117,7 @@ private fun MigrationItem(
         selected = false,
         onClick = onClick,
         leadingContent = { Icon(icon, contentDescription = null) },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {

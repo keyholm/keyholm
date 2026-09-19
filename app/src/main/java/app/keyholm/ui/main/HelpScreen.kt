@@ -22,14 +22,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -47,15 +44,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import app.keyholm.R
+import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.common.rememberAppIcon
 import app.keyholm.ui.main.settings.SECTION_TITLE_ACCOUNT_MIGRATION
@@ -92,25 +88,14 @@ private val INLINE_MARKUP = Regex("""\[([^]]+)]\(([^)]+)\)|\*\*([^*]+)\*\*""")
 @Composable
 private fun linkedText(raw: String): AnnotatedString {
     val text = raw.reflowParagraphs()
-    val linkColor = MaterialTheme.colorScheme.primary
-    return remember(text, linkColor) {
+    return remember(text) {
         buildAnnotatedString {
             var cursor = 0
             for (match in INLINE_MARKUP.findAll(text)) {
                 append(text.substring(cursor, match.range.first))
                 val (linkLabel, url, boldText) = match.destructured
                 if (url.isNotEmpty()) {
-                    withLink(
-                        LinkAnnotation.Url(
-                            url = url,
-                            styles =
-                                TextLinkStyles(
-                                    style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline),
-                                ),
-                        ),
-                    ) {
-                        append(linkLabel)
-                    }
+                    withLink(LinkAnnotation.Url(url)) { append(linkLabel) }
                 } else {
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(boldText) }
                 }
@@ -237,17 +222,7 @@ private fun HelpTopBar(onBack: () -> Unit) {
     TopAppBar(
         title = { Text("Help") },
         navigationIcon = {
-            FilledIconButton(
-                onClick = onBack,
-                modifier = Modifier.padding(start = 16.dp, end = 8.dp),
-                colors =
-                    IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
+            BackButton(onBack)
         },
     )
 }
@@ -259,7 +234,7 @@ private fun HelpSectionView(section: HelpSection) {
             ListItem(
                 selected = false,
                 onClick = {},
-                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                 shapes = ListItemDefaults.shapes(shape = shape),
             ) {
                 Text(linkedText(section.body), style = MaterialTheme.typography.bodyMedium)
@@ -317,7 +292,7 @@ private fun AboutSection() {
     Section(title = SECTION_TITLE_ABOUT) {
         item { shape ->
             Column(
-                Modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainer).padding(16.dp),
+                Modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(16.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
@@ -367,7 +342,7 @@ fun HelpScreen(onBack: () -> Unit) {
                     ListItem(
                         selected = false,
                         onClick = {},
-                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                         shapes = ListItemDefaults.shapes(shape = shape),
                     ) {
                         Text(linkedText(HELP_INTRO), style = MaterialTheme.typography.bodyMedium)

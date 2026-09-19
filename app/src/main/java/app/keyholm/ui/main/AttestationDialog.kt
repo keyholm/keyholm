@@ -21,10 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -44,15 +42,7 @@ private fun LinkText(
     Text(
         buildAnnotatedString {
             append(prefix)
-            val styles =
-                TextLinkStyles(
-                    style =
-                        SpanStyle(
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                            fontWeight = FontWeight.Medium,
-                        ),
-                )
-            withLink(LinkAnnotation.Url(url, styles = styles)) { append(link) }
+            withLink(LinkAnnotation.Url(url)) { append(link) }
             append(suffix)
         },
         style = MaterialTheme.typography.bodyMedium,

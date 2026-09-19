@@ -14,14 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.PasskeyRecord
+import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.common.rpDisplayName
 import app.keyholm.ui.common.rpLabel
@@ -78,7 +76,7 @@ private fun DetailRow(
             Toast.makeText(context, TOAST_COPIED, Toast.LENGTH_SHORT).show()
         },
         supportingContent = { Text(value, style = MaterialTheme.typography.bodySmall) },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {
         Text(label)
@@ -119,7 +117,7 @@ private fun AttestationRow(
     ListItem(
         selected = false,
         onClick = onViewAttestation,
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {
         Text("Attestation")
@@ -203,17 +201,7 @@ private fun PasskeyDetailsTopBar(
     TopAppBar(
         title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         navigationIcon = {
-            FilledIconButton(
-                onClick = onBack,
-                modifier = Modifier.padding(start = 16.dp, end = 8.dp),
-                colors =
-                    IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
+            BackButton(onBack)
         },
     )
 }
