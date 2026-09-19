@@ -37,7 +37,6 @@ import app.keyholm.ui.common.promptContent
 import app.keyholm.util.logger
 import app.keyholm.webauthn.AssetLinkStatement
 import app.keyholm.webauthn.AuthenticatorData
-import app.keyholm.webauthn.Caller
 import app.keyholm.webauthn.ClientDataHash
 import app.keyholm.webauthn.ClientDataJson
 import app.keyholm.webauthn.ClientDataType
@@ -287,13 +286,19 @@ class Activity : FragmentActivity() {
                 return SignInResult.MalformedRequest("prf salt is not valid base64url")
             }
 
+        val clientData =
+            WebAuthn.clientData(
+                type = ClientDataType.Get,
+                challengeB64Url = request.challenge,
+                caller = caller,
+            )
+
         return when (
             val ctx =
                 buildSignInContext(
                     record,
                     PackageName(providerRequest.callingAppInfo.packageName),
-                    request,
-                    caller,
+                    clientData,
                     existingSignature,
                     prfSalts,
                 )
@@ -345,20 +350,13 @@ class Activity : FragmentActivity() {
     private suspend fun buildSignInContext(
         record: PasskeyRecord,
         callingPackage: PackageName,
-        request: RequestOptions,
-        caller: Caller.Trusted,
+        clientData: WebAuthn.ClientData,
         existingSignature: Signature?,
         prfSalts: PrfExtension.Salts?,
     ): Outcome<SignInContext> {
-        val cd =
-            WebAuthn.clientData(
-                type = ClientDataType.Get,
-                challengeB64Url = request.challenge,
-                caller = caller,
-            )
         val newSignCount = record.signCount + 1
         val authData = WebAuthn.assertionAuthData(record.rp.id, newSignCount)
-        val toSign = SigningInput(authData.bytes + cd.hash.bytes)
+        val toSign = SigningInput(authData.bytes + clientData.hash.bytes)
 
         val algorithm = record.keystore.coseAlgorithm
         val signatureOutcome = existingSignature?.let { Outcome.Success(it) } ?: keyMaterial.signFor(record, algorithm)
@@ -381,7 +379,7 @@ class Activity : FragmentActivity() {
                                 record = record,
                                 callingPackage = callingPackage,
                                 newSignCount = newSignCount,
-                                clientDataJSON = cd.json,
+                                clientDataJSON = clientData.json,
                                 authData = authData,
                                 toSign = toSign,
                                 signature = signature.value,
