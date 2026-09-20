@@ -1,5 +1,7 @@
 import com.android.build.api.variant.DeviceTestBuilder
 import com.android.build.api.variant.HostTestBuilder
+import dev.detekt.gradle.Detekt
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
     id("com.android.application")
@@ -157,6 +159,21 @@ detekt {
 
 tasks.named("check") {
     dependsOn("detektMain")
+}
+
+// detekt drops generated sources but doesn't add their classes: https://github.com/detekt/detekt/issues/9402
+// Setting the classpath replaces the plugin's convention, so the libraries and Kotlin output are re-listed too.
+tasks.withType<Detekt>().configureEach {
+    val compilation = name.removePrefix("detekt")
+    if (compilation.isNotEmpty()) {
+        val kotlin = tasks.named<KotlinJvmCompile>("compile${compilation}Kotlin")
+        val javac = tasks.named<JavaCompile>("compile${compilation}JavaWithJavac")
+        classpath.setFrom(
+            kotlin.map { it.libraries },
+            kotlin.flatMap { it.destinationDirectory },
+            javac.flatMap { it.destinationDirectory },
+        )
+    }
 }
 
 dependencies {
