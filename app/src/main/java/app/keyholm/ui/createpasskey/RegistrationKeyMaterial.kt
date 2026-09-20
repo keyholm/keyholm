@@ -71,7 +71,7 @@ internal class RegistrationKeyMaterial(
             }
         val aaguid = if (registration.identifyAsKeyholm) WebAuthn.KEYHOLM_AAGUID else WebAuthn.ZERO_AAGUID
         val authData =
-            WebAuthn.registrationAuthData(registration.info.rpId, credentialId, generated.publicKey, aaguid, algorithm)
+            WebAuthn.registrationAuthData(registration.info.rp.id, credentialId, generated.publicKey, aaguid, algorithm)
         val toSign = SigningInput(authData.bytes + clientDataHash.bytes)
         val signature =
             when (val r = signFor(alias, algorithm)) {

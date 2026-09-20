@@ -37,6 +37,7 @@ import app.keyholm.ui.common.PRF_PROMPT_TITLE
 import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.appLabel
 import app.keyholm.ui.common.promptContent
+import app.keyholm.ui.common.userLabel
 import app.keyholm.ui.theme.KeyholmTheme
 import app.keyholm.util.logger
 import app.keyholm.webauthn.AttestationObject
@@ -49,15 +50,15 @@ import app.keyholm.webauthn.ClientDataType
 import app.keyholm.webauthn.CreationOptions
 import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.CredentialResponseJson
+import app.keyholm.webauthn.CredentialUser
 import app.keyholm.webauthn.DerSignature
 import app.keyholm.webauthn.KeyAlias
 import app.keyholm.webauthn.PackageName
 import app.keyholm.webauthn.PrfExtension
 import app.keyholm.webauthn.RegistrationPrf
-import app.keyholm.webauthn.RpId
+import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.SigningInput
 import app.keyholm.webauthn.SpkiPublicKey
-import app.keyholm.webauthn.UserHandle
 import app.keyholm.webauthn.WebAuthn
 import app.keyholm.webauthn.WebAuthnAlgorithm
 import com.google.protobuf.ByteString
@@ -162,11 +163,8 @@ internal data class KeyMaterial(
 )
 
 internal data class RegistrantInfo(
-    val rpId: RpId,
-    val rpName: String,
-    val userHandle: UserHandle,
-    val userName: String,
-    val displayName: String,
+    val rp: RelyingParty,
+    val user: CredentialUser,
     val callingPackage: PackageName,
     val credPropsRequested: Boolean,
     val prfRequested: Boolean,
@@ -198,13 +196,8 @@ private data class PendingRegistration(
         val now = Instant.now()
         return PasskeyRecord(
             credentialId = credentialId,
-            rp = PasskeyRecord.Rp(id = info.rpId, name = info.rpName),
-            user =
-                PasskeyRecord.User(
-                    handle = info.userHandle,
-                    name = info.userName,
-                    displayName = info.displayName,
-                ),
+            rp = info.rp,
+            user = info.user,
             signCount = 0,
             callingPackage = info.callingPackage,
             createdAt = now,
@@ -367,11 +360,9 @@ class Activity : FragmentActivity() {
                             registration.includeAttestation,
                         ),
                     lastUsedAt = null,
-                    rpId = registration.info.rpId,
-                    rpName = registration.info.rpName,
+                    rp = registration.info.rp,
                     preferRpName = intent.preferRpName(),
-                    userName = registration.info.userName,
-                    displayName = registration.info.displayName,
+                    userLabel = userLabel(registration.info.user.name, registration.info.user.displayName),
                 ),
         )
 
@@ -459,11 +450,9 @@ class Activity : FragmentActivity() {
                     promptContent(
                         description = "${appLabel(pending.info.callingPackage)} wants access to the secret for:",
                         lastUsedAt = null,
-                        rpId = pending.info.rpId,
-                        rpName = pending.info.rpName,
+                        rp = pending.info.rp,
                         preferRpName = intent.preferRpName(),
-                        userName = pending.info.userName,
-                        displayName = pending.info.displayName,
+                        userLabel = userLabel(pending.info.user.name, pending.info.user.displayName),
                     ),
             ) as? PromptResult.Success
         val results = authorized?.crypto?.mac?.let { PrfExtension.evaluate(it, salts) }

@@ -9,7 +9,9 @@ import app.keyholm.store.proto.PrfProto
 import app.keyholm.store.proto.RelyingPartyProto
 import app.keyholm.store.proto.UserProto
 import app.keyholm.webauthn.CredentialId
+import app.keyholm.webauthn.CredentialUser
 import app.keyholm.webauthn.PackageName
+import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.RpId
 import app.keyholm.webauthn.UserHandle
 import app.keyholm.webauthn.WebAuthnAlgorithm
@@ -74,9 +76,9 @@ private fun KeySecurityLevel.toProto(): KeySecurityLevelProto =
 internal fun PasskeyRecordProto.toDomain(): PasskeyRecord =
     PasskeyRecord(
         credentialId = CredentialId(credentialId),
-        rp = PasskeyRecord.Rp(id = RpId(rp.id), name = rp.name),
+        rp = RelyingParty(id = RpId(rp.id), name = rp.name),
         user =
-            PasskeyRecord.User(
+            CredentialUser(
                 handle = UserHandle(user.handle),
                 name = user.name,
                 displayName = user.displayName,

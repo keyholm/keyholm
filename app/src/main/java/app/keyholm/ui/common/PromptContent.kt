@@ -5,17 +5,15 @@ import androidx.biometric.AuthenticationRequest
 import androidx.biometric.PromptContentItemBulletedText
 import androidx.biometric.PromptContentItemPlainText
 import app.keyholm.store.PasskeyRecord
-import app.keyholm.webauthn.RpId
+import app.keyholm.webauthn.RelyingParty
 import java.time.Instant
 
 internal fun promptContent(
     description: String,
     lastUsedAt: Instant?,
-    rpId: RpId,
-    rpName: String,
+    rp: RelyingParty,
     preferRpName: Boolean,
-    userName: String,
-    displayName: String,
+    userLabel: String,
 ): AuthenticationRequest.BodyContent =
     AuthenticationRequest.BodyContent.VerticalList(
         description = description,
@@ -23,9 +21,9 @@ internal fun promptContent(
         items =
             buildList {
                 add(PromptContentItemBulletedText("User"))
-                add(PromptContentItemPlainText(userLabel(userName, displayName)))
-                val idRow = "Relying Party ID" to rpId.value
-                val nameRow = rpDisplayName(rpId, rpName)?.let { "Relying Party name" to it }
+                add(PromptContentItemPlainText(userLabel))
+                val idRow = "Relying Party ID" to rp.id.value
+                val nameRow = rpDisplayName(rp)?.let { "Relying Party name" to it }
                 val rpRows = if (preferRpName) listOfNotNull(nameRow, idRow) else listOfNotNull(idRow, nameRow)
                 rpRows.forEach { (label, value) ->
                     add(PromptContentItemBulletedText(label))
@@ -46,11 +44,9 @@ internal fun promptContent(
     promptContent(
         description,
         record.lastUsedAt,
-        record.rp.id,
-        record.rp.name,
+        record.rp,
         preferRpName,
-        record.user.name,
-        record.user.displayName,
+        userLabel(record.user.name, record.user.displayName),
     )
 
 private fun lastUsedLabel(lastUsedAt: Instant): String =

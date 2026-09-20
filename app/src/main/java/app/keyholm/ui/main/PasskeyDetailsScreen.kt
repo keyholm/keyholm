@@ -48,6 +48,7 @@ import app.keyholm.ui.common.rpLabel
 import app.keyholm.ui.common.userLabel
 import app.keyholm.util.sha256
 import app.keyholm.webauthn.CredentialId
+import app.keyholm.webauthn.RelyingParty
 import com.google.protobuf.ByteString
 import java.text.DateFormat
 import java.util.Date
@@ -141,7 +142,7 @@ private fun DetailsSection(
     val algorithmName = record.keystore.coseAlgorithm.displayName
     val locationLabel = record.keystore.securityLevel.label
     Section(title = "Details") {
-        item { shape -> DetailRow("Relying party", rpLabel(record.rp.id, record.rp.name, preferRpName), shape) }
+        item { shape -> DetailRow("Relying party", rpLabel(record.rp, preferRpName), shape) }
         item { shape -> DetailRow("User", userLabel(record.user.name, record.user.displayName), shape) }
         item { shape -> DetailRow("Algorithm", algorithmName, shape) }
         item { shape -> DetailRow("Location", locationLabel, shape) }
@@ -197,11 +198,11 @@ private fun PrfSection(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PasskeyDetailsTopBar(
-    rp: PasskeyRecord.Rp,
+    rp: RelyingParty,
     preferRpName: Boolean,
     onBack: () -> Unit,
 ) {
-    val title = (if (preferRpName) rpDisplayName(rp.id, rp.name) else null) ?: rp.id.value
+    val title = (if (preferRpName) rpDisplayName(rp) else null) ?: rp.id.value
     TopAppBar(
         title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         navigationIcon = {

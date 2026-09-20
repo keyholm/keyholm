@@ -3,7 +3,9 @@ package app.keyholm.store
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.proto.KeySecurityLevelProto
 import app.keyholm.webauthn.CredentialId
+import app.keyholm.webauthn.CredentialUser
 import app.keyholm.webauthn.PackageName
+import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.RpId
 import app.keyholm.webauthn.UserHandle
 import app.keyholm.webauthn.WebAuthnAlgorithm
@@ -24,8 +26,8 @@ class PasskeyRecordMappingTest {
         lifecycle: RecordLifecycle = RecordLifecycle.Active,
     ) = PasskeyRecord(
         credentialId = CredentialId("cred-1"),
-        rp = PasskeyRecord.Rp(id = RpId("example.com"), name = "Example"),
-        user = PasskeyRecord.User(handle = UserHandle("user-1"), name = "alice", displayName = "Alice"),
+        rp = RelyingParty(id = RpId("example.com"), name = "Example"),
+        user = CredentialUser(handle = UserHandle("user-1"), name = "alice", displayName = "Alice"),
         signCount = 7,
         callingPackage = PackageName("com.example.app"),
         createdAt = Instant.ofEpochMilli(1_000),

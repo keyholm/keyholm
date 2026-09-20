@@ -241,7 +241,7 @@ private fun PasskeyListItemContent(
                 },
         ) {
             Text(
-                rpLabel(record.rp.id, record.rp.name, display.preferRpName),
+                rpLabel(record.rp, display.preferRpName),
                 maxLines = if (display.compactView) 1 else Int.MAX_VALUE,
                 overflow = TextOverflow.Ellipsis,
             )

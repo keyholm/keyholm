@@ -18,15 +18,18 @@ import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.appLabel
 import app.keyholm.ui.common.promptContent
+import app.keyholm.ui.common.userLabel
 import app.keyholm.util.B64
 import app.keyholm.webauthn.Caller
 import app.keyholm.webauthn.ClientDataHash
 import app.keyholm.webauthn.CreationOptions
 import app.keyholm.webauthn.CredentialId
+import app.keyholm.webauthn.CredentialUser
 import app.keyholm.webauthn.IdentityPreference
 import app.keyholm.webauthn.InvalidOptionsException
 import app.keyholm.webauthn.PackageName
 import app.keyholm.webauthn.PrfExtension
+import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.RpId
 import app.keyholm.webauthn.TrustDecision
 import app.keyholm.webauthn.UserHandle
@@ -126,11 +129,9 @@ internal class RegistrationRequestResolver(
                                         choice.includeAttestation,
                                     ),
                                 lastUsedAt = null,
-                                rpId = RpId(request.options.rp.id),
-                                rpName = request.options.rp.name,
+                                rp = RelyingParty(RpId(request.options.rp.id), request.options.rp.name),
                                 preferRpName = intent.preferRpName(),
-                                userName = request.options.user.name,
-                                displayName = request.options.user.displayName,
+                                userLabel = userLabel(request.options.user.name, request.options.user.displayName),
                             ),
                     )
                 ) {
@@ -175,11 +176,13 @@ internal class RegistrationRequestResolver(
             RegistrationContext(
                 info =
                     RegistrantInfo(
-                        rpId = rpId,
-                        rpName = options.rp.name,
-                        userHandle = userHandle,
-                        userName = options.user.name,
-                        displayName = options.user.displayName,
+                        rp = RelyingParty(rpId, options.rp.name),
+                        user =
+                            CredentialUser(
+                                handle = userHandle,
+                                name = options.user.name,
+                                displayName = options.user.displayName,
+                            ),
                         callingPackage = PackageName(request.providerRequest.callingAppInfo.packageName),
                         credPropsRequested = options.extensions?.credProps == true,
                         prfRequested = PrfExtension.requestedAtCreation(options),

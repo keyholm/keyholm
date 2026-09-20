@@ -3,7 +3,7 @@ package app.keyholm.ui.common
 import android.content.Context
 import android.content.pm.PackageManager
 import app.keyholm.webauthn.PackageName
-import app.keyholm.webauthn.RpId
+import app.keyholm.webauthn.RelyingParty
 import java.text.BreakIterator
 
 // Something I ran into while testing, some identity proxy defaults we should just ignore
@@ -20,23 +20,19 @@ private fun String.truncated(): String {
     return substring(0, cut) + "\u2026"
 }
 
-internal fun rpDisplayName(
-    rpId: RpId,
-    rpName: String,
-): String? =
-    rpName
+internal fun rpDisplayName(rp: RelyingParty): String? =
+    rp.name
         .takeUnless {
-            it.isBlank() || it == rpId.value ||
+            it.isBlank() || it == rp.id.value ||
                 it in UNINFORMATIVE_RP_NAMES
         }?.truncated()
 
 internal fun rpLabel(
-    rpId: RpId,
-    rpName: String,
+    rp: RelyingParty,
     preferRpName: Boolean,
 ): String {
-    val name = rpDisplayName(rpId, rpName) ?: return rpId.value
-    return if (preferRpName) "$name (${rpId.value})" else "${rpId.value} ($name)"
+    val name = rpDisplayName(rp) ?: return rp.id.value
+    return if (preferRpName) "$name (${rp.id.value})" else "${rp.id.value} ($name)"
 }
 
 internal fun userLabel(

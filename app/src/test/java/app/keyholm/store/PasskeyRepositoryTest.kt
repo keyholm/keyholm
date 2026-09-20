@@ -6,7 +6,9 @@ import androidx.datastore.core.DataStoreFactory
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.proto.PasskeyRecordsProto
 import app.keyholm.webauthn.CredentialId
+import app.keyholm.webauthn.CredentialUser
 import app.keyholm.webauthn.PackageName
+import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.RpId
 import app.keyholm.webauthn.UserHandle
 import app.keyholm.webauthn.WebAuthnAlgorithm
@@ -62,8 +64,8 @@ class PasskeyRepositoryTest {
         likelyInvalid: Boolean = false,
     ) = PasskeyRecord(
         credentialId = credentialId,
-        rp = PasskeyRecord.Rp(id = rpId, name = rpId.value),
-        user = PasskeyRecord.User(handle = UserHandle("user-1"), name = "alice", displayName = "Alice"),
+        rp = RelyingParty(id = rpId, name = rpId.value),
+        user = CredentialUser(handle = UserHandle("user-1"), name = "alice", displayName = "Alice"),
         signCount = 0,
         callingPackage = PackageName("com.example.app"),
         createdAt = createdAt,

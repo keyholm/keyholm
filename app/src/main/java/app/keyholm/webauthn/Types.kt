@@ -64,6 +64,11 @@ value class RpId(
     val value: String,
 )
 
+data class RelyingParty(
+    val id: RpId,
+    val name: String,
+)
+
 @Serializable
 @JvmInline
 value class PackageName(
@@ -86,6 +91,12 @@ value class UserHandle(
         fun of(bytes: ByteArray) = UserHandle(B64.enc(bytes))
     }
 }
+
+data class CredentialUser(
+    val handle: UserHandle,
+    val name: String,
+    val displayName: String,
+)
 
 @Serializable
 @JvmInline

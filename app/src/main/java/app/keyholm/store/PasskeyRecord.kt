@@ -3,10 +3,10 @@ package app.keyholm.store
 import androidx.compose.runtime.Immutable
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.webauthn.CredentialId
+import app.keyholm.webauthn.CredentialUser
 import app.keyholm.webauthn.KeyAlias
 import app.keyholm.webauthn.PackageName
-import app.keyholm.webauthn.RpId
-import app.keyholm.webauthn.UserHandle
+import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.WebAuthnAlgorithm
 import com.google.protobuf.ByteString
 import java.time.Instant
@@ -21,8 +21,8 @@ import java.time.Instant
 @Immutable
 data class PasskeyRecord(
     val credentialId: CredentialId,
-    val rp: Rp,
-    val user: User,
+    val rp: RelyingParty,
+    val user: CredentialUser,
     val signCount: Int,
     val callingPackage: PackageName,
     val createdAt: Instant,
@@ -31,17 +31,6 @@ data class PasskeyRecord(
     val lastUsedAt: Instant,
     val likelyInvalid: Boolean,
 ) {
-    data class Rp(
-        val id: RpId,
-        val name: String,
-    )
-
-    data class User(
-        val handle: UserHandle,
-        val name: String,
-        val displayName: String,
-    )
-
     data class Keystore(
         val coseAlgorithm: WebAuthnAlgorithm,
         val securityLevel: KeySecurityLevel,
