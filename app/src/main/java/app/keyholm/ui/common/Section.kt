@@ -15,13 +15,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+private val INNER_RADIUS = 4.dp
+
 @Composable
 internal fun Section(
     title: String?,
     modifier: Modifier = Modifier,
     description: String? = null,
     outerRadius: Dp = 16.dp,
-    innerRadius: Dp = 4.dp,
     content: SectionScope.() -> Unit,
 ) {
     val scope = SectionScope().apply(content)
@@ -54,13 +55,13 @@ internal fun Section(
                         when {
                             index == 0 -> outerRadius
                             item.attachedToPrevious -> 0.dp
-                            else -> innerRadius
+                            else -> INNER_RADIUS
                         }
                     val bottomRadius =
                         when {
                             index == scope.items.lastIndex -> outerRadius
                             attachedBelow -> 0.dp
-                            else -> innerRadius
+                            else -> INNER_RADIUS
                         }
                     item.content(
                         RoundedCornerShape(
