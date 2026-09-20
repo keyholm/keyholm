@@ -72,6 +72,11 @@ internal data class CreationOptionsPrompt(
     val identity: OptionChoice,
 )
 
+private data class CreationToggle(
+    val checked: Boolean,
+    val onCheckedChange: (Boolean) -> Unit,
+)
+
 internal data class CreationChoice(
     val algorithm: WebAuthnAlgorithm,
     val includeAttestation: Boolean,
@@ -230,11 +235,19 @@ internal fun CreationOptionsSheet(
         CreationOptionsSheetContent(
             prompt = prompt,
             explanation = explanation,
-            includeAttestation = includeAttestation,
-            onIncludeAttestationChange = { includeAttestation = it },
-            identifyAsKeyholm = identifyAsKeyholm,
-            onIdentifyChange = { identifyAsKeyholm = it },
-            onChoice = onChoice,
+            attestation =
+                if (prompt.attestation is OptionChoice.Ask) {
+                    CreationToggle(includeAttestation) { includeAttestation = it }
+                } else {
+                    null
+                },
+            identity =
+                if (prompt.identity is OptionChoice.Ask) {
+                    CreationToggle(identifyAsKeyholm) { identifyAsKeyholm = it }
+                } else {
+                    null
+                },
+            onSelectAlgorithm = { onChoice(CreationChoice(it, includeAttestation, identifyAsKeyholm)) },
         )
     }
 }
@@ -243,31 +256,22 @@ internal fun CreationOptionsSheet(
 private fun CreationOptionsSheetContent(
     prompt: CreationOptionsPrompt,
     explanation: String,
-    includeAttestation: Boolean,
-    onIncludeAttestationChange: (Boolean) -> Unit,
-    identifyAsKeyholm: Boolean,
-    onIdentifyChange: (Boolean) -> Unit,
-    onChoice: (CreationChoice) -> Unit,
+    attestation: CreationToggle?,
+    identity: CreationToggle?,
+    onSelectAlgorithm: (WebAuthnAlgorithm) -> Unit,
 ) {
     val icon = rememberAppIcon(badged = true)
     CreationOptionsHeader(
         icon,
         "Create passkey to sign in as ${prompt.userName} to ${prompt.rpId.value}?",
     )
-    if (prompt.attestation is OptionChoice.Ask || prompt.identity is OptionChoice.Ask) {
-        CreationTogglesSection(
-            askAttestation = prompt.attestation is OptionChoice.Ask,
-            includeAttestation = includeAttestation,
-            onIncludeAttestationChange = onIncludeAttestationChange,
-            askIdentity = prompt.identity is OptionChoice.Ask,
-            identifyAsKeyholm = identifyAsKeyholm,
-            onIdentifyChange = onIdentifyChange,
-        )
+    if (attestation != null || identity != null) {
+        CreationTogglesSection(attestation = attestation, identity = identity)
     }
     AlgorithmSection(
         algorithms = prompt.algorithms,
         icon = icon,
-        onSelect = { onChoice(CreationChoice(it, includeAttestation, identifyAsKeyholm)) },
+        onSelect = onSelectAlgorithm,
     )
     HorizontalDivider(
         thickness = 2.dp,
@@ -284,36 +288,32 @@ private fun CreationOptionsSheetContent(
 
 @Composable
 private fun CreationTogglesSection(
-    askAttestation: Boolean,
-    includeAttestation: Boolean,
-    onIncludeAttestationChange: (Boolean) -> Unit,
-    askIdentity: Boolean,
-    identifyAsKeyholm: Boolean,
-    onIdentifyChange: (Boolean) -> Unit,
+    attestation: CreationToggle?,
+    identity: CreationToggle?,
 ) {
     Section(
         title = null,
         outerRadius = 28.dp,
         modifier = Modifier.padding(horizontal = 8.dp),
     ) {
-        if (askIdentity) {
+        if (identity != null) {
             item { rowShape ->
                 ToggleRow(
                     title = "Identify as Keyholm",
                     subtitle = "Include Keyholm's identifier (AAGUID).",
-                    checked = identifyAsKeyholm,
-                    onCheckedChange = onIdentifyChange,
+                    checked = identity.checked,
+                    onCheckedChange = identity.onCheckedChange,
                     shape = rowShape,
                 )
             }
         }
-        if (askAttestation) {
+        if (attestation != null) {
             item { rowShape ->
                 ToggleRow(
                     title = "Include attestation",
                     subtitle = "Attestation may reveal identifying information.",
-                    checked = includeAttestation,
-                    onCheckedChange = onIncludeAttestationChange,
+                    checked = attestation.checked,
+                    onCheckedChange = attestation.onCheckedChange,
                     shape = rowShape,
                 )
             }
