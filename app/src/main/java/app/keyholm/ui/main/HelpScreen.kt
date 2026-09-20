@@ -22,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Info
@@ -268,6 +269,7 @@ private fun AboutRow(
     icon: ImageVector,
     label: String,
     detail: String,
+    external: Boolean = false,
     onClick: () -> Unit,
 ) {
     Row(
@@ -278,9 +280,12 @@ private fun AboutRow(
             Icon(icon, contentDescription = null)
         }
         Spacer(Modifier.width(16.dp))
-        Column {
+        Column(Modifier.weight(1f)) {
             Text(label)
             Text(detail, style = MaterialTheme.typography.bodySmall)
+        }
+        if (external) {
+            Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null)
         }
     }
 }
@@ -292,7 +297,7 @@ private fun AboutSection() {
     Section(title = SECTION_TITLE_ABOUT) {
         item { shape ->
             Column(
-                Modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(16.dp),
+                Modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainerLow).padding(16.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
@@ -313,11 +318,11 @@ private fun AboutSection() {
                     clipboard.setPrimaryClip(ClipData.newPlainText(LABEL_VERSION, version))
                 }
                 Spacer(Modifier.height(8.dp))
-                AboutRow(Icons.Outlined.Code, LABEL_GITHUB, DESCRIPTION_GITHUB) {
+                AboutRow(Icons.Outlined.Code, LABEL_GITHUB, DESCRIPTION_GITHUB, external = true) {
                     context.startActivity(Intent(Intent.ACTION_VIEW, GITHUB_URL.toUri()))
                 }
                 Spacer(Modifier.height(8.dp))
-                AboutRow(Icons.Outlined.Description, LABEL_LICENSE, DESCRIPTION_LICENSE) {
+                AboutRow(Icons.Outlined.Description, LABEL_LICENSE, DESCRIPTION_LICENSE, external = true) {
                     context.startActivity(Intent(Intent.ACTION_VIEW, LICENSE_URL.toUri()))
                 }
             }
