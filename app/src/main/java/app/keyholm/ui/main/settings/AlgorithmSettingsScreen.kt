@@ -114,42 +114,50 @@ private const val DESCRIPTION_FIRST_OFFERED = "Use first enabled algorithm offer
 private const val DESCRIPTION_ALWAYS_ASK = "Choose from offered, enabled algorithms at creation."
 private const val DESCRIPTION_PREFER_STRONGBOX = "Prefer StrongBox."
 
-@Composable
-private fun AlgorithmPreferenceDropdown(
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    canChoose: Boolean,
-    currentLabel: String,
-    options: List<AlgorithmFamily>,
-    onSelect: (AlgorithmPreference) -> Unit,
+private data class AlgorithmSelection(
+    val preference: AlgorithmPreference,
+    val options: List<AlgorithmFamily>,
+    val onSelect: (AlgorithmPreference) -> Unit,
 ) {
+    val canChoose: Boolean get() = options.size > 1
+}
+
+@Composable
+private fun AlgorithmPreferenceDropdown(selection: AlgorithmSelection) {
+    var expanded by remember { mutableStateOf(false) }
+    val currentLabel =
+        when (val preference = selection.preference) {
+            AlgorithmPreference.FirstOffered -> LABEL_FIRST_OFFERED
+            AlgorithmPreference.AlwaysAsk -> LABEL_ALWAYS_ASK
+            is AlgorithmPreference.Prefer -> preference.family.displayName
+        }
     Box {
-        TextButton(onClick = { onExpandedChange(true) }, enabled = canChoose) {
+        TextButton(onClick = { expanded = true }, enabled = selection.canChoose) {
             Text(currentLabel)
             Icon(Icons.Default.ArrowDropDown, contentDescription = null)
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
                 text = { Text(LABEL_FIRST_OFFERED) },
                 onClick = {
-                    onSelect(AlgorithmPreference.FirstOffered)
-                    onExpandedChange(false)
+                    selection.onSelect(AlgorithmPreference.FirstOffered)
+                    expanded = false
                 },
             )
-            options.forEach { family ->
+            selection.options.forEach { family ->
                 DropdownMenuItem(
                     text = { Text(family.displayName) },
                     onClick = {
-                        onSelect(AlgorithmPreference.Prefer(family))
-                        onExpandedChange(false)
+                        selection.onSelect(AlgorithmPreference.Prefer(family))
+                        expanded = false
                     },
                 )
             }
             DropdownMenuItem(
                 text = { Text(LABEL_ALWAYS_ASK) },
                 onClick = {
-                    onSelect(AlgorithmPreference.AlwaysAsk)
-                    onExpandedChange(false)
+                    selection.onSelect(AlgorithmPreference.AlwaysAsk)
+                    expanded = false
                 },
             )
         }
@@ -180,9 +188,12 @@ private fun PreferredAlgorithmRow(
     AlgorithmPreferenceRow(
         label = LABEL_PREFERRED_ALGORITHM,
         description = description,
-        preference = preference,
-        options = allowedFamilies(uiState),
-        onSelect = viewModel.settings.algorithms::setPreferred,
+        selection =
+            AlgorithmSelection(
+                preference = preference,
+                options = allowedFamilies(uiState),
+                onSelect = viewModel.settings.algorithms::setPreferred,
+            ),
         shape = shape,
     )
 }
@@ -211,9 +222,12 @@ private fun FallbackAlgorithmRow(
     AlgorithmPreferenceRow(
         label = LABEL_FALLBACK_ALGORITHM,
         description = DESCRIPTION_FALLBACK_ALGORITHM,
-        preference = uiState.settings.fallbackAlgorithm,
-        options = options,
-        onSelect = viewModel.settings.algorithms::setFallback,
+        selection =
+            AlgorithmSelection(
+                preference = uiState.settings.fallbackAlgorithm,
+                options = options,
+                onSelect = viewModel.settings.algorithms::setFallback,
+            ),
         shape = shape,
         attached = true,
     )
@@ -223,21 +237,10 @@ private fun FallbackAlgorithmRow(
 private fun AlgorithmPreferenceRow(
     label: String,
     description: String?,
-    preference: AlgorithmPreference,
-    options: List<AlgorithmFamily>,
-    onSelect: (AlgorithmPreference) -> Unit,
+    selection: AlgorithmSelection,
     shape: Shape,
     attached: Boolean = false,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val canChoose = options.size > 1
-    val currentLabel =
-        when (preference) {
-            AlgorithmPreference.FirstOffered -> LABEL_FIRST_OFFERED
-            AlgorithmPreference.AlwaysAsk -> LABEL_ALWAYS_ASK
-            is AlgorithmPreference.Prefer -> preference.family.displayName
-        }
-
     ListItem(
         selected = false,
         onClick = {},
@@ -245,14 +248,12 @@ private fun AlgorithmPreferenceRow(
             description?.let { text ->
                 { Text(text, style = MaterialTheme.typography.bodySmall) }
             },
-        trailingContent = {
-            AlgorithmPreferenceDropdown(expanded, { expanded = it }, canChoose, currentLabel, options, onSelect)
-        },
+        trailingContent = { AlgorithmPreferenceDropdown(selection) },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {
-        val alpha = if (canChoose) 1f else 0.38f
+        val alpha = if (selection.canChoose) 1f else 0.38f
         Text(
             label,
             color = LocalContentColor.current.copy(alpha = alpha),
