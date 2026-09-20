@@ -5,7 +5,6 @@ import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.PersistableBundle
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -91,16 +90,14 @@ private fun AttestationDetails(securityLevel: KeySecurityLevel) {
 }
 
 @Composable
-internal fun AttestationDialog(
-    attestation: Loadable<AttestationInfo>,
-    securityLevel: KeySecurityLevel,
+private fun AttestationActions(
+    pemCerts: List<String>,
     fileName: String,
-    onDismiss: () -> Unit,
+    onError: (String) -> Unit,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val pemCerts = if (attestation is Loadable.Loaded) attestation.value.pemCerts else emptyList()
     val pemText = pemCerts.joinToString("\n\n")
     val saveLauncher =
         rememberLauncherForActivityResult(
@@ -115,34 +112,43 @@ internal fun AttestationDialog(
                             stream.use { it.write(pemText.toByteArray()) }
                         }.isSuccess
                     }
-                if (!saved) Toast.makeText(context, "Couldn't save the file", Toast.LENGTH_LONG).show()
+                if (!saved) onError("Couldn't save the file")
             }
         }
+    if (pemCerts.isEmpty()) return
+    Row {
+        TextButton(onClick = { saveLauncher.launch(fileName) }) { Text("Save to file") }
+        TextButton(
+            onClick = {
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clip =
+                    ClipData.newPlainText("attestation", pemText).apply {
+                        description.extras =
+                            PersistableBundle().apply {
+                                putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
+                            }
+                    }
+                clipboard.setPrimaryClip(clip)
+            },
+        ) { Text("Copy") }
+    }
+}
+
+@Composable
+internal fun AttestationDialog(
+    attestation: Loadable<AttestationInfo>,
+    securityLevel: KeySecurityLevel,
+    fileName: String,
+    onError: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val pemCerts = if (attestation is Loadable.Loaded) attestation.value.pemCerts else emptyList()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Attestation certificate") },
         text = {
             if (attestation is Loadable.Failed) Text(LOAD_ERROR) else AttestationDetails(securityLevel)
         },
-        confirmButton = {
-            if (pemCerts.isNotEmpty()) {
-                Row {
-                    TextButton(onClick = { saveLauncher.launch(fileName) }) { Text("Save to file") }
-                    TextButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip =
-                                ClipData.newPlainText("attestation", pemText).apply {
-                                    description.extras =
-                                        PersistableBundle().apply {
-                                            putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
-                                        }
-                                }
-                            clipboard.setPrimaryClip(clip)
-                        },
-                    ) { Text("Copy") }
-                }
-            }
-        },
+        confirmButton = { AttestationActions(pemCerts, fileName, onError) },
     )
 }

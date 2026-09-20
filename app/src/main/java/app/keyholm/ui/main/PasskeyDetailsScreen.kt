@@ -6,7 +6,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.PersistableBundle
 import android.security.keystore.KeyProperties
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -54,8 +53,6 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 
-private const val TOAST_COPIED = "Copied to clipboard"
-
 @Composable
 private fun DetailRow(
     label: String,
@@ -75,7 +72,6 @@ private fun DetailRow(
                         }
                 }
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(context, TOAST_COPIED, Toast.LENGTH_SHORT).show()
         },
         supportingContent = { Text(value, style = MaterialTheme.typography.bodySmall) },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -270,6 +266,7 @@ internal fun PasskeyDetailsScreen(
             attestation = open?.attestation ?: Loadable.Loading,
             securityLevel = record.keystore.securityLevel,
             fileName = "keyholm-attestation-${record.rp.id.value}.pem",
+            onError = viewModel.reportError,
             onDismiss = { showAttestationDialog = false },
         )
     }

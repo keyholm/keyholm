@@ -1,6 +1,5 @@
 package app.keyholm.ui.main.settings
 
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -62,7 +61,7 @@ private const val SECTION_TITLE_DENIED = "Denied"
 private const val SECTION_TITLE_EXCEPTIONS = "Exceptions"
 private const val DESCRIPTION_DENIED =
     "Allow specific app/RP combos that were denied. Only enable apps you recognise."
-private const val TOAST_BUILT_IN_EXCEPTION = "In community mode, built-in exceptions can't be removed."
+private const val BUILT_IN_EXCEPTION_MESSAGE = "In community mode, built-in exceptions can't be removed."
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -124,13 +123,13 @@ fun ExceptionsScreen(
                 SwipeSection(SECTION_TITLE_EXCEPTIONS) {
                     exceptions.forEach { exceptionKey ->
                         key(exceptionKey) {
-                            ExceptionRow(exceptionKey, builtIn = false) {
+                            ExceptionRow(exceptionKey, builtIn = false, onMessage = viewModel.reportError) {
                                 viewModel.applyNativeAppException(it, NativeAppExceptionAction.REVOKE)
                             }
                         }
                     }
                     builtIn.forEach { builtInKey ->
-                        key(builtInKey) { ExceptionRow(builtInKey, builtIn = true) {} }
+                        key(builtInKey) { ExceptionRow(builtInKey, builtIn = true, onMessage = viewModel.reportError) {} }
                     }
                 }
             }
@@ -217,9 +216,9 @@ private fun DeniedAppRow(
 private fun ExceptionRow(
     exceptionKey: DeniedNativeAppKey,
     builtIn: Boolean,
+    onMessage: (String) -> Unit,
     onRevoke: (DeniedNativeAppKey) -> Unit,
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val dismissState = rememberSwipeToDismissBoxState()
     SwipeToDismissBox(
@@ -230,7 +229,7 @@ private fun ExceptionRow(
                 direction != SwipeToDismissBoxValue.EndToStart -> {}
 
                 builtIn -> {
-                    Toast.makeText(context, TOAST_BUILT_IN_EXCEPTION, Toast.LENGTH_SHORT).show()
+                    onMessage(BUILT_IN_EXCEPTION_MESSAGE)
                     scope.launch { dismissState.reset() }
                 }
 

@@ -135,10 +135,15 @@ class MainViewModel internal constructor(
     private val migrationRepo = MigrationRepository(application)
     private val deniedAppsRepo = DeniedNativeAppRepository(application)
 
-    private val actionErrors = Channel<String>(Channel.BUFFERED)
+    val errors: Flow<String>
 
-    /** One-shot failures for an action the user took, shown as a snackbar. */
-    val errors: Flow<String> = actionErrors.receiveAsFlow()
+    val reportError: (String) -> Unit
+
+    init {
+        val actionErrors = Channel<String>(Channel.BUFFERED)
+        errors = actionErrors.receiveAsFlow()
+        reportError = { actionErrors.trySend(it) }
+    }
 
     private val refreshTicks = MutableStateFlow(0)
     private val details = MutableStateFlow<PasskeyDetails>(PasskeyDetails.Closed)
@@ -194,7 +199,7 @@ class MainViewModel internal constructor(
         }
 
     val pendingDeletes =
-        PendingDeleteController(passkeyRepo, viewModelScope, dispatcher) { actionErrors.trySend(it) }
+        PendingDeleteController(passkeyRepo, viewModelScope, dispatcher, reportError)
 
     val uiState: StateFlow<MainUiState> =
         combine(
@@ -221,7 +226,7 @@ class MainViewModel internal constructor(
         )
 
     val settings =
-        SettingsController(settingsRepo, viewModelScope, deniedAppsRepo) { actionErrors.trySend(it) }
+        SettingsController(settingsRepo, viewModelScope, deniedAppsRepo, reportError)
 
     val imports = ImportReviewController(migrationRepo, passkeyRepo, viewModelScope)
 
@@ -304,7 +309,7 @@ class MainViewModel internal constructor(
                 log.e(failure) { "reset failed, deleting the store files" }
                 val deleted = withContext(dispatcher) { deleteStoreFiles(getApplication<Application>()) }
                 if (!deleted) {
-                    actionErrors.trySend(ErrorMessages.UPDATE_FAILED)
+                    reportError(ErrorMessages.UPDATE_FAILED)
                     return@launch
                 }
             }
@@ -323,7 +328,7 @@ class MainViewModel internal constructor(
     fun dismissMigrationPlaceholder(placeholder: MigrationPlaceholder) {
         viewModelScope.launch {
             if (!writeStore { migrationRepo.delete(placeholder.rpId, placeholder.userName) }) {
-                actionErrors.trySend(ErrorMessages.UPDATE_FAILED)
+                reportError(ErrorMessages.UPDATE_FAILED)
             }
         }
     }
@@ -341,7 +346,7 @@ class MainViewModel internal constructor(
                         NativeAppExceptionAction.REVOKE -> deniedAppsRepo.revoke(key)
                     }
                 }
-            if (!applied) actionErrors.trySend(ErrorMessages.UPDATE_FAILED)
+            if (!applied) reportError(ErrorMessages.UPDATE_FAILED)
         }
     }
 }

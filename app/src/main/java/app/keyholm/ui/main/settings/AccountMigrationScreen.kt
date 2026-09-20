@@ -4,7 +4,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
@@ -54,9 +53,10 @@ private fun List<PasskeyRecord>.toMigrationExportEntries(): List<MigrationExport
 private fun exportMigrationList(
     context: Context,
     passkeys: List<PasskeyRecord>,
+    reportError: (String) -> Unit,
 ) {
     if (passkeys.isEmpty()) {
-        Toast.makeText(context, NO_ACCOUNTS_TO_EXPORT, Toast.LENGTH_LONG).show()
+        reportError(NO_ACCOUNTS_TO_EXPORT)
         return
     }
     val entries = passkeys.toMigrationExportEntries()
@@ -84,7 +84,7 @@ private fun importMigrationList(
             ?.let { runCatching { Json.decodeFromString<List<MigrationExportEntry>>(it) }.getOrNull() }
             .orEmpty()
     if (entries.isEmpty()) {
-        Toast.makeText(context, "No import list found.", Toast.LENGTH_LONG).show()
+        viewModel.reportError("No import list found.")
         return
     }
     viewModel.imports.request(ImportReview.InApp(entries))
@@ -126,16 +126,16 @@ private fun MigrationItem(
 }
 
 private fun qrExportBitmap(
-    context: Context,
     passkeys: List<PasskeyRecord>,
+    reportError: (String) -> Unit,
 ): Bitmap? {
     if (passkeys.isEmpty()) {
-        Toast.makeText(context, NO_ACCOUNTS_TO_EXPORT, Toast.LENGTH_LONG).show()
+        reportError(NO_ACCOUNTS_TO_EXPORT)
         return null
     }
     val bitmap = encodeQrCode(migrationExportUri(passkeys.toMigrationExportEntries()), QR_SIZE_PX)
     if (bitmap == null) {
-        Toast.makeText(context, TOO_MANY_ACCOUNTS_FOR_QR, Toast.LENGTH_LONG).show()
+        reportError(TOO_MANY_ACCOUNTS_FOR_QR)
     }
     return bitmap
 }
@@ -155,12 +155,12 @@ internal fun AccountMigrationSection(
         if (passkeys is Stored.Available) {
             item { shape ->
                 MigrationItem("Export QR code", Icons.Default.QrCode, shape) {
-                    qrBitmap = qrExportBitmap(context, passkeys.value)
+                    qrBitmap = qrExportBitmap(passkeys.value, viewModel.reportError)
                 }
             }
             item { shape ->
                 MigrationItem("Export", Icons.Default.Share, shape) {
-                    exportMigrationList(context, passkeys.value)
+                    exportMigrationList(context, passkeys.value, viewModel.reportError)
                 }
             }
         }

@@ -1,7 +1,6 @@
 package app.keyholm.ui.main
 
 import android.content.Context
-import android.widget.Toast
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +20,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
@@ -280,13 +278,13 @@ private fun PasskeyListContent(
 fun MainScreen(
     viewModel: MainViewModel = viewModel(),
     cryptoPrompt: CryptoPrompt,
+    snackbarHostState: SnackbarHostState,
     onOpenSettings: () -> Unit,
     onOpenDetails: (PasskeyRecord) -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val uiState = state as? MainUiState.Ready ?: return
     val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
     val rowGeneration = remember { mutableStateMapOf<CredentialId, Int>() }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
@@ -321,7 +319,7 @@ fun MainScreen(
                     }
 
                     is DeletePlan.Failed -> {
-                        Toast.makeText(context, plan.message, Toast.LENGTH_LONG).show()
+                        viewModel.reportError(plan.message)
                         false
                     }
 
@@ -343,10 +341,7 @@ fun MainScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { MainTopBar(onOpenSettings) },
-    ) { innerPadding ->
+    Scaffold(topBar = { MainTopBar(onOpenSettings) }) { innerPadding ->
         PasskeyListContent(uiState, innerPadding, rowGeneration, listActions)
     }
 }

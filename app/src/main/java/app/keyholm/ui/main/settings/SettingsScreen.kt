@@ -1,6 +1,5 @@
 package app.keyholm.ui.main.settings
 
-import android.widget.Toast
 import androidx.biometric.AuthenticationRequest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -358,7 +357,7 @@ fun SettingsScreen(
                     val policy = uiState.settings.createAuthenticators
                     when (val authenticators = resolveCreateAuthenticators(context, policy)) {
                         is AuthenticatorsResolution.Unavailable -> {
-                            Toast.makeText(context, authenticators.message, Toast.LENGTH_LONG).show()
+                            viewModel.reportError(authenticators.message)
                         }
 
                         is AuthenticatorsResolution.Ready -> {

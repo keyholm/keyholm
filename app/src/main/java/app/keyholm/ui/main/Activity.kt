@@ -1,7 +1,6 @@
 package app.keyholm.ui.main
 
 import android.content.pm.ApplicationInfo
-import android.net.Uri
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
@@ -18,14 +17,22 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -51,6 +58,7 @@ import app.keyholm.ui.main.settings.SettingsScreen
 import app.keyholm.ui.theme.KeyholmTheme
 import app.keyholm.util.logger
 import app.keyholm.webauthn.CredentialId
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -101,6 +109,7 @@ private fun MainNavDisplay(
     cryptoPrompt: CryptoPrompt,
     backStack: NavBackStack<NavKey>,
     density: Density,
+    snackbarHostState: SnackbarHostState,
 ) {
     NavDisplay(
         backStack = backStack,
@@ -114,7 +123,7 @@ private fun MainNavDisplay(
         predictivePopTransitionSpec = {
             sharedAxisEnter(density, reverse = true).togetherWith(sharedAxisExit(density, reverse = true))
         },
-        entryProvider = mainEntryProvider(viewModel, cryptoPrompt, backStack),
+        entryProvider = mainEntryProvider(viewModel, cryptoPrompt, backStack, snackbarHostState),
     )
 }
 
@@ -122,11 +131,13 @@ private fun mainEntryProvider(
     viewModel: MainViewModel,
     cryptoPrompt: CryptoPrompt,
     backStack: NavBackStack<NavKey>,
+    snackbarHostState: SnackbarHostState,
 ) = entryProvider {
     entry<MainRoute> {
         MainScreen(
             viewModel = viewModel,
             cryptoPrompt = cryptoPrompt,
+            snackbarHostState = snackbarHostState,
             onOpenSettings = { backStack.add(SettingsRoute) },
             onOpenDetails = { record -> backStack.add(PasskeyDetailsRoute(record.credentialId)) },
         )
@@ -165,15 +176,16 @@ private fun MainContent(importEntries: List<MigrationExportEntry>) {
     val importReview by viewModel.imports.review.collectAsStateWithLifecycle()
     val backStack = rememberNavBackStack(MainRoute)
     val density = LocalDensity.current
-    val context = LocalContext.current
     val activity = LocalActivity.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(importEntries) {
         if (importEntries.isNotEmpty()) viewModel.imports.request(ImportReview.DeepLink(importEntries))
     }
 
     LaunchedEffect(Unit) {
-        viewModel.errors.collect { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+        viewModel.errors.collect { snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Long) }
     }
 
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.lockIfIdle() }
@@ -181,36 +193,45 @@ private fun MainContent(importEntries: List<MigrationExportEntry>) {
     // Launchers must be registered unconditionally
     val cryptoPrompt = rememberCryptoPrompt()
 
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        val review = importReview
-        if ((uiState as? MainUiState.Ready)?.locked == true) {
-            LockScreen(viewModel, cryptoPrompt)
-        } else if (review != null) {
-            MigrationImportReviewScreen(
-                entries = review.entries,
-                onConfirm = {
-                    viewModel.imports.importList(
-                        entries = review.entries,
-                        onResult = { result ->
-                            val message = migrationImportResultMessage(result)
-                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                        },
-                        onFailure = {
-                            Toast.makeText(context, ErrorMessages.CHECK_EXISTING_FAILED, Toast.LENGTH_LONG).show()
-                        },
-                    )
-                    viewModel.imports.dismiss()
-                },
-                onCancel = {
-                    when (review) {
-                        is ImportReview.DeepLink -> activity?.finish()
-                        is ImportReview.InApp -> viewModel.imports.dismiss()
-                    }
-                },
-            )
-        } else {
-            MainNavDisplay(viewModel, cryptoPrompt, backStack, density)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            val review = importReview
+            if ((uiState as? MainUiState.Ready)?.locked == true) {
+                LockScreen(viewModel, cryptoPrompt)
+            } else if (review != null) {
+                MigrationImportReviewScreen(
+                    entries = review.entries,
+                    onConfirm = {
+                        viewModel.imports.importList(
+                            entries = review.entries,
+                            onResult = { result ->
+                                val message = migrationImportResultMessage(result)
+                                scope.launch { snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Long) }
+                            },
+                            onFailure = {
+                                viewModel.reportError(ErrorMessages.CHECK_EXISTING_FAILED)
+                            },
+                        )
+                        viewModel.imports.dismiss()
+                    },
+                    onCancel = {
+                        when (review) {
+                            is ImportReview.DeepLink -> activity?.finish()
+                            is ImportReview.InApp -> viewModel.imports.dismiss()
+                        }
+                    },
+                )
+            } else {
+                MainNavDisplay(viewModel, cryptoPrompt, backStack, density, snackbarHostState)
+            }
         }
+        SnackbarHost(
+            snackbarHostState,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .windowInsetsPadding(ScaffoldDefaults.contentWindowInsets),
+        )
     }
 }
 
@@ -224,31 +245,30 @@ class Activity : FragmentActivity() {
         }
         window.setHideOverlayWindows(true)
         enableEdgeToEdge()
-        val importEntries = migrationEntries(intent?.data)
+        val importEntries =
+            when (
+                val import =
+                    intent?.data?.let { migrationImportEntries(log, it) } ?: MigrationImport.NotAMigrationLink
+            ) {
+                is MigrationImport.Entries -> {
+                    import.entries
+                }
+
+                MigrationImport.NotAMigrationLink -> {
+                    emptyList()
+                }
+
+                MigrationImport.Malformed -> {
+                    log.e { "the migration deep link is malformed" }
+                    Toast.makeText(this, ErrorMessages.MIGRATION_LINK_MALFORMED, Toast.LENGTH_LONG).show()
+                    finish()
+                    return
+                }
+            }
         setContent {
             KeyholmTheme {
                 MainContent(importEntries)
             }
         }
     }
-
-    private fun migrationEntries(uri: Uri?): List<MigrationExportEntry> =
-        when (
-            val import =
-                uri?.let { migrationImportEntries(log, it) } ?: MigrationImport.NotAMigrationLink
-        ) {
-            is MigrationImport.Entries -> {
-                import.entries
-            }
-
-            MigrationImport.NotAMigrationLink -> {
-                emptyList()
-            }
-
-            MigrationImport.Malformed -> {
-                log.e { "the migration deep link is malformed" }
-                Toast.makeText(this, ErrorMessages.MIGRATION_LINK_MALFORMED, Toast.LENGTH_LONG).show()
-                emptyList()
-            }
-        }
 }
