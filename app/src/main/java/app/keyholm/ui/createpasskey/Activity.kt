@@ -264,9 +264,13 @@ class Activity : FragmentActivity() {
             intent,
             passkeyRepo,
             deniedAppsRepo,
-            keyMaterial,
-            cryptoPrompt,
-            ::chooseCreationOptions,
+            RegistrationPrompts(
+                applicationContext,
+                intent,
+                keyMaterial,
+                cryptoPrompt,
+                ::chooseCreationOptions,
+            ),
         )
     }
 

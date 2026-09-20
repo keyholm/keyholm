@@ -7,25 +7,18 @@ import androidx.credentials.CreatePublicKeyCredentialRequest
 import androidx.credentials.exceptions.domerrors.DataError
 import androidx.credentials.exceptions.domerrors.EncodingError
 import androidx.credentials.provider.PendingIntentHandler
-import app.keyholm.provider.AttestationOffer
 import app.keyholm.provider.CreationOffer
-import app.keyholm.provider.preferRpName
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.StoredRecordException
-import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.ErrorMessages
-import app.keyholm.ui.common.appLabel
-import app.keyholm.ui.common.promptContent
-import app.keyholm.ui.common.userLabel
 import app.keyholm.util.B64
 import app.keyholm.webauthn.Caller
 import app.keyholm.webauthn.ClientDataHash
 import app.keyholm.webauthn.CreationOptions
 import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.CredentialUser
-import app.keyholm.webauthn.IdentityPreference
 import app.keyholm.webauthn.InvalidOptionsException
 import app.keyholm.webauthn.PackageName
 import app.keyholm.webauthn.PrfExtension
@@ -45,16 +38,12 @@ private val USER_ID_BYTES = 1..64
 
 private val log = Logger.withTag("app.keyholm.ui.createpasskey.RegistrationRequestResolver")
 
-private typealias CreationOptionsChooser = suspend (prompt: CreationOptionsPrompt) -> CreationChoice?
-
 internal class RegistrationRequestResolver(
     private val context: Context,
     private val intent: Intent,
     private val passkeyRepo: PasskeyRepository,
     private val deniedAppsRepo: DeniedNativeAppRepository,
-    private val keyMaterial: RegistrationKeyMaterial,
-    private val cryptoPrompt: CryptoPrompt,
-    private val chooseCreationOptions: CreationOptionsChooser,
+    private val prompts: RegistrationPrompts,
 ) {
     suspend fun prepareRegistration(offer: CreationOffer): Registration<RegistrationContext> {
         val existing =
@@ -98,48 +87,9 @@ internal class RegistrationRequestResolver(
 
         val excludeIds = options.excludeCredentials.mapTo(mutableSetOf()) { CredentialId(it.id) }
         return if (existing.any { it.credentialId in excludeIds && it.rp.id == rpId }) {
-            confirmAlreadyRegistered(request, offer)
+            prompts.confirmAlreadyRegistered(request, offer)
         } else {
             buildRegistrationContext(request, rpId, offer, caller)
-        }
-    }
-
-    private suspend fun confirmAlreadyRegistered(
-        request: CreateRequest,
-        offer: CreationOffer,
-    ): Registration<RegistrationContext> {
-        val choice = resolveCreationChoice(request, offer) ?: return Registration.Canceled()
-        return when (val r = keyMaterial.resolveAuthenticators(offer.authenticators)) {
-            is Registration.Failed -> {
-                r
-            }
-
-            // WebAuthn 6.3.2: the gesture authorizes disclosing that the credential exists.
-            is Registration.Ready -> {
-                if (
-                    cryptoPrompt.confirm(
-                        title = "Create passkey",
-                        allowedAuthenticators = r.value,
-                        content =
-                            promptContent(
-                                description =
-                                    registrationDescription(
-                                        context.appLabel(PackageName(request.providerRequest.callingAppInfo.packageName)),
-                                        choice.algorithm,
-                                        choice.includeAttestation,
-                                    ),
-                                lastUsedAt = null,
-                                rp = RelyingParty(RpId(request.options.rp.id), request.options.rp.name),
-                                preferRpName = intent.preferRpName(),
-                                userLabel = userLabel(request.options.user.name, request.options.user.displayName),
-                            ),
-                    )
-                ) {
-                    Registration.AlreadyRegistered
-                } else {
-                    Registration.Canceled()
-                }
-            }
         }
     }
 
@@ -162,7 +112,7 @@ internal class RegistrationRequestResolver(
         }
         val userHandle = UserHandle.of(userId)
 
-        val choice = resolveCreationChoice(request, offer) ?: return Registration.Canceled()
+        val choice = prompts.resolveCreationChoice(request, offer) ?: return Registration.Canceled()
 
         val prfEvalSalts =
             try {
@@ -206,42 +156,6 @@ internal class RegistrationRequestResolver(
             }
         }
         return Registration.NoCreateOption(decision.message)
-    }
-
-    private suspend fun resolveCreationChoice(
-        request: CreateRequest,
-        offer: CreationOffer,
-    ): CreationChoice? {
-        val options = request.options
-        val algorithms = offer.algorithms
-        val attestation =
-            when (offer.attestation) {
-                AttestationOffer.NotRequested -> OptionChoice.Fixed(false)
-                AttestationOffer.Ask -> OptionChoice.Ask(initial = false)
-            }
-        val identity =
-            when (offer.identity) {
-                IdentityPreference.ALWAYS_ASK -> OptionChoice.Ask(initial = true)
-                IdentityPreference.ENABLED -> OptionChoice.Fixed(true)
-                IdentityPreference.DISABLED -> OptionChoice.Fixed(false)
-            }
-        val needsSheet =
-            algorithms.size > 1 ||
-                attestation is OptionChoice.Ask ||
-                identity is OptionChoice.Ask
-        return if (needsSheet) {
-            chooseCreationOptions(
-                CreationOptionsPrompt(
-                    rpId = RpId(options.rp.id),
-                    userName = options.user.name,
-                    algorithms = algorithms,
-                    attestation = attestation,
-                    identity = identity,
-                ),
-            )
-        } else {
-            CreationChoice(algorithms.single(), attestation.initial, identity.initial)
-        }
     }
 
     private fun parseOptions(requestJson: String): Registration<CreationOptions> =
