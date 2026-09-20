@@ -53,7 +53,6 @@ import app.keyholm.ui.common.rememberAppIcon
 import app.keyholm.ui.theme.titleColor
 import app.keyholm.webauthn.CredentialId
 import co.touchlab.kermit.Logger
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import java.security.GeneralSecurityException
@@ -181,11 +180,17 @@ private fun LazyListScope.passkeyItems(
     }
 }
 
+private data class PasskeyListActions(
+    val rows: PasskeyRowActions,
+    val onDismissWarning: () -> Unit,
+    val onOpenSettings: () -> Unit,
+    val onDismissPlaceholder: (MigrationPlaceholder) -> Unit,
+    val showMessage: (String) -> Unit,
+)
+
 private fun LazyListScope.migrationPlaceholderItems(
     placeholders: List<MigrationPlaceholder>,
-    viewModel: MainViewModel,
-    scope: CoroutineScope,
-    snackbarHostState: SnackbarHostState,
+    actions: PasskeyListActions,
 ) {
     if (!placeholders.isEmpty()) {
         item {
@@ -203,23 +208,10 @@ private fun LazyListScope.migrationPlaceholderItems(
     ) { placeholder ->
         MigrationPlaceholderItem(
             placeholder = placeholder,
-            onClick = {
-                scope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = "Visit ${placeholder.rpId.value} to recreate this passkey!",
-                        duration = SnackbarDuration.Short,
-                    )
-                }
-            },
+            onClick = { actions.showMessage("Visit ${placeholder.rpId.value} to recreate this passkey!") },
             onDismiss = {
-                viewModel.dismissMigrationPlaceholder(placeholder)
-                scope.launch {
-                    val name = placeholder.userName
-                    snackbarHostState.showSnackbar(
-                        message = "Removed placeholder $name",
-                        duration = SnackbarDuration.Short,
-                    )
-                }
+                actions.onDismissPlaceholder(placeholder)
+                actions.showMessage("Removed placeholder ${placeholder.userName}")
             },
             modifier = Modifier.animateItem(),
         )
@@ -229,14 +221,10 @@ private fun LazyListScope.migrationPlaceholderItems(
 @Composable
 private fun PasskeyListContent(
     uiState: MainUiState.Ready,
-    viewModel: MainViewModel,
     innerPadding: PaddingValues,
-    snackbarHostState: SnackbarHostState,
     rowGeneration: MutableMap<CredentialId, Int>,
-    actions: PasskeyRowActions,
+    actions: PasskeyListActions,
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     LazyColumn(
         modifier =
             Modifier
@@ -256,7 +244,7 @@ private fun PasskeyListContent(
                             "become unusable if biometrics-only and you change biometrics enrollment, by default",
                             "are irrevocably deleted on uninstall",
                         ),
-                    onDismiss = viewModel.settings::dismissDeviceBoundWarning,
+                    onDismiss = actions.onDismissWarning,
                 )
             }
         }
@@ -264,7 +252,7 @@ private fun PasskeyListContent(
             item {
                 StatusCard(
                     isAvailable = uiState.device.secureElement,
-                    onOpenSettings = { openCredentialSettings(context) },
+                    onOpenSettings = actions.onOpenSettings,
                 )
             }
         }
@@ -281,9 +269,9 @@ private fun PasskeyListContent(
             passkeys.value,
             PasskeyRowDisplay(uiState.settings.compactView, uiState.settings.preferRpName),
             rowGeneration,
-            actions,
+            actions.rows,
         )
-        migrationPlaceholderItems(placeholders.value, viewModel, scope, snackbarHostState)
+        migrationPlaceholderItems(placeholders.value, actions)
     }
 }
 
@@ -308,12 +296,20 @@ fun MainScreen(
     // This is for when multiple rows are swiped before the prompt shows up
     val confirmationQueue = remember { Channel<DeleteConfirmationRequest>(Channel.UNLIMITED) }
     val requestDeleteConfirmation: DeleteConfirmationRequester = { confirmationQueue.trySend(it) }
-    val rowActions =
-        PasskeyRowActions(
-            onDelete = viewModel.pendingDeletes::start,
-            onOpenDetails = onOpenDetails,
-            onCancelDelete = viewModel.pendingDeletes::cancel,
-            requestDeleteConfirmation = requestDeleteConfirmation,
+    val scope = rememberCoroutineScope()
+    val listActions =
+        PasskeyListActions(
+            rows =
+                PasskeyRowActions(
+                    onDelete = viewModel.pendingDeletes::start,
+                    onOpenDetails = onOpenDetails,
+                    onCancelDelete = viewModel.pendingDeletes::cancel,
+                    requestDeleteConfirmation = requestDeleteConfirmation,
+                ),
+            onDismissWarning = viewModel.settings::dismissDeviceBoundWarning,
+            onOpenSettings = { openCredentialSettings(context) },
+            onDismissPlaceholder = viewModel::dismissMigrationPlaceholder,
+            showMessage = { scope.launch { snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short) } },
         )
 
     LaunchedEffect(cryptoPrompt) {
@@ -351,14 +347,7 @@ fun MainScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { MainTopBar(onOpenSettings) },
     ) { innerPadding ->
-        PasskeyListContent(
-            uiState,
-            viewModel,
-            innerPadding,
-            snackbarHostState,
-            rowGeneration,
-            rowActions,
-        )
+        PasskeyListContent(uiState, innerPadding, rowGeneration, listActions)
     }
 }
 
