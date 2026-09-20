@@ -85,21 +85,6 @@ internal class RegistrationRequestResolver(
                 is TrustDecision.Allowed -> decision.caller
             }
 
-        val excludeIds = options.excludeCredentials.mapTo(mutableSetOf()) { CredentialId(it.id) }
-        return if (existing.any { it.credentialId in excludeIds && it.rp.id == rpId }) {
-            prompts.confirmAlreadyRegistered(request, offer)
-        } else {
-            buildRegistrationContext(request, rpId, offer, caller)
-        }
-    }
-
-    private suspend fun buildRegistrationContext(
-        request: CreateRequest,
-        rpId: RpId,
-        offer: CreationOffer,
-        caller: Caller.Trusted,
-    ): Registration<RegistrationContext> {
-        val options = request.options
         val userId =
             try {
                 B64.dec(options.user.id)
@@ -110,8 +95,29 @@ internal class RegistrationRequestResolver(
         if (userId.size !in USER_ID_BYTES) {
             return Registration.MalformedRequest(DataError(), "user.id must be 1 to 64 bytes")
         }
-        val userHandle = UserHandle.of(userId)
+        val user =
+            CredentialUser(
+                handle = UserHandle.of(userId),
+                name = options.user.name,
+                displayName = options.user.displayName,
+            )
 
+        val excludeIds = options.excludeCredentials.mapTo(mutableSetOf()) { CredentialId(it.id) }
+        return if (existing.any { it.credentialId in excludeIds && it.rp.id == rpId }) {
+            prompts.confirmAlreadyRegistered(request, offer)
+        } else {
+            buildRegistrationContext(request, rpId, offer, caller, user)
+        }
+    }
+
+    private suspend fun buildRegistrationContext(
+        request: CreateRequest,
+        rpId: RpId,
+        offer: CreationOffer,
+        caller: Caller.Trusted,
+        user: CredentialUser,
+    ): Registration<RegistrationContext> {
+        val options = request.options
         val choice = prompts.resolveCreationChoice(request, offer) ?: return Registration.Canceled()
 
         val prfEvalSalts =
@@ -127,12 +133,7 @@ internal class RegistrationRequestResolver(
                 info =
                     RegistrantInfo(
                         rp = RelyingParty(rpId, options.rp.name),
-                        user =
-                            CredentialUser(
-                                handle = userHandle,
-                                name = options.user.name,
-                                displayName = options.user.displayName,
-                            ),
+                        user = user,
                         callingPackage = PackageName(request.providerRequest.callingAppInfo.packageName),
                         credPropsRequested = options.extensions?.credProps == true,
                         prfRequested = PrfExtension.requestedAtCreation(options),
