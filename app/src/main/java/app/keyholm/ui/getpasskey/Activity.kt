@@ -179,12 +179,8 @@ class Activity : FragmentActivity() {
                             content =
                                 promptContent(
                                     description = "${appLabel(signIn.callingPackage)} wants to use a passkey:",
-                                    lastUsedAt = signIn.record.lastUsedAt,
-                                    rpId = signIn.record.rp.id,
-                                    rpName = signIn.record.rp.name,
+                                    record = signIn.record,
                                     preferRpName = intent.preferRpName(),
-                                    userName = signIn.record.user.name,
-                                    displayName = signIn.record.user.displayName,
                                 ),
                         )
                     }
@@ -460,12 +456,8 @@ class Activity : FragmentActivity() {
                                 content =
                                     promptContent(
                                         description = "${appLabel(signIn.callingPackage)} wants access to the secret for:",
-                                        lastUsedAt = signIn.record.lastUsedAt,
-                                        rpId = signIn.record.rp.id,
-                                        rpName = signIn.record.rp.name,
+                                        record = signIn.record,
                                         preferRpName = intent.preferRpName(),
-                                        userName = signIn.record.user.name,
-                                        displayName = signIn.record.user.displayName,
                                     ),
                             ) as? PromptResult.Success
                         val prfResults = authorized?.crypto?.mac?.let { PrfExtension.evaluate(it, prfSalts) }
