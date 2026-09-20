@@ -311,15 +311,19 @@ internal data class PasskeyRowDisplay(
     val preferRpName: Boolean,
 )
 
+internal data class PasskeyRowActions(
+    val onDelete: (PasskeyRecord) -> Unit,
+    val onOpenDetails: (PasskeyRecord) -> Unit,
+    val onCancelDelete: (PasskeyRecord) -> Unit,
+    val requestDeleteConfirmation: DeleteConfirmationRequester,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PasskeyItem(
     record: PasskeyRecord,
     display: PasskeyRowDisplay,
-    onDeleteClick: () -> Unit,
-    onOpenDetails: () -> Unit,
-    onCancelDelete: () -> Unit,
-    requestDeleteConfirmation: DeleteConfirmationRequester,
+    actions: PasskeyRowActions,
     modifier: Modifier = Modifier,
 ) {
     val lifecycle = record.lifecycle
@@ -328,7 +332,7 @@ internal fun PasskeyItem(
             record = record,
             pendingDeleteAt = lifecycle.at,
             display = display,
-            onCancelDelete = onCancelDelete,
+            onCancelDelete = { actions.onCancelDelete(record) },
             modifier = modifier,
         )
         return
@@ -344,10 +348,10 @@ internal fun PasskeyItem(
         enableDismissFromStartToEnd = false,
         onDismiss = { direction ->
             if (direction == SwipeToDismissBoxValue.EndToStart) {
-                requestDeleteConfirmation(
+                actions.requestDeleteConfirmation(
                     DeleteConfirmationRequest(
                         record = record,
-                        onConfirmed = onDeleteClick,
+                        onConfirmed = { actions.onDelete(record) },
                         onDenied = { scope.launch { dismissState.reset() } },
                     ),
                 )
@@ -356,7 +360,7 @@ internal fun PasskeyItem(
         backgroundContent = { SwipeToDeleteBackground(dismissState) },
     ) {
         Card(
-            onClick = onOpenDetails,
+            onClick = { actions.onOpenDetails(record) },
             modifier = Modifier.fillMaxWidth(),
             colors =
                 CardDefaults.cardColors(

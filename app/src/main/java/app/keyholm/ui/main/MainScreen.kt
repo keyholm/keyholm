@@ -166,9 +166,7 @@ private fun LazyListScope.passkeyItems(
     passkeys: List<PasskeyRecord>,
     display: PasskeyRowDisplay,
     rowGeneration: Map<CredentialId, Int>,
-    viewModel: MainViewModel,
-    requestDeleteConfirmation: DeleteConfirmationRequester,
-    onOpenDetails: (PasskeyRecord) -> Unit,
+    actions: PasskeyRowActions,
 ) {
     items(
         passkeys,
@@ -177,10 +175,7 @@ private fun LazyListScope.passkeyItems(
         PasskeyItem(
             record = record,
             display = display,
-            onDeleteClick = { viewModel.pendingDeletes.start(record) },
-            onOpenDetails = { onOpenDetails(record) },
-            onCancelDelete = { viewModel.pendingDeletes.cancel(record) },
-            requestDeleteConfirmation = requestDeleteConfirmation,
+            actions = actions,
             modifier = Modifier.animateItem(),
         )
     }
@@ -238,8 +233,7 @@ private fun PasskeyListContent(
     innerPadding: PaddingValues,
     snackbarHostState: SnackbarHostState,
     rowGeneration: MutableMap<CredentialId, Int>,
-    requestDeleteConfirmation: DeleteConfirmationRequester,
-    onOpenDetails: (PasskeyRecord) -> Unit,
+    actions: PasskeyRowActions,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -287,9 +281,7 @@ private fun PasskeyListContent(
             passkeys.value,
             PasskeyRowDisplay(uiState.settings.compactView, uiState.settings.preferRpName),
             rowGeneration,
-            viewModel,
-            requestDeleteConfirmation,
-            onOpenDetails,
+            actions,
         )
         migrationPlaceholderItems(placeholders.value, viewModel, scope, snackbarHostState)
     }
@@ -316,6 +308,13 @@ fun MainScreen(
     // This is for when multiple rows are swiped before the prompt shows up
     val confirmationQueue = remember { Channel<DeleteConfirmationRequest>(Channel.UNLIMITED) }
     val requestDeleteConfirmation: DeleteConfirmationRequester = { confirmationQueue.trySend(it) }
+    val rowActions =
+        PasskeyRowActions(
+            onDelete = viewModel.pendingDeletes::start,
+            onOpenDetails = onOpenDetails,
+            onCancelDelete = viewModel.pendingDeletes::cancel,
+            requestDeleteConfirmation = requestDeleteConfirmation,
+        )
 
     LaunchedEffect(cryptoPrompt) {
         for (request in confirmationQueue) {
@@ -358,8 +357,7 @@ fun MainScreen(
             innerPadding,
             snackbarHostState,
             rowGeneration,
-            requestDeleteConfirmation,
-            onOpenDetails,
+            rowActions,
         )
     }
 }
