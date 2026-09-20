@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.preferencesDataStoreFile
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.webauthn.AlgorithmFamily
 import app.keyholm.webauthn.AlgorithmPreference
@@ -23,7 +24,14 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 
-internal val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+private const val SETTINGS_STORE_NAME = "settings"
+
+internal val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = SETTINGS_STORE_NAME)
+
+internal fun deleteSettingsStoreFile(context: Context): Boolean {
+    val file = context.preferencesDataStoreFile(SETTINGS_STORE_NAME)
+    return !file.exists() || file.delete()
+}
 
 internal object SettingsKeys {
     val deviceBoundWarningDismissed = booleanPreferencesKey("device_bound_warning_dismissed")

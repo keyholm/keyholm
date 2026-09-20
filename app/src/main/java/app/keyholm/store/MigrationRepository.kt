@@ -2,8 +2,8 @@ package app.keyholm.store
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.dataStore
+import androidx.datastore.dataStoreFile
 import app.keyholm.store.proto.MigrationPlaceholdersProto
 import app.keyholm.webauthn.RpId
 import kotlinx.coroutines.CoroutineDispatcher
@@ -13,11 +13,17 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 
+private const val MIGRATION_STORE_FILE = "migration_placeholders.pb"
+
 private val Context.migrationDataStore: DataStore<MigrationPlaceholdersProto> by dataStore(
-    fileName = "migration_placeholders.pb",
+    fileName = MIGRATION_STORE_FILE,
     serializer = MigrationPlaceholdersSerializer,
-    corruptionHandler = ReplaceFileCorruptionHandler { MigrationPlaceholdersProto.getDefaultInstance() },
 )
+
+internal fun deleteMigrationStoreFile(context: Context): Boolean {
+    val file = context.dataStoreFile(MIGRATION_STORE_FILE)
+    return !file.exists() || file.delete()
+}
 
 class MigrationRepository internal constructor(
     private val dataStore: DataStore<MigrationPlaceholdersProto>,

@@ -2,8 +2,8 @@ package app.keyholm.store
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.dataStore
+import androidx.datastore.dataStoreFile
 import app.keyholm.store.proto.DeniedNativeAppsProto
 import app.keyholm.webauthn.AssetLinkStatement
 import app.keyholm.webauthn.CertFingerprint
@@ -17,11 +17,17 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 import java.time.Instant
 
+private const val DENIED_NATIVE_APPS_STORE_FILE = "denied_native_apps.pb"
+
 private val Context.deniedNativeAppsDataStore: DataStore<DeniedNativeAppsProto> by dataStore(
-    fileName = "denied_native_apps.pb",
+    fileName = DENIED_NATIVE_APPS_STORE_FILE,
     serializer = DeniedNativeAppsSerializer,
-    corruptionHandler = ReplaceFileCorruptionHandler { DeniedNativeAppsProto.getDefaultInstance() },
 )
+
+internal fun deleteDeniedNativeAppStoreFile(context: Context): Boolean {
+    val file = context.dataStoreFile(DENIED_NATIVE_APPS_STORE_FILE)
+    return !file.exists() || file.delete()
+}
 
 class DeniedNativeAppRepository internal constructor(
     private val dataStore: DataStore<DeniedNativeAppsProto>,

@@ -2,8 +2,8 @@ package app.keyholm.store
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.dataStore
+import androidx.datastore.dataStoreFile
 import app.keyholm.store.proto.PasskeyRecordsProto
 import app.keyholm.webauthn.CredentialId
 import kotlinx.coroutines.CoroutineDispatcher
@@ -26,11 +26,17 @@ internal fun summarize(records: List<PasskeyRecord>): PasskeySummary =
         lastUsedTime = records.maxOfOrNull { it.lastUsedAt },
     )
 
+private const val PASSKEY_STORE_FILE = "passkeys.pb"
+
 private val Context.passkeyDataStore: DataStore<PasskeyRecordsProto> by dataStore(
-    fileName = "passkeys.pb",
+    fileName = PASSKEY_STORE_FILE,
     serializer = PasskeyRecordsSerializer,
-    corruptionHandler = ReplaceFileCorruptionHandler { PasskeyRecordsProto.getDefaultInstance() },
 )
+
+internal fun deletePasskeyStoreFile(context: Context): Boolean {
+    val file = context.dataStoreFile(PASSKEY_STORE_FILE)
+    return !file.exists() || file.delete()
+}
 
 class PasskeyRepository internal constructor(
     private val dataStore: DataStore<PasskeyRecordsProto>,
