@@ -1,9 +1,11 @@
 package app.keyholm.ui.createpasskey
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.biometric.AuthenticationRequest
 import androidx.biometric.BiometricPrompt
 import androidx.compose.runtime.mutableStateOf
 import androidx.credentials.CreatePublicKeyCredentialRequest
@@ -228,6 +230,26 @@ internal fun registrationDescription(
         append(":")
     }
 
+internal fun registrationPromptContent(
+    context: Context,
+    info: RegistrantInfo,
+    algorithm: WebAuthnAlgorithm,
+    includeAttestation: Boolean,
+    preferRpName: Boolean,
+): AuthenticationRequest.BodyContent =
+    promptContent(
+        description =
+            registrationDescription(
+                context.appLabel(info.callingPackage),
+                algorithm,
+                includeAttestation,
+            ),
+        lastUsedAt = null,
+        rp = info.rp,
+        preferRpName = preferRpName,
+        userLabel = userLabel(info.user.name, info.user.displayName),
+    )
+
 private fun buildPendingRegistration(
     registration: RegistrationContext,
     material: KeyMaterial,
@@ -356,17 +378,12 @@ class Activity : FragmentActivity() {
             cryptoObject = BiometricPrompt.CryptoObject(material.signature),
             allowedAuthenticators = material.authenticators,
             content =
-                promptContent(
-                    description =
-                        registrationDescription(
-                            appLabel(registration.info.callingPackage),
-                            registration.algorithm,
-                            registration.includeAttestation,
-                        ),
-                    lastUsedAt = null,
-                    rp = registration.info.rp,
-                    preferRpName = intent.preferRpName(),
-                    userLabel = userLabel(registration.info.user.name, registration.info.user.displayName),
+                registrationPromptContent(
+                    this,
+                    registration.info,
+                    registration.algorithm,
+                    registration.includeAttestation,
+                    intent.preferRpName(),
                 ),
         )
 

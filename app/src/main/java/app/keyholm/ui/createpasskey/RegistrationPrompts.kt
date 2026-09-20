@@ -6,12 +6,7 @@ import app.keyholm.provider.AttestationOffer
 import app.keyholm.provider.CreationOffer
 import app.keyholm.provider.preferRpName
 import app.keyholm.ui.common.CryptoPrompt
-import app.keyholm.ui.common.appLabel
-import app.keyholm.ui.common.promptContent
-import app.keyholm.ui.common.userLabel
 import app.keyholm.webauthn.IdentityPreference
-import app.keyholm.webauthn.PackageName
-import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.RpId
 
 internal typealias CreationOptionsChooser = suspend (prompt: CreationOptionsPrompt) -> CreationChoice?
@@ -26,6 +21,7 @@ internal class RegistrationPrompts(
     suspend fun confirmAlreadyRegistered(
         request: CreateRequest,
         offer: CreationOffer,
+        info: RegistrantInfo,
     ): Registration<RegistrationContext> {
         val choice = resolveCreationChoice(request, offer) ?: return Registration.Canceled()
         return when (val r = keyMaterial.resolveAuthenticators(offer.authenticators)) {
@@ -40,17 +36,12 @@ internal class RegistrationPrompts(
                         title = "Create passkey",
                         allowedAuthenticators = r.value,
                         content =
-                            promptContent(
-                                description =
-                                    registrationDescription(
-                                        context.appLabel(PackageName(request.providerRequest.callingAppInfo.packageName)),
-                                        choice.algorithm,
-                                        choice.includeAttestation,
-                                    ),
-                                lastUsedAt = null,
-                                rp = RelyingParty(RpId(request.options.rp.id), request.options.rp.name),
-                                preferRpName = intent.preferRpName(),
-                                userLabel = userLabel(request.options.user.name, request.options.user.displayName),
+                            registrationPromptContent(
+                                context,
+                                info,
+                                choice.algorithm,
+                                choice.includeAttestation,
+                                intent.preferRpName(),
                             ),
                     )
                 ) {

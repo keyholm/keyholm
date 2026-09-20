@@ -95,27 +95,33 @@ internal class RegistrationRequestResolver(
         if (userId.size !in USER_ID_BYTES) {
             return Registration.MalformedRequest(DataError(), "user.id must be 1 to 64 bytes")
         }
-        val user =
-            CredentialUser(
-                handle = UserHandle.of(userId),
-                name = options.user.name,
-                displayName = options.user.displayName,
+        val info =
+            RegistrantInfo(
+                rp = RelyingParty(rpId, options.rp.name),
+                user =
+                    CredentialUser(
+                        handle = UserHandle.of(userId),
+                        name = options.user.name,
+                        displayName = options.user.displayName,
+                    ),
+                callingPackage = PackageName(request.providerRequest.callingAppInfo.packageName),
+                credPropsRequested = options.extensions?.credProps == true,
+                prfRequested = PrfExtension.requestedAtCreation(options),
             )
 
         val excludeIds = options.excludeCredentials.mapTo(mutableSetOf()) { CredentialId(it.id) }
         return if (existing.any { it.credentialId in excludeIds && it.rp.id == rpId }) {
-            prompts.confirmAlreadyRegistered(request, offer)
+            prompts.confirmAlreadyRegistered(request, offer, info)
         } else {
-            buildRegistrationContext(request, rpId, offer, caller, user)
+            buildRegistrationContext(request, offer, caller, info)
         }
     }
 
     private suspend fun buildRegistrationContext(
         request: CreateRequest,
-        rpId: RpId,
         offer: CreationOffer,
         caller: Caller.Trusted,
-        user: CredentialUser,
+        info: RegistrantInfo,
     ): Registration<RegistrationContext> {
         val options = request.options
         val choice = prompts.resolveCreationChoice(request, offer) ?: return Registration.Canceled()
@@ -130,14 +136,7 @@ internal class RegistrationRequestResolver(
 
         return Registration.Ready(
             RegistrationContext(
-                info =
-                    RegistrantInfo(
-                        rp = RelyingParty(rpId, options.rp.name),
-                        user = user,
-                        callingPackage = PackageName(request.providerRequest.callingAppInfo.packageName),
-                        credPropsRequested = options.extensions?.credProps == true,
-                        prfRequested = PrfExtension.requestedAtCreation(options),
-                    ),
+                info = info,
                 challenge = options.challenge,
                 caller = caller,
                 algorithm = choice.algorithm,
