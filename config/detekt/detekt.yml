@@ -1,3 +1,14 @@
+# Rules detekt turns on by default upstream but not in 2.0.0-alpha.6.
+exceptions:
+  ErrorUsageWithThrowable:
+    active: true
+  ObjectExtendsThrowable:
+    active: true
+
+potential-bugs:
+  MissingSuperCall:
+    active: true
+
 naming:
   FunctionNaming:
     ignoreAnnotated: ['Composable']
@@ -8,6 +19,16 @@ style:
     maxLineLength: 140
   ReturnCount:
     excludeGuardClauses: true
+  UnusedImport:
+    active: true
+  ExplicitCollectionElementAccessMethod:
+    active: true
+  UnnecessaryBracesAroundTrailingLambda:
+    active: true
+  RedundantConstructorKeyword:
+    active: true
+  StringShouldBeRawString:
+    active: true
   ForbiddenVoid:
     ignoreOverridden: true
   ForbiddenImport:

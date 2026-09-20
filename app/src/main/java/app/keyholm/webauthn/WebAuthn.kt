@@ -5,7 +5,6 @@ import app.keyholm.util.sha256
 import com.upokecenter.cbor.CBOREncodeOptions
 import com.upokecenter.cbor.CBORObject
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.math.BigInteger
@@ -254,7 +253,7 @@ object WebAuthn {
     }
 
     val PLACEHOLDER_CLIENT_DATA_JSON: ClientDataJson =
-        ClientDataJson("{\"clientDataJSON\":\"provided_by_caller\"}".toByteArray(Charsets.UTF_8))
+        ClientDataJson("""{"clientDataJSON":"provided_by_caller"}""".toByteArray(Charsets.UTF_8))
 
     class ClientData(
         val hash: ClientDataHash,
