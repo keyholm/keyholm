@@ -217,8 +217,7 @@ private fun BoxScope.PasskeyListItemTrailingIcon(
 @Composable
 private fun PasskeyListItemContent(
     record: PasskeyRecord,
-    compactView: Boolean = false,
-    preferRpName: Boolean = false,
+    display: PasskeyRowDisplay,
     onCancelDelete: (() -> Unit)? = null,
     contentColor: Color? = null,
 ) {
@@ -228,7 +227,7 @@ private fun PasskeyListItemContent(
             ?: if (record.likelyInvalid) MaterialTheme.colorScheme.onErrorContainer else null
     Box(modifier = Modifier.fillMaxWidth()) {
         ListItem(
-            supportingContent = { PasskeyListItemSupportingContent(record, compactView, df) },
+            supportingContent = { PasskeyListItemSupportingContent(record, display.compactView, df) },
             trailingContent = { Spacer(Modifier.size(48.dp)) },
             colors =
                 if (effectiveContentColor != null) {
@@ -242,8 +241,8 @@ private fun PasskeyListItemContent(
                 },
         ) {
             Text(
-                rpLabel(record.rp.id, record.rp.name, preferRpName),
-                maxLines = if (compactView) 1 else Int.MAX_VALUE,
+                rpLabel(record.rp.id, record.rp.name, display.preferRpName),
+                maxLines = if (display.compactView) 1 else Int.MAX_VALUE,
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -255,8 +254,7 @@ private fun PasskeyListItemContent(
 private fun PendingDeleteItem(
     record: PasskeyRecord,
     pendingDeleteAt: Instant,
-    compactView: Boolean,
-    preferRpName: Boolean,
+    display: PasskeyRowDisplay,
     onCancelDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -298,8 +296,7 @@ private fun PendingDeleteItem(
         ) {
             PasskeyListItemContent(
                 record = record,
-                compactView = compactView,
-                preferRpName = preferRpName,
+                display = display,
                 onCancelDelete = onCancelDelete,
                 contentColor = baseContentColor,
             )
@@ -309,12 +306,16 @@ private fun PendingDeleteItem(
 
 internal typealias DeleteConfirmationRequester = (DeleteConfirmationRequest) -> Unit
 
+internal data class PasskeyRowDisplay(
+    val compactView: Boolean,
+    val preferRpName: Boolean,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PasskeyItem(
     record: PasskeyRecord,
-    compactView: Boolean,
-    preferRpName: Boolean,
+    display: PasskeyRowDisplay,
     onDeleteClick: () -> Unit,
     onOpenDetails: () -> Unit,
     onCancelDelete: () -> Unit,
@@ -326,8 +327,7 @@ internal fun PasskeyItem(
         PendingDeleteItem(
             record = record,
             pendingDeleteAt = lifecycle.at,
-            compactView = compactView,
-            preferRpName = preferRpName,
+            display = display,
             onCancelDelete = onCancelDelete,
             modifier = modifier,
         )
@@ -368,7 +368,7 @@ internal fun PasskeyItem(
                         },
                 ),
         ) {
-            PasskeyListItemContent(record = record, compactView = compactView, preferRpName = preferRpName)
+            PasskeyListItemContent(record = record, display = display)
         }
     }
 }

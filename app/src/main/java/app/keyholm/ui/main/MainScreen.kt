@@ -164,8 +164,7 @@ internal class DeleteConfirmationRequest(
 
 private fun LazyListScope.passkeyItems(
     passkeys: List<PasskeyRecord>,
-    compactView: Boolean,
-    preferRpName: Boolean,
+    display: PasskeyRowDisplay,
     rowGeneration: Map<CredentialId, Int>,
     viewModel: MainViewModel,
     requestDeleteConfirmation: DeleteConfirmationRequester,
@@ -177,8 +176,7 @@ private fun LazyListScope.passkeyItems(
     ) { record ->
         PasskeyItem(
             record = record,
-            compactView = compactView,
-            preferRpName = preferRpName,
+            display = display,
             onDeleteClick = { viewModel.pendingDeletes.start(record) },
             onOpenDetails = { onOpenDetails(record) },
             onCancelDelete = { viewModel.pendingDeletes.cancel(record) },
@@ -287,8 +285,7 @@ private fun PasskeyListContent(
         }
         passkeyItems(
             passkeys.value,
-            uiState.settings.compactView,
-            uiState.settings.preferRpName,
+            PasskeyRowDisplay(uiState.settings.compactView, uiState.settings.preferRpName),
             rowGeneration,
             viewModel,
             requestDeleteConfirmation,
