@@ -1,12 +1,26 @@
-[tools]
-java = "25"
-gradle = "9.7.1"
-uv = "latest"
-"pipx:apksigcopier" = "latest"
-
 [task_config]
 cascade = true
 shell = "bash -c -o errexit"
+
+[tools]
+android-sdk = "latest"
+android-cli = "latest"
+gradle = "9.7.1"
+java = "temurin-25"
+uv = "latest"
+"pypi:apksigcopier" = "latest"
+
+[hooks]
+postinstall = "mise run android-sdk-install"
+
+[env]
+BUILD_TOOLS_VERSION = "36.0.0"
+_.path = { tools = true, path = ["${ANDROID_HOME}/build-tools/${BUILD_TOOLS_VERSION}"] }
+
+[tasks.android-sdk-install]
+run = """
+  android sdk install build-tools/$BUILD_TOOLS_VERSION platforms/android-37.0
+"""
 
 [tasks.refresh-gradle]
 description = "Refresh gradle lockfiles and verification metadata"
@@ -52,10 +66,8 @@ arg "[unsigned]" help="path to the unsigned release APK" default="app/build/outp
 run = '''
 set -euo pipefail
 unsigned="$usage_unsigned"
-apksigner=$(ls -d "$HOME"/Android/Sdk/build-tools/*/apksigner | sort -V | tail -1)
-export PATH="$(dirname "$apksigner"):$PATH"
 
-secret-tool lookup package app.keyholm kind signing-key | "$apksigner" sign \
+secret-tool lookup package app.keyholm kind signing-key | apksigner sign \
   --v1-signing-enabled false \
   --v2-signing-enabled false \
   --v3-signing-enabled true \
@@ -67,7 +79,7 @@ secret-tool lookup package app.keyholm kind signing-key | "$apksigner" sign \
   --out keyholm.apk \
   "$unsigned"
 
-"$apksigner" verify --print-certs -v keyholm.apk
+apksigner verify --print-certs -v keyholm.apk
 apksigcopier compare keyholm.apk "$unsigned" --unsigned
 
 echo "OK: keyholm.apk is the reproducible build plus a v3 signature"
