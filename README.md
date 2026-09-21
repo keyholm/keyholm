@@ -6,7 +6,6 @@ Keyholm is all about single-device passkeys (i.e. client-side discoverable crede
 whose private key is protected by secure hardware.
 
 You can never export or sync these passkeys.
-If you use only biometrics and you change your biometrics enrollment, they are invalidated by default.
 
 Think of Keyholm as a way to activate the built-in security key on your phone.
 
@@ -23,14 +22,14 @@ Think of Keyholm as a way to activate the built-in security key on your phone.
 - supports `prf` extension
 - uses `QUERY_ALL_PACKAGES` in order to icons for apps that were denied trust
   - since we don't have network I don't see any danger to this
-
-There is an _account list_ export capability for making it marginally easier to switch
-devices, but all keys still need to be manually recreated on the new device.
+- _account list_ export/importj
+  - for making it marginally easier to switch devices
+  - still all keys still need to be manually recreated on the new device
 
 ## Releases
 
 [<img src="docs/badge_obtainium.png"
-  alt="Get it on Obtainium" width="161" height="48">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22app.keyholm%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fkeyholm%2Fkeyholm%22%2C%22author%22%3A%22keyholm%22%2C%22name%22%3A%22Keyholm%22%2C%22additionalSettings%22%3A%22%7B%5C%22apkFilterRegEx%5C%22%3A%5C%22%5Ekeyholm%5C%5C%5C%5C.apk%24%5C%22%2C%5C%22verifyLatestTag%5C%22%3Atrue%7D%22%7D)
+  alt="Get it on Obtainium" width="161" height="48">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22app.keyholm%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fkeyholm%2Fkeyholm%22%2C%22author%22%3A%22keyholm%22%2C%22name%22%3A%22Keyholm%22%2C%22additionalSettings%22%3A%22%7B%5C%22apkFilterRegEx%5C%22%3A%5C%22%5Ekeyholm%5C%5C%5C%5C.apk%24%5C%22%2C%5C%22includePrereleases%5C%22%3Atrue%7D%22%7D)
 
 Releases are done via GitHub workflows, see the releases themselves for how to
 verify provenance of the artifacts.
@@ -136,7 +135,7 @@ However, `root` cannot get to the passkey private key material or extract it.
 ### Hybrid transport
 
 - CTAP 2.3 BLE hybrid transport support (i.e. scan a QR code with Keyholm)
-  Only requires Nearby devices aka Bluetooth permissions.
+  - Only requires Nearby devices aka Bluetooth permissions.
 
 ### Security
 
@@ -158,8 +157,8 @@ the Free Software Foundation, version 3.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+along with this program. If not, see <https://www.gnu.org/licenses/>.
