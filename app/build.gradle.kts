@@ -82,6 +82,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -94,8 +97,14 @@ android {
         create("staging") {
             initWith(getByName("release"))
             signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".debug"
         }
     }
+
+    sourceSets.named("staging") {
+        res.directories += "src/debug/res"
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_25
         targetCompatibility = JavaVersion.VERSION_25
