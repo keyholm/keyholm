@@ -1,0 +1,29 @@
+name: Refresh gradle metadata and locks
+
+on:
+  push:
+    branches: ["renovate/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          # pushes over SSH so the refresh commit triggers CI
+          ssh-key: ${{ secrets.GRADLE_REFRESH_SSH_KEY }}
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          install: true
+          cache: true
+          minimum_release_age: 7d
+      - run: mise run refresh-gradle
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: refresh gradle locks and verification metadata" || echo "no changes"
+          git push

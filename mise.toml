@@ -8,8 +8,9 @@ uv = "latest"
 cascade = true
 shell = "bash -c -o errexit"
 
-[tasks.refresh]
-description = "Refresh lockfiles and verification metadata"
+[tasks.refresh-gradle]
+description = "Refresh gradle lockfiles and verification metadata"
+depends = ["reset-gradle-verification-metadata"]
 run = "gradle --refresh-dependencies --write-locks --write-verification-metadata sha256 check assembleDebug assembleRelease"
 
 [tasks.generate-keystore]

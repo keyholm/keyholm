@@ -1,0 +1,22 @@
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["lxml"]
+# ///
+#MISE description="Drop every verified component so the next refresh regenerates them all"
+from pathlib import Path
+
+from lxml import etree
+
+FILE = "gradle/verification-metadata.xml"
+NS = {"v": "https://schema.gradle.org/dependency-verification"}
+
+tree = etree.parse(FILE)
+components = tree.getroot().find("v:components", NS)
+for component in list(components):
+    components.remove(component)
+components.text = None
+
+# written by hand so the declaration and trailing newline match what Gradle writes
+body = etree.tostring(tree, encoding="unicode")
+Path(FILE).write_text('<?xml version="1.0" encoding="UTF-8"?>\n' + body + "\n")
