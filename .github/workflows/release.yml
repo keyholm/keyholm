@@ -26,12 +26,9 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
+          install: true
+          cache: true
           minimum_release_age: 7d
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: temurin
-          cache: gradle
-          java-version-file: .tool-versions
       - name: Check formatting, lint and test
         run: gradle check
       - name: Build unsigned release APK
