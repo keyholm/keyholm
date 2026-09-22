@@ -67,7 +67,7 @@ data class Settings(
 
 class SettingsRepository(
     context: Context,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val appContext = context.applicationContext
     internal val dataStore = appContext.settingsDataStore
@@ -75,7 +75,7 @@ class SettingsRepository(
     val settings: Flow<Settings> =
         dataStore.data
             .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
-            .map { it.toSettings(appContext) }
+            .map { it.toSettings(appContext, dispatcher) }
             .flowOn(dispatcher)
 
     suspend fun reset(): Result<Unit> =
@@ -87,7 +87,10 @@ class SettingsRepository(
         }
 }
 
-internal suspend fun Preferences.toSettings(context: Context): Settings =
+internal suspend fun Preferences.toSettings(
+    context: Context,
+    dispatcher: CoroutineDispatcher,
+): Settings =
     Settings(
         deviceBoundWarningDismissed = this[SettingsKeys.deviceBoundWarningDismissed] ?: false,
         identityPreference = decodeIdentityPreference(this[SettingsKeys.identityPreference]),
@@ -101,5 +104,5 @@ internal suspend fun Preferences.toSettings(context: Context): Settings =
         preferredAlgorithm = decodeAlgorithmPreference(this[SettingsKeys.preferredAlgorithm]),
         fallbackAlgorithm = decodeAlgorithmPreference(this[SettingsKeys.fallbackAlgorithm]),
         mlDsaSupport = decodeMlDsaSupport(this[SettingsKeys.mlDsaSupport]),
-        nativeAppTrust = decodeNativeAppTrust(this[SettingsKeys.nativeAppTrust], context),
+        nativeAppTrust = decodeNativeAppTrust(this[SettingsKeys.nativeAppTrust], context, dispatcher),
     )

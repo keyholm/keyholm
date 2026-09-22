@@ -18,8 +18,10 @@ import app.keyholm.util.logger
 import app.keyholm.webauthn.NativeAppTrust
 import app.keyholm.webauthn.RpId
 import app.keyholm.webauthn.TrustDecision
+import app.keyholm.webauthn.TrustPolicy
 import app.keyholm.webauthn.parseRequestOptionsOrLog
 import app.keyholm.webauthn.resolveTrustDecision
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import java.io.IOException
 
@@ -27,6 +29,7 @@ private const val UNLOCK_REQUEST_CODE = 1
 
 internal class GetCredentialEntries(
     private val context: Context,
+    private val dispatcher: CoroutineDispatcher,
 ) {
     private val log = logger()
     private val keyManager = SecureKeyManager()
@@ -90,7 +93,7 @@ internal class GetCredentialEntries(
                 log.e(e) { "couldn't read the denied apps store" }
                 return false
             }
-        return context.resolveTrustDecision(callingAppInfo, rpId, trust, accepted) is TrustDecision.Allowed
+        return context.resolveTrustDecision(callingAppInfo, rpId, TrustPolicy(trust, accepted), dispatcher) is TrustDecision.Allowed
     }
 
     private fun credentialPendingIntent(

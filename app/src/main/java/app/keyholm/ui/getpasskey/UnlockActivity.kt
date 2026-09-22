@@ -13,14 +13,20 @@ import app.keyholm.provider.GetCredentialEntries
 import app.keyholm.ui.common.AuthenticatorsResolution
 import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.resolveCreateAuthenticators
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 private const val UNLOCK_TITLE = "Unlock Keyholm"
 private const val UNLOCK_DESCRIPTION = "Confirm your identity to see your passkeys for this site."
 
-class UnlockActivity : FragmentActivity() {
+class UnlockActivity internal constructor(
+    private val dispatcher: CoroutineDispatcher,
+) : FragmentActivity() {
+    constructor() : this(Dispatchers.IO)
+
     private val cryptoPrompt = CryptoPrompt(this)
-    private val entries by lazy { GetCredentialEntries(applicationContext) }
+    private val entries by lazy { GetCredentialEntries(applicationContext, dispatcher) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -5,6 +5,8 @@ import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.webauthn.CommunityAssetLinks
 import app.keyholm.webauthn.IdentityPreference
 import app.keyholm.webauthn.NativeAppTrust
+import app.keyholm.webauthn.TrustMode
+import kotlinx.coroutines.CoroutineDispatcher
 
 private const val TRUST_DENY_ALL = "DENY_ALL"
 private const val TRUST_ALLOW_ALL = "ALLOW_ALL"
@@ -32,19 +34,20 @@ internal fun decodeAuthenticatorPolicy(stored: String?): AuthenticatorPolicy =
         else -> error("unknown create-authenticators token $stored")
     }
 
-internal fun encodeNativeAppTrust(trust: NativeAppTrust): String =
-    when (trust) {
-        NativeAppTrust.DenyAll -> TRUST_DENY_ALL
-        NativeAppTrust.AllowAll -> TRUST_ALLOW_ALL
-        is NativeAppTrust.Community -> TRUST_COMMUNITY
+internal fun encodeNativeAppTrust(mode: TrustMode): String =
+    when (mode) {
+        TrustMode.DenyAll -> TRUST_DENY_ALL
+        TrustMode.AllowAll -> TRUST_ALLOW_ALL
+        TrustMode.Community -> TRUST_COMMUNITY
     }
 
 internal suspend fun decodeNativeAppTrust(
     stored: String?,
     context: Context,
+    dispatcher: CoroutineDispatcher,
 ): NativeAppTrust =
     when (stored) {
-        null, TRUST_COMMUNITY -> NativeAppTrust.Community(CommunityAssetLinks.load(context))
+        null, TRUST_COMMUNITY -> NativeAppTrust.Community(CommunityAssetLinks.load(context, dispatcher))
         TRUST_DENY_ALL -> NativeAppTrust.DenyAll
         TRUST_ALLOW_ALL -> NativeAppTrust.AllowAll
         else -> error("unknown native-app-trust token $stored")

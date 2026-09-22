@@ -64,6 +64,8 @@ import app.keyholm.webauthn.SpkiPublicKey
 import app.keyholm.webauthn.WebAuthn
 import app.keyholm.webauthn.WebAuthnAlgorithm
 import com.google.protobuf.ByteString
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import java.security.GeneralSecurityException
@@ -270,7 +272,11 @@ private fun buildPendingRegistration(
         prfEvalSalts = registration.prfEvalSalts,
     )
 
-class Activity : FragmentActivity() {
+class Activity internal constructor(
+    private val dispatcher: CoroutineDispatcher,
+) : FragmentActivity() {
+    constructor() : this(Dispatchers.IO)
+
     private val log = logger()
     private val cryptoPrompt = CryptoPrompt(this)
     private val passkeyRepo by lazy { PasskeyRepository(applicationContext) }
@@ -286,6 +292,7 @@ class Activity : FragmentActivity() {
             intent,
             passkeyRepo,
             deniedAppsRepo,
+            dispatcher,
             RegistrationPrompts(
                 applicationContext,
                 intent,
@@ -325,7 +332,7 @@ class Activity : FragmentActivity() {
     }
 
     private suspend fun registerPasskey() {
-        val offer = intent.creationOffer(applicationContext)
+        val offer = intent.creationOffer(applicationContext, dispatcher)
         val registration =
             requestResolver
                 .prepareRegistration(offer)

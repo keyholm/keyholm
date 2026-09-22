@@ -6,7 +6,11 @@ import android.net.Uri
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.webauthn.IdentityPreference
 import app.keyholm.webauthn.NativeAppTrust
+import app.keyholm.webauthn.TrustMode
 import app.keyholm.webauthn.WebAuthnAlgorithm
+import app.keyholm.webauthn.mode
+import app.keyholm.webauthn.toTrust
+import kotlinx.coroutines.CoroutineDispatcher
 
 private const val SCHEME = "keyholm"
 private const val CREATE = "create"
@@ -45,7 +49,10 @@ internal data class CreationOffer(
     }
 }
 
-internal suspend fun Intent.creationOffer(context: Context): CreationOffer {
+internal suspend fun Intent.creationOffer(
+    context: Context,
+    dispatcher: CoroutineDispatcher,
+): CreationOffer {
     val uri = checkNotNull(data) { "the create intent carries no offer URI" }
     val names = uri.getQueryParameters(PARAM_ALGORITHM)
     check(names.isNotEmpty()) { "$PARAM_ALGORITHM is missing" }
@@ -55,7 +62,7 @@ internal suspend fun Intent.creationOffer(context: Context): CreationOffer {
         identity = uri.required(PARAM_IDENTITY, IdentityPreference.entries),
         authenticators = uri.required(PARAM_AUTHENTICATORS, AuthenticatorPolicy.entries),
         invalidateOnBiometricEnrollment = uri.requiredBoolean(PARAM_INVALIDATE_ON_ENROLLMENT),
-        nativeAppTrust = uri.required(PARAM_NATIVE_APP_TRUST, TrustMode.entries).toTrust(context),
+        nativeAppTrust = uri.required(PARAM_NATIVE_APP_TRUST, TrustMode.entries).toTrust(context, dispatcher),
     )
 }
 

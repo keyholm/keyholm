@@ -7,7 +7,7 @@ import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
 import app.keyholm.webauthn.IdentityPreference
-import app.keyholm.webauthn.NativeAppTrust
+import app.keyholm.webauthn.TrustMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -67,5 +67,5 @@ class SettingsController(
 
     fun setRequireUnlock(value: Boolean) = launchEdit { it[SettingsKeys.requireUnlock] = value }
 
-    fun setNativeAppTrust(trust: NativeAppTrust) = launchEdit { it[SettingsKeys.nativeAppTrust] = encodeNativeAppTrust(trust) }
+    fun setNativeAppTrust(mode: TrustMode) = launchEdit { it[SettingsKeys.nativeAppTrust] = encodeNativeAppTrust(mode) }
 }

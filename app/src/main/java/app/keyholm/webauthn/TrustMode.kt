@@ -1,10 +1,9 @@
-package app.keyholm.provider
+package app.keyholm.webauthn
 
 import android.content.Context
-import app.keyholm.webauthn.CommunityAssetLinks
-import app.keyholm.webauthn.NativeAppTrust
+import kotlinx.coroutines.CoroutineDispatcher
 
-internal enum class TrustMode {
+enum class TrustMode {
     DenyAll,
     AllowAll,
     Community,
@@ -17,9 +16,12 @@ internal fun NativeAppTrust.mode(): TrustMode =
         is NativeAppTrust.Community -> TrustMode.Community
     }
 
-internal suspend fun TrustMode.toTrust(context: Context): NativeAppTrust =
+internal suspend fun TrustMode.toTrust(
+    context: Context,
+    dispatcher: CoroutineDispatcher,
+): NativeAppTrust =
     when (this) {
         TrustMode.DenyAll -> NativeAppTrust.DenyAll
         TrustMode.AllowAll -> NativeAppTrust.AllowAll
-        TrustMode.Community -> NativeAppTrust.Community(CommunityAssetLinks.load(context))
+        TrustMode.Community -> NativeAppTrust.Community(CommunityAssetLinks.load(context, dispatcher))
     }

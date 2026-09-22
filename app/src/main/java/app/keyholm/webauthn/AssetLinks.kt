@@ -2,7 +2,7 @@ package app.keyholm.webauthn
 
 import android.content.Context
 import app.keyholm.util.logger
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -59,11 +59,16 @@ object CommunityAssetLinks {
     @Volatile
     private var parsed: Map<RpId, List<AssetLinkStatement>>? = null
 
-    suspend fun load(context: Context): Map<RpId, List<AssetLinkStatement>> =
-        parsed ?: read(context.applicationContext).also { parsed = it }
+    suspend fun load(
+        context: Context,
+        dispatcher: CoroutineDispatcher,
+    ): Map<RpId, List<AssetLinkStatement>> = parsed ?: read(context.applicationContext, dispatcher).also { parsed = it }
 
-    private suspend fun read(context: Context): Map<RpId, List<AssetLinkStatement>> =
-        withContext(Dispatchers.IO) {
+    private suspend fun read(
+        context: Context,
+        dispatcher: CoroutineDispatcher,
+    ): Map<RpId, List<AssetLinkStatement>> =
+        withContext(dispatcher) {
             try {
                 context.assets.open(ASSETS_FILE).use {
                     parseCommunityAssetLinks(it.readBytes().toString(Charsets.UTF_8))

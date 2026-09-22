@@ -57,8 +57,8 @@ import app.keyholm.ui.main.MainUiState
 import app.keyholm.ui.main.MainViewModel
 import app.keyholm.ui.main.StatusRow
 import app.keyholm.ui.main.Stored
-import app.keyholm.webauthn.CommunityAssetLinks
 import app.keyholm.webauthn.NativeAppTrust
+import app.keyholm.webauthn.TrustMode
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -169,11 +169,9 @@ private const val DESCRIPTION_COMMUNITY = "Use Digital Asset Links with a commun
 @Composable
 private fun NativeAppTrustMenu(
     currentLabel: String,
-    onSelect: (NativeAppTrust) -> Unit,
+    onSelect: (TrustMode) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
     Box {
         TextButton(onClick = { expanded = true }) {
@@ -184,21 +182,21 @@ private fun NativeAppTrustMenu(
             DropdownMenuItem(
                 text = { Text(LABEL_DENY_ALL) },
                 onClick = {
-                    onSelect(NativeAppTrust.DenyAll)
+                    onSelect(TrustMode.DenyAll)
                     expanded = false
                 },
             )
             DropdownMenuItem(
                 text = { Text(LABEL_ALLOW_ALL) },
                 onClick = {
-                    onSelect(NativeAppTrust.AllowAll)
+                    onSelect(TrustMode.AllowAll)
                     expanded = false
                 },
             )
             DropdownMenuItem(
                 text = { Text(LABEL_COMMUNITY) },
                 onClick = {
-                    scope.launch { onSelect(NativeAppTrust.Community(CommunityAssetLinks.load(context))) }
+                    onSelect(TrustMode.Community)
                     expanded = false
                 },
             )

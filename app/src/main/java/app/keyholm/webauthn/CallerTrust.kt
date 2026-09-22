@@ -8,7 +8,7 @@ import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.B64
 import app.keyholm.util.sha256
 import co.touchlab.kermit.Logger
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
@@ -54,6 +54,11 @@ internal sealed interface TrustDecision {
         ) : Denied
     }
 }
+
+internal data class TrustPolicy(
+    val trust: NativeAppTrust,
+    val userAccepted: Map<RpId, List<AssetLinkStatement>>,
+)
 
 internal data class DeniedNativeAppRef(
     val rpId: RpId,
@@ -130,23 +135,23 @@ fun CallingAppInfo.resolveCaller(
 internal suspend fun Context.resolveTrustDecision(
     callingAppInfo: CallingAppInfo,
     rpId: RpId,
-    trust: NativeAppTrust,
-    userAccepted: Map<RpId, List<AssetLinkStatement>> = emptyMap(),
+    policy: TrustPolicy,
+    dispatcher: CoroutineDispatcher,
     providedHash: ClientDataHash? = null,
 ): TrustDecision {
-    val allowlist = PrivilegedAllowlist.load(applicationContext)
+    val allowlist = PrivilegedAllowlist.load(applicationContext, dispatcher)
     val caller = callingAppInfo.resolveCaller(allowlist, providedHash)
     val pkg = PackageName(callingAppInfo.packageName)
     val signingInfo = callingAppInfo.signingInfo
-    val communityLinks = (trust as? NativeAppTrust.Community)?.assetLinksByDomain
+    val communityLinks = (policy.trust as? NativeAppTrust.Community)?.assetLinksByDomain
     val grant =
         when {
-            userAccepted[rpId]?.grantsCaller(pkg, signingInfo) == true -> GrantSource.User
+            policy.userAccepted[rpId]?.grantsCaller(pkg, signingInfo) == true -> GrantSource.User
             communityLinks?.get(rpId)?.grantsCaller(pkg, signingInfo) == true -> GrantSource.Community
             else -> GrantSource.None
         }
     return caller.applyNativeAppTrust(
-        trust,
+        policy.trust,
         DeniedNativeAppRef(rpId, pkg, callerSignerFingerprints(signingInfo)),
         grant,
     )
@@ -156,8 +161,11 @@ object PrivilegedAllowlist {
     @Volatile
     private var json: String? = null
 
-    suspend fun load(context: Context): String =
-        json ?: withContext(Dispatchers.IO) {
+    suspend fun load(
+        context: Context,
+        dispatcher: CoroutineDispatcher,
+    ): String =
+        json ?: withContext(dispatcher) {
             context.applicationContext.assets
                 .open(ALLOWLIST_FILE)
                 .use { it.readBytes().toString(Charsets.UTF_8) }

@@ -25,11 +25,13 @@ import app.keyholm.webauthn.PrfExtension
 import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.RpId
 import app.keyholm.webauthn.TrustDecision
+import app.keyholm.webauthn.TrustPolicy
 import app.keyholm.webauthn.UserHandle
 import app.keyholm.webauthn.WebAuthn
 import app.keyholm.webauthn.parseCreationOptions
 import app.keyholm.webauthn.resolveTrustDecision
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerializationException
 import java.io.IOException
@@ -43,6 +45,7 @@ internal class RegistrationRequestResolver(
     private val intent: Intent,
     private val passkeyRepo: PasskeyRepository,
     private val deniedAppsRepo: DeniedNativeAppRepository,
+    private val dispatcher: CoroutineDispatcher,
     private val prompts: RegistrationPrompts,
 ) {
     suspend fun prepareRegistration(offer: CreationOffer): Registration<RegistrationContext> {
@@ -75,8 +78,8 @@ internal class RegistrationRequestResolver(
             context.resolveTrustDecision(
                 request.providerRequest.callingAppInfo,
                 rpId,
-                offer.nativeAppTrust,
-                deniedAppsRepo.accepted.first(),
+                TrustPolicy(offer.nativeAppTrust, deniedAppsRepo.accepted.first()),
+                dispatcher,
                 request.callingRequest.clientDataHash?.let(::ClientDataHash),
             )
         val caller =

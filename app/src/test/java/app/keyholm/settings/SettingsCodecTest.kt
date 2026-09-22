@@ -7,7 +7,9 @@ import app.keyholm.webauthn.AlgorithmPreference
 import app.keyholm.webauthn.IdentityPreference
 import app.keyholm.webauthn.MlDsaSupport
 import app.keyholm.webauthn.NativeAppTrust
+import app.keyholm.webauthn.TrustMode
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.jupiter.api.assertThrows
@@ -39,34 +41,34 @@ class SettingsCodecTest {
     @Test
     fun `nativeAppTrust round-trips DenyAll`() =
         runBlocking<Unit> {
-            val encoded = encodeNativeAppTrust(NativeAppTrust.DenyAll)
-            assertThat(decodeNativeAppTrust(encoded, context)).isEqualTo(NativeAppTrust.DenyAll)
+            val encoded = encodeNativeAppTrust(TrustMode.DenyAll)
+            assertThat(decodeNativeAppTrust(encoded, context, Dispatchers.Unconfined)).isEqualTo(NativeAppTrust.DenyAll)
         }
 
     @Test
     fun `nativeAppTrust round-trips AllowAll`() =
         runBlocking<Unit> {
-            val encoded = encodeNativeAppTrust(NativeAppTrust.AllowAll)
-            assertThat(decodeNativeAppTrust(encoded, context)).isEqualTo(NativeAppTrust.AllowAll)
+            val encoded = encodeNativeAppTrust(TrustMode.AllowAll)
+            assertThat(decodeNativeAppTrust(encoded, context, Dispatchers.Unconfined)).isEqualTo(NativeAppTrust.AllowAll)
         }
 
     @Test
     fun `nativeAppTrust round-trips Community`() =
         runBlocking<Unit> {
-            val encoded = encodeNativeAppTrust(NativeAppTrust.Community(emptyMap()))
-            assertThat(decodeNativeAppTrust(encoded, context)).isInstanceOf(NativeAppTrust.Community::class.java)
+            val encoded = encodeNativeAppTrust(TrustMode.Community)
+            assertThat(decodeNativeAppTrust(encoded, context, Dispatchers.Unconfined)).isInstanceOf(NativeAppTrust.Community::class.java)
         }
 
     @Test
     fun `nativeAppTrust defaults to Community when unset`() =
         runBlocking<Unit> {
-            assertThat(decodeNativeAppTrust(null, context)).isInstanceOf(NativeAppTrust.Community::class.java)
+            assertThat(decodeNativeAppTrust(null, context, Dispatchers.Unconfined)).isInstanceOf(NativeAppTrust.Community::class.java)
         }
 
     @Test
     fun `nativeAppTrust rejects an unrecognized stored value`() =
         runBlocking<Unit> {
-            assertThrows<IllegalStateException> { decodeNativeAppTrust("SOME_FUTURE_MODE", context) }
+            assertThrows<IllegalStateException> { decodeNativeAppTrust("SOME_FUTURE_MODE", context, Dispatchers.Unconfined) }
         }
 
     @Test

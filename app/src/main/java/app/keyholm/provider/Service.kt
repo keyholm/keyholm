@@ -37,9 +37,12 @@ import app.keyholm.webauthn.CreationOptions
 import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.MlDsaSupport
 import app.keyholm.webauthn.NativeAppTrust
+import app.keyholm.webauthn.TrustMode
 import app.keyholm.webauthn.WebAuthnAlgorithm
 import app.keyholm.webauthn.attestationRequested
+import app.keyholm.webauthn.mode
 import app.keyholm.webauthn.parseCreationOptions
+import app.keyholm.webauthn.toTrust
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -75,9 +78,12 @@ internal fun Intent.preferRpName(): Boolean {
 
 internal fun Intent.putNativeAppTrust(trust: NativeAppTrust): Intent = putExtra(EXTRA_NATIVE_APP_TRUST, trust.mode().name)
 
-internal suspend fun Intent.nativeAppTrust(context: Context): NativeAppTrust {
+internal suspend fun Intent.nativeAppTrust(
+    context: Context,
+    dispatcher: CoroutineDispatcher,
+): NativeAppTrust {
     val stored = checkNotNull(getStringExtra(EXTRA_NATIVE_APP_TRUST)) { "the intent carries no native app trust" }
-    return named(EXTRA_NATIVE_APP_TRUST, stored, TrustMode.entries).toTrust(context)
+    return named(EXTRA_NATIVE_APP_TRUST, stored, TrustMode.entries).toTrust(context, dispatcher)
 }
 
 internal fun Intent.credentialId(): CredentialId =
@@ -88,13 +94,13 @@ internal fun Intent.credentialId(): CredentialId =
     )
 
 class Service internal constructor(
-    dispatcher: CoroutineDispatcher,
+    private val dispatcher: CoroutineDispatcher,
 ) : CredentialProviderService() {
     constructor() : this(Dispatchers.IO)
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val passkeyRepo by lazy { PasskeyRepository(applicationContext) }
-    private val getEntries by lazy { GetCredentialEntries(applicationContext) }
+    private val getEntries by lazy { GetCredentialEntries(applicationContext, dispatcher) }
     private val settingsRepo by lazy { SettingsRepository(applicationContext) }
     private val log = logger()
 
