@@ -87,7 +87,7 @@ class SettingsRepository(
         }
 }
 
-internal fun Preferences.toSettings(context: Context): Settings =
+internal suspend fun Preferences.toSettings(context: Context): Settings =
     Settings(
         deviceBoundWarningDismissed = this[SettingsKeys.deviceBoundWarningDismissed] ?: false,
         identityPreference = decodeIdentityPreference(this[SettingsKeys.identityPreference]),

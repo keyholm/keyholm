@@ -45,7 +45,7 @@ internal data class CreationOffer(
     }
 }
 
-internal fun Intent.creationOffer(context: Context): CreationOffer {
+internal suspend fun Intent.creationOffer(context: Context): CreationOffer {
     val uri = checkNotNull(data) { "the create intent carries no offer URI" }
     val names = uri.getQueryParameters(PARAM_ALGORITHM)
     check(names.isNotEmpty()) { "$PARAM_ALGORITHM is missing" }

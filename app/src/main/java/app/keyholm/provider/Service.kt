@@ -75,7 +75,7 @@ internal fun Intent.preferRpName(): Boolean {
 
 internal fun Intent.putNativeAppTrust(trust: NativeAppTrust): Intent = putExtra(EXTRA_NATIVE_APP_TRUST, trust.mode().name)
 
-internal fun Intent.nativeAppTrust(context: Context): NativeAppTrust {
+internal suspend fun Intent.nativeAppTrust(context: Context): NativeAppTrust {
     val stored = checkNotNull(getStringExtra(EXTRA_NATIVE_APP_TRUST)) { "the intent carries no native app trust" }
     return named(EXTRA_NATIVE_APP_TRUST, stored, TrustMode.entries).toTrust(context)
 }

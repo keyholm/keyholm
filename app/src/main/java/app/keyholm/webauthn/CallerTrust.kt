@@ -8,7 +8,11 @@ import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.B64
 import app.keyholm.util.sha256
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.Locale
+
+private const val ALLOWLIST_FILE = "privileged_allowlist.json"
 
 private val log = Logger.withTag("app.keyholm.webauthn.CallerTrust")
 
@@ -123,7 +127,7 @@ fun CallingAppInfo.resolveCaller(
         Caller.Untrusted
     }
 
-internal fun Context.resolveTrustDecision(
+internal suspend fun Context.resolveTrustDecision(
     callingAppInfo: CallingAppInfo,
     rpId: RpId,
     trust: NativeAppTrust,
@@ -149,10 +153,15 @@ internal fun Context.resolveTrustDecision(
 }
 
 object PrivilegedAllowlist {
-    fun load(context: Context): String =
-        context.applicationContext.assets
-            .open("privileged_allowlist.json")
-            .use { it.readBytes().toString(Charsets.UTF_8) }
+    @Volatile
+    private var json: String? = null
+
+    suspend fun load(context: Context): String =
+        json ?: withContext(Dispatchers.IO) {
+            context.applicationContext.assets
+                .open(ALLOWLIST_FILE)
+                .use { it.readBytes().toString(Charsets.UTF_8) }
+        }.also { json = it }
 }
 
 private fun ByteArray.toColonHex(): String = joinToString(":") { "%02X".format(Locale.ROOT, it) }

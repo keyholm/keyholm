@@ -2,6 +2,8 @@ package app.keyholm.webauthn
 
 import android.content.Context
 import app.keyholm.util.logger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -53,20 +55,25 @@ internal fun parseCommunityAssetLinks(raw: String): Map<RpId, List<AssetLinkStat
 
 object CommunityAssetLinks {
     private val log = logger()
+
+    @Volatile
     private var parsed: Map<RpId, List<AssetLinkStatement>>? = null
 
-    fun load(context: Context): Map<RpId, List<AssetLinkStatement>> = parsed ?: read(context.applicationContext).also { parsed = it }
+    suspend fun load(context: Context): Map<RpId, List<AssetLinkStatement>> =
+        parsed ?: read(context.applicationContext).also { parsed = it }
 
-    private fun read(context: Context): Map<RpId, List<AssetLinkStatement>> =
-        try {
-            context.assets.open(ASSETS_FILE).use {
-                parseCommunityAssetLinks(it.readBytes().toString(Charsets.UTF_8))
+    private suspend fun read(context: Context): Map<RpId, List<AssetLinkStatement>> =
+        withContext(Dispatchers.IO) {
+            try {
+                context.assets.open(ASSETS_FILE).use {
+                    parseCommunityAssetLinks(it.readBytes().toString(Charsets.UTF_8))
+                }
+            } catch (e: IOException) {
+                log.e(e) { "couldn't read $ASSETS_FILE, not trusting anyone from community list" }
+                emptyMap()
+            } catch (e: SerializationException) {
+                log.e(e) { "couldn't parse $ASSETS_FILE, not trusting anyone from community list" }
+                emptyMap()
             }
-        } catch (e: IOException) {
-            log.e(e) { "couldn't read $ASSETS_FILE, not trusting anyone from community list" }
-            emptyMap()
-        } catch (e: SerializationException) {
-            log.e(e) { "couldn't parse $ASSETS_FILE, not trusting anyone from community list" }
-            emptyMap()
         }
 }

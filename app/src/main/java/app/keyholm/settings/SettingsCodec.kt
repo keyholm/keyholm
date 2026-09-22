@@ -39,7 +39,7 @@ internal fun encodeNativeAppTrust(trust: NativeAppTrust): String =
         is NativeAppTrust.Community -> TRUST_COMMUNITY
     }
 
-internal fun decodeNativeAppTrust(
+internal suspend fun decodeNativeAppTrust(
     stored: String?,
     context: Context,
 ): NativeAppTrust =

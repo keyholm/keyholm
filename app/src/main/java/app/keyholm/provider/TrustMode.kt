@@ -17,7 +17,7 @@ internal fun NativeAppTrust.mode(): TrustMode =
         is NativeAppTrust.Community -> TrustMode.Community
     }
 
-internal fun TrustMode.toTrust(context: Context): NativeAppTrust =
+internal suspend fun TrustMode.toTrust(context: Context): NativeAppTrust =
     when (this) {
         TrustMode.DenyAll -> NativeAppTrust.DenyAll
         TrustMode.AllowAll -> NativeAppTrust.AllowAll

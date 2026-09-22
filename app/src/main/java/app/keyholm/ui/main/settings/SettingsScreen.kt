@@ -167,13 +167,51 @@ private const val DESCRIPTION_ALLOW_ALL = "Any native app can use passkeys for a
 private const val DESCRIPTION_COMMUNITY = "Use Digital Asset Links with a community-maintained list of RPs."
 
 @Composable
+private fun NativeAppTrustMenu(
+    currentLabel: String,
+    onSelect: (NativeAppTrust) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    Box {
+        TextButton(onClick = { expanded = true }) {
+            Text(currentLabel)
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(LABEL_DENY_ALL) },
+                onClick = {
+                    onSelect(NativeAppTrust.DenyAll)
+                    expanded = false
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(LABEL_ALLOW_ALL) },
+                onClick = {
+                    onSelect(NativeAppTrust.AllowAll)
+                    expanded = false
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(LABEL_COMMUNITY) },
+                onClick = {
+                    scope.launch { onSelect(NativeAppTrust.Community(CommunityAssetLinks.load(context))) }
+                    expanded = false
+                },
+            )
+        }
+    }
+}
+
+@Composable
 private fun NativeAppTrustRow(
     uiState: MainUiState.Ready,
     viewModel: MainViewModel,
     shape: Shape,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val context = LocalContext.current
     val currentLabel =
         when (uiState.settings.nativeAppTrust) {
             NativeAppTrust.DenyAll -> LABEL_DENY_ALL
@@ -191,38 +229,7 @@ private fun NativeAppTrustRow(
         selected = false,
         onClick = {},
         supportingContent = { Text(description, style = MaterialTheme.typography.bodySmall) },
-        trailingContent = {
-            Box {
-                TextButton(onClick = { expanded = true }) {
-                    Text(currentLabel)
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    DropdownMenuItem(
-                        text = { Text(LABEL_DENY_ALL) },
-                        onClick = {
-                            viewModel.settings.setNativeAppTrust(NativeAppTrust.DenyAll)
-                            expanded = false
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(LABEL_ALLOW_ALL) },
-                        onClick = {
-                            viewModel.settings.setNativeAppTrust(NativeAppTrust.AllowAll)
-                            expanded = false
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(LABEL_COMMUNITY) },
-                        onClick = {
-                            val trust = NativeAppTrust.Community(CommunityAssetLinks.load(context))
-                            viewModel.settings.setNativeAppTrust(trust)
-                            expanded = false
-                        },
-                    )
-                }
-            }
-        },
+        trailingContent = { NativeAppTrustMenu(currentLabel, viewModel.settings::setNativeAppTrust) },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
