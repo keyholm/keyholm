@@ -1,5 +1,32 @@
 # <img src="docs/title.svg" alt="Keyholm" width="328">
 
+<table>
+  <tr>
+    <td width="20%" align="center">
+      <a href="docs/screenshots/main.png"><img src="docs/screenshots/main.png" alt="Main screen" width="100%"></a>
+    </td>
+    <td width="20%" align="center">
+      <a href="docs/screenshots/create-1.png"><img src="docs/screenshots/create-1.png" alt="Create step 1" width="100%"></a>
+    </td>
+    <td width="20%" align="center">
+      <a href="docs/screenshots/create-2.png"><img src="docs/screenshots/create-2.png" alt="Create step 2" width="100%"></a>
+    </td>
+    <td width="20%" align="center">
+      <a href="docs/screenshots/settings-1.png"><img src="docs/screenshots/settings-1.png" alt="Settings 1" width="100%"></a>
+    </td>
+    <td width="20%" align="center">
+      <a href="docs/screenshots/settings-2.png"><img src="docs/screenshots/settings-2.png" alt="Settings 2" width="100%"></a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center"></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
 ## Features
 
 Keyholm is all about single-device passkeys (i.e. client-side discoverable credentials)
@@ -22,7 +49,7 @@ Think of Keyholm as a way to activate the built-in security key on your phone.
 - supports `prf` extension
 - uses `QUERY_ALL_PACKAGES` in order to icons for apps that were denied trust
   - since we don't have network I don't see any danger to this
-- _account list_ export/importj
+- _account list_ export/import
   - for making it marginally easier to switch devices
   - still all keys still need to be manually recreated on the new device
 
@@ -140,7 +167,7 @@ However, `root` cannot get to the passkey private key material or extract it.
 
 - Password protection **for Keyholm**: this would protect Keyholm from being used,
   given physical access, in spite of knowledge of device credential/biometrics access.
-  Note that it's **not possible** to full protect the private keys
+  Note that it's **not possible** to fully protect the private keys
   themselves with a password while also keeping them device-bound.
   `root` access will ALWAYS remove any password protection to the keys
   themselves.
