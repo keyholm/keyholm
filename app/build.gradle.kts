@@ -214,7 +214,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     implementation("androidx.navigation3:navigation3-runtime:1.1.7")
-    implementation("androidx.navigation3:navigation3-ui:1.1.7")
+    implementation("androidx.navigation3:navigation3-ui:1.2.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("com.google.zxing:core:3.5.4")
