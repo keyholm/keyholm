@@ -129,6 +129,10 @@ android {
         baseline = file("lint-baseline.xml")
         // Compat drawable loading exists for pre-API-21 vector and theme handling.
         disable += "UseCompatLoadingForDrawables"
+        // Only releases fail on newer dependency versions
+        if (!providers.gradleProperty("checkDependencyVersions").isPresent) {
+            disable += "GradleDependency"
+        }
         warningsAsErrors = true
         abortOnError = true
     }
