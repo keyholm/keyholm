@@ -1,8 +1,6 @@
 package app.keyholm.ui.main
 
-import android.content.pm.ApplicationInfo
 import android.os.Bundle
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
@@ -254,10 +252,8 @@ class Activity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE == 0) {
-            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-        }
         window.setHideOverlayWindows(true)
+        setRecentsScreenshotEnabled(false)
         enableEdgeToEdge()
         val importEntries =
             when (
