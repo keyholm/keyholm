@@ -30,7 +30,7 @@ jobs:
           cache: true
           minimum_release_age: 7d
       - name: Check formatting, lint and test
-        run: gradle check
+        run: gradle -PcheckDependencyVersions check
       - name: Build unsigned release APK
         run: gradle assembleRelease
       - name: Stage unsigned APK
