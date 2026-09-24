@@ -60,35 +60,35 @@ internal class GetCredentialEntryBuilder(
         preferRpName: Boolean,
         trust: NativeAppTrust,
     ): CredentialEntry {
-        val builder =
-            PublicKeyCredentialEntry
-                .Builder(
-                    context = context,
-                    username = record.user.name,
-                    pendingIntent =
-                        pendingIntent(
-                            record.credentialId,
-                            preferRpName,
-                            trust,
-                        ),
-                    beginGetPublicKeyCredentialOption = option,
-                ).setDisplayName(record.user.displayName.ifBlank { record.user.name })
-                .setIcon(Icon.createWithResource(context, R.mipmap.ic_launcher))
-
-        if (allowSingleTap) {
-            singleTapSignature(record)?.let { material ->
-                PendingSignatures.put(record.credentialId, material.signature)
-                builder.setBiometricPromptData(
+        val material =
+            if (allowSingleTap) {
+                singleTapSignature(record)?.also { PendingSignatures.put(record.credentialId, it.signature) }
+            } else {
+                null
+            }
+        return PublicKeyCredentialEntry(
+            context = context,
+            username = record.user.name,
+            pendingIntent =
+                pendingIntent(
+                    record.credentialId,
+                    preferRpName,
+                    trust,
+                ),
+            beginGetPublicKeyCredentialOption = option,
+            displayName = record.user.displayName.ifBlank { record.user.name },
+            lastUsedTime = record.lastUsedAt,
+            icon = Icon.createWithResource(context, R.mipmap.ic_launcher),
+            isAutoSelectAllowed = true,
+            biometricPromptData =
+                material?.let {
                     BiometricPromptData
                         .Builder()
-                        .setCryptoObject(BiometricPrompt.CryptoObject(material.signature))
-                        .setAllowedAuthenticators(material.allowedAuthenticators.promptMask)
-                        .build(),
-                )
-            }
-        }
-
-        return builder.build()
+                        .setCryptoObject(BiometricPrompt.CryptoObject(it.signature))
+                        .setAllowedAuthenticators(it.allowedAuthenticators.promptMask)
+                        .build()
+                },
+        )
     }
 
     private data class SingleTapSignature(
