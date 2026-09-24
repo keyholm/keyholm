@@ -70,16 +70,25 @@ internal data class CreationOptionsPrompt(
     val algorithms: List<WebAuthnAlgorithm>,
     val attestation: OptionChoice,
     val identity: OptionChoice,
+    val devicePropertiesAvailable: Boolean,
 )
 
 private data class CreationToggle(
     val checked: Boolean,
+    val enabled: Boolean,
     val onCheckedChange: (Boolean) -> Unit,
+)
+
+private data class CreationToggles(
+    val attestation: CreationToggle?,
+    val deviceProperties: CreationToggle?,
+    val identity: CreationToggle?,
 )
 
 internal data class CreationChoice(
     val algorithm: WebAuthnAlgorithm,
     val includeAttestation: Boolean,
+    val includeDeviceProperties: Boolean,
     val identifyAsKeyholm: Boolean,
 )
 
@@ -135,13 +144,13 @@ private fun CreationOptionsHeader(
 private fun ToggleRow(
     title: String,
     subtitle: String?,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
+    toggle: CreationToggle,
     shape: Shape,
 ) {
     ListItem(
         selected = false,
-        onClick = { onCheckedChange(!checked) },
+        onClick = { toggle.onCheckedChange(!toggle.checked) },
+        enabled = toggle.enabled,
         supportingContent =
             subtitle?.let {
                 {
@@ -151,7 +160,7 @@ private fun ToggleRow(
                     )
                 }
             },
-        trailingContent = { Switch(checked = checked, onCheckedChange = onCheckedChange) },
+        trailingContent = { Switch(checked = toggle.checked, onCheckedChange = toggle.onCheckedChange, enabled = toggle.enabled) },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -221,7 +230,9 @@ internal fun CreationOptionsSheet(
             prompt.identity is OptionChoice.Ask,
         )
     var includeAttestation by remember { mutableStateOf(prompt.attestation.initial) }
+    var includeDeviceProperties by remember { mutableStateOf(false) }
     var identifyAsKeyholm by remember { mutableStateOf(prompt.identity.initial) }
+    val devicePropertiesEnabled = includeAttestation && prompt.devicePropertiesAvailable
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         dragHandle = null,
@@ -235,19 +246,32 @@ internal fun CreationOptionsSheet(
         CreationOptionsSheetContent(
             prompt = prompt,
             explanation = explanation,
-            attestation =
-                if (prompt.attestation is OptionChoice.Ask) {
-                    CreationToggle(includeAttestation) { includeAttestation = it }
-                } else {
-                    null
-                },
-            identity =
-                if (prompt.identity is OptionChoice.Ask) {
-                    CreationToggle(identifyAsKeyholm) { identifyAsKeyholm = it }
-                } else {
-                    null
-                },
-            onSelectAlgorithm = { onChoice(CreationChoice(it, includeAttestation, identifyAsKeyholm)) },
+            toggles =
+                CreationToggles(
+                    attestation =
+                        if (prompt.attestation is OptionChoice.Ask) {
+                            CreationToggle(includeAttestation, enabled = true) { includeAttestation = it }
+                        } else {
+                            null
+                        },
+                    deviceProperties =
+                        if (prompt.attestation is OptionChoice.Ask) {
+                            CreationToggle(devicePropertiesEnabled && includeDeviceProperties, enabled = devicePropertiesEnabled) {
+                                includeDeviceProperties = it
+                            }
+                        } else {
+                            null
+                        },
+                    identity =
+                        if (prompt.identity is OptionChoice.Ask) {
+                            CreationToggle(identifyAsKeyholm, enabled = true) { identifyAsKeyholm = it }
+                        } else {
+                            null
+                        },
+                ),
+            onSelectAlgorithm = {
+                onChoice(CreationChoice(it, includeAttestation, devicePropertiesEnabled && includeDeviceProperties, identifyAsKeyholm))
+            },
         )
     }
 }
@@ -256,8 +280,7 @@ internal fun CreationOptionsSheet(
 private fun CreationOptionsSheetContent(
     prompt: CreationOptionsPrompt,
     explanation: String,
-    attestation: CreationToggle?,
-    identity: CreationToggle?,
+    toggles: CreationToggles,
     onSelectAlgorithm: (WebAuthnAlgorithm) -> Unit,
 ) {
     val icon = rememberAppIcon(badged = true)
@@ -265,8 +288,8 @@ private fun CreationOptionsSheetContent(
         icon,
         "Create passkey to sign in as ${prompt.userName} to ${prompt.rpId.value}?",
     )
-    if (attestation != null || identity != null) {
-        CreationTogglesSection(attestation = attestation, identity = identity)
+    if (toggles.attestation != null || toggles.identity != null) {
+        CreationTogglesSection(toggles)
     }
     AlgorithmSection(
         algorithms = prompt.algorithms,
@@ -287,33 +310,38 @@ private fun CreationOptionsSheetContent(
 }
 
 @Composable
-private fun CreationTogglesSection(
-    attestation: CreationToggle?,
-    identity: CreationToggle?,
-) {
+private fun CreationTogglesSection(toggles: CreationToggles) {
     Section(
         title = null,
         outerRadius = 28.dp,
         modifier = Modifier.padding(horizontal = 8.dp),
     ) {
-        if (identity != null) {
+        if (toggles.identity != null) {
             item { rowShape ->
                 ToggleRow(
                     title = "Identify as Keyholm",
                     subtitle = "Include Keyholm's identifier (AAGUID).",
-                    checked = identity.checked,
-                    onCheckedChange = identity.onCheckedChange,
+                    toggle = toggles.identity,
                     shape = rowShape,
                 )
             }
         }
-        if (attestation != null) {
+        if (toggles.attestation != null) {
             item { rowShape ->
                 ToggleRow(
                     title = "Include attestation",
                     subtitle = "Attestation may reveal identifying information.",
-                    checked = attestation.checked,
-                    onCheckedChange = attestation.onCheckedChange,
+                    toggle = toggles.attestation,
+                    shape = rowShape,
+                )
+            }
+        }
+        if (toggles.deviceProperties != null) {
+            item { rowShape ->
+                ToggleRow(
+                    title = "Include device properties",
+                    subtitle = "Includes the brand, manufacturer, model, device and product name.",
+                    toggle = toggles.deviceProperties,
                     shape = rowShape,
                 )
             }

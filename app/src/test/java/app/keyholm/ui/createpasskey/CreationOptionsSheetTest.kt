@@ -1,6 +1,8 @@
 package app.keyholm.ui.createpasskey
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasAnyAncestor
@@ -20,6 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 private const val ATTESTATION_ROW = "Include attestation"
+private const val DEVICE_PROPERTIES_ROW = "Include device properties"
 private const val IDENTITY_ROW = "Identify as Keyholm"
 
 @RunWith(RobolectricTestRunner::class)
@@ -34,6 +37,7 @@ class CreationOptionsSheetTest {
         algorithms: List<WebAuthnAlgorithm> = listOf(WebAuthnAlgorithm.ES256, WebAuthnAlgorithm.ED25519),
         attestation: OptionChoice = OptionChoice.Ask(initial = false),
         identity: OptionChoice = OptionChoice.Ask(initial = true),
+        devicePropertiesAvailable: Boolean = true,
     ) {
         val prompt =
             CreationOptionsPrompt(
@@ -42,6 +46,7 @@ class CreationOptionsSheetTest {
                 algorithms = algorithms,
                 attestation = attestation,
                 identity = identity,
+                devicePropertiesAvailable = devicePropertiesAvailable,
             )
         compose.setContent {
             KeyholmTheme(darkTheme = false) {
@@ -68,7 +73,12 @@ class CreationOptionsSheetTest {
         compose.onNodeWithText("Ed25519").performClick()
 
         assertThat(choices).containsExactly(
-            CreationChoice(WebAuthnAlgorithm.ED25519, includeAttestation = false, identifyAsKeyholm = true),
+            CreationChoice(
+                WebAuthnAlgorithm.ED25519,
+                includeAttestation = false,
+                includeDeviceProperties = false,
+                identifyAsKeyholm = true,
+            ),
         )
     }
 
@@ -81,7 +91,79 @@ class CreationOptionsSheetTest {
         compose.onNodeWithText("ES256").performClick()
 
         assertThat(choices).containsExactly(
-            CreationChoice(WebAuthnAlgorithm.ES256, includeAttestation = true, identifyAsKeyholm = false),
+            CreationChoice(
+                WebAuthnAlgorithm.ES256,
+                includeAttestation = true,
+                includeDeviceProperties = false,
+                identifyAsKeyholm = false,
+            ),
+        )
+    }
+
+    @Test
+    fun disablesDevicePropertiesWhileAttestationIsOff() {
+        showSheet()
+
+        switchIn(DEVICE_PROPERTIES_ROW).assertIsNotEnabled()
+        switchIn(DEVICE_PROPERTIES_ROW).assertIsOff()
+        switchIn(ATTESTATION_ROW).performClick()
+        switchIn(DEVICE_PROPERTIES_ROW).assertIsEnabled()
+        switchIn(DEVICE_PROPERTIES_ROW).assertIsOff()
+    }
+
+    @Test
+    fun keepsDevicePropertiesOffAndDisabledOnceTheyFailed() {
+        showSheet(attestation = OptionChoice.Ask(initial = true), devicePropertiesAvailable = false)
+
+        switchIn(ATTESTATION_ROW).assertIsOn()
+        switchIn(DEVICE_PROPERTIES_ROW).assertIsNotEnabled()
+        switchIn(DEVICE_PROPERTIES_ROW).assertIsOff()
+        compose.onNodeWithText("ES256").performClick()
+
+        assertThat(choices).containsExactly(
+            CreationChoice(
+                WebAuthnAlgorithm.ES256,
+                includeAttestation = true,
+                includeDeviceProperties = false,
+                identifyAsKeyholm = true,
+            ),
+        )
+    }
+
+    @Test
+    fun carriesDevicePropertiesIntoTheChoice() {
+        showSheet()
+
+        switchIn(ATTESTATION_ROW).performClick()
+        switchIn(DEVICE_PROPERTIES_ROW).performClick()
+        compose.onNodeWithText("ES256").performClick()
+
+        assertThat(choices).containsExactly(
+            CreationChoice(
+                WebAuthnAlgorithm.ES256,
+                includeAttestation = true,
+                includeDeviceProperties = true,
+                identifyAsKeyholm = true,
+            ),
+        )
+    }
+
+    @Test
+    fun dropsDevicePropertiesWhenAttestationIsTurnedBackOff() {
+        showSheet()
+
+        switchIn(ATTESTATION_ROW).performClick()
+        switchIn(DEVICE_PROPERTIES_ROW).performClick()
+        switchIn(ATTESTATION_ROW).performClick()
+        compose.onNodeWithText("ES256").performClick()
+
+        assertThat(choices).containsExactly(
+            CreationChoice(
+                WebAuthnAlgorithm.ES256,
+                includeAttestation = false,
+                includeDeviceProperties = false,
+                identifyAsKeyholm = true,
+            ),
         )
     }
 
@@ -99,12 +181,13 @@ class CreationOptionsSheetTest {
         showSheet(attestation = OptionChoice.Fixed(false), identity = OptionChoice.Fixed(false))
 
         compose.onNodeWithText(ATTESTATION_ROW).assertDoesNotExist()
+        compose.onNodeWithText(DEVICE_PROPERTIES_ROW).assertDoesNotExist()
         compose.onNodeWithText(IDENTITY_ROW).assertDoesNotExist()
 
         compose.onNodeWithText("ES256").performClick()
 
         assertThat(choices).containsExactly(
-            CreationChoice(WebAuthnAlgorithm.ES256, includeAttestation = false, identifyAsKeyholm = false),
+            CreationChoice(WebAuthnAlgorithm.ES256, includeAttestation = false, includeDeviceProperties = false, identifyAsKeyholm = false),
         )
     }
 

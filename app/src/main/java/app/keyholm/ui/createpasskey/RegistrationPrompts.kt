@@ -82,10 +82,31 @@ internal class RegistrationPrompts(
                     algorithms = algorithms,
                     attestation = attestation,
                     identity = identity,
+                    devicePropertiesAvailable = true,
                 ),
             )
         } else {
-            CreationChoice(algorithms.single(), attestation.initial, identity.initial)
+            CreationChoice(algorithms.single(), attestation.initial, includeDeviceProperties = false, identity.initial)
         }
     }
+
+    suspend fun chooseWithoutDeviceProperties(
+        offer: CreationOffer,
+        registration: RegistrationContext,
+    ): CreationChoice? =
+        chooseCreationOptions(
+            CreationOptionsPrompt(
+                rpId = registration.info.rp.id,
+                userName = registration.info.user.name,
+                algorithms = offer.algorithms,
+                attestation = OptionChoice.Ask(initial = registration.includeAttestation),
+                identity =
+                    if (offer.identity == IdentityPreference.ALWAYS_ASK) {
+                        OptionChoice.Ask(initial = registration.identifyAsKeyholm)
+                    } else {
+                        OptionChoice.Fixed(registration.identifyAsKeyholm)
+                    },
+                devicePropertiesAvailable = false,
+            ),
+        )
 }

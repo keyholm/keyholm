@@ -40,31 +40,50 @@ class SecureKeyManager {
         val securityLevel: KeySecurityLevel,
     )
 
+    sealed interface CredentialKeyGeneration {
+        data class Generated(
+            val credential: GeneratedCredential,
+        ) : CredentialKeyGeneration
+
+        data object DevicePropertiesUnavailable : CredentialKeyGeneration
+    }
+
     data class CredentialKeyRequest(
         val alias: KeyAlias,
         val attestationChallenge: ClientDataHash,
         val algorithm: WebAuthnAlgorithm,
         val authenticators: AuthenticatorPolicy,
         val invalidateOnBiometricEnrollment: Boolean,
+        val includeDeviceProperties: Boolean,
     )
 
     private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
 
-    fun generateCredentialKey(request: CredentialKeyRequest): GeneratedCredential {
+    fun generateCredentialKey(request: CredentialKeyRequest): CredentialKeyGeneration {
         val alias = request.alias
         val algorithm = request.algorithm
         val keyAlgorithm = keyAlgorithmFor(algorithm)
 
-        fun generate(strongBox: Boolean) =
-            generateAndValidate(
-                keyStore,
-                keyAlgorithm,
-                alias,
-                algorithm,
-                buildCredentialKeySpec(request, strongBox),
-            )
+        fun generate(strongBox: Boolean): CredentialKeyGeneration =
+            try {
+                CredentialKeyGeneration.Generated(
+                    generateAndValidate(
+                        keyStore,
+                        keyAlgorithm,
+                        alias,
+                        algorithm,
+                        buildCredentialKeySpec(request, strongBox),
+                    ),
+                )
+            } catch (e: ProviderException) {
+                if ((e.cause as? KeyStoreException)?.numericErrorCode == KeyStoreException.ERROR_ID_ATTESTATION_FAILURE) {
+                    CredentialKeyGeneration.DevicePropertiesUnavailable
+                } else {
+                    throw e
+                }
+            }
 
-        fun fallbackFromStrongBox(e: Exception): GeneratedCredential {
+        fun fallbackFromStrongBox(e: Exception): CredentialKeyGeneration {
             deleteKey(alias)
             if (algorithm == WebAuthnAlgorithm.ES256) {
                 throw SecureElementUnavailableException(
@@ -205,6 +224,7 @@ class SecureKeyManager {
                     .setUserAuthenticationParameters(0, request.authenticators.keystoreMask)
                     .setInvalidatedByBiometricEnrollment(request.invalidateOnBiometricEnrollment)
                     .setAttestationChallenge(request.attestationChallenge.bytes)
+                    .setDevicePropertiesAttestationIncluded(request.includeDeviceProperties)
             when (request.algorithm) {
                 WebAuthnAlgorithm.ES256 -> {
                     builder

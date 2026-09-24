@@ -3,6 +3,7 @@ package app.keyholm.ui.createpasskey
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.biometric.AuthenticationRequest
@@ -25,6 +26,7 @@ import androidx.lifecycle.lifecycleScope
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.provider.CreationOffer
 import app.keyholm.provider.creationOffer
 import app.keyholm.provider.preferRpName
 import app.keyholm.store.DeniedNativeAppRepository
@@ -166,6 +168,14 @@ internal data class KeyMaterial(
     val prfSecurityLevel: KeySecurityLevel?,
 )
 
+internal sealed interface KeyCreation {
+    data class Created(
+        val material: KeyMaterial,
+    ) : KeyCreation
+
+    data object DevicePropertiesUnavailable : KeyCreation
+}
+
 internal data class RegistrantInfo(
     val rp: RelyingParty,
     val user: CredentialUser,
@@ -180,6 +190,7 @@ internal data class RegistrationContext(
     val caller: Caller.Trusted,
     val algorithm: WebAuthnAlgorithm,
     val includeAttestation: Boolean,
+    val includeDeviceProperties: Boolean,
     val identifyAsKeyholm: Boolean,
     val prfEvalSalts: PrfExtension.Salts?,
 )
@@ -286,6 +297,15 @@ class Activity internal constructor(
     private val deniedAppsRepo by lazy { DeniedNativeAppRepository(applicationContext) }
     private val creationChoice = Channel<CreationChoice?>(Channel.CONFLATED)
     private val creationOptions = mutableStateOf<CreationOptionsPrompt?>(null)
+    private val prompts by lazy {
+        RegistrationPrompts(
+            applicationContext,
+            intent,
+            keyMaterial,
+            cryptoPrompt,
+            ::chooseCreationOptions,
+        )
+    }
     private val requestResolver by lazy {
         RegistrationRequestResolver(
             applicationContext,
@@ -293,13 +313,7 @@ class Activity internal constructor(
             passkeyRepo,
             deniedAppsRepo,
             dispatcher,
-            RegistrationPrompts(
-                applicationContext,
-                intent,
-                keyMaterial,
-                cryptoPrompt,
-                ::chooseCreationOptions,
-            ),
+            prompts,
         )
     }
 
@@ -344,18 +358,28 @@ class Activity internal constructor(
                 challengeB64Url = registration.challenge,
                 caller = registration.caller,
             )
-        val clientDataJSON = cd.json
-        val clientDataHash = cd.hash
-
         val credentialId = CredentialId.of(ByteArray(CREDENTIAL_ID_BYTES).also { SecureRandom().nextBytes(it) })
+        createPasskey(offer, registration, cd, credentialId)
+    }
+
+    private suspend fun createPasskey(
+        offer: CreationOffer,
+        registration: RegistrationContext,
+        cd: WebAuthn.ClientData,
+        credentialId: CredentialId,
+    ) {
         val alias = credentialId.signingKeyAlias
-
-        val material =
+        val created =
             keyMaterial
-                .create(registration, credentialId, clientDataHash, offer.authenticators, offer.invalidateOnBiometricEnrollment)
+                .create(registration, credentialId, cd.hash, offer.authenticators, offer.invalidateOnBiometricEnrollment)
                 .orFail { failCreateCredential(it.toException(), it.toastMessage) } ?: return
+        val material =
+            when (created) {
+                is KeyCreation.Created -> created.material
+                KeyCreation.DevicePropertiesUnavailable -> return retryWithoutDeviceProperties(offer, registration, cd, credentialId)
+            }
 
-        val pending = buildPendingRegistration(registration, material, clientDataJSON, credentialId, alias)
+        val pending = buildPendingRegistration(registration, material, cd.json, credentialId, alias)
 
         when (val promptResult = promptForRegistration(registration, material)) {
             is PromptResult.Success -> {
@@ -393,6 +417,27 @@ class Activity internal constructor(
                     intent.preferRpName(),
                 ),
         )
+
+    private suspend fun retryWithoutDeviceProperties(
+        offer: CreationOffer,
+        registration: RegistrationContext,
+        cd: WebAuthn.ClientData,
+        credentialId: CredentialId,
+    ) {
+        Toast.makeText(this, ErrorMessages.DEVICE_PROPERTIES_UNSUPPORTED, Toast.LENGTH_LONG).show()
+        val choice = prompts.chooseWithoutDeviceProperties(offer, registration) ?: return cancelCreateCredential()
+        createPasskey(
+            offer,
+            registration.copy(
+                algorithm = choice.algorithm,
+                includeAttestation = choice.includeAttestation,
+                includeDeviceProperties = choice.includeDeviceProperties,
+                identifyAsKeyholm = choice.identifyAsKeyholm,
+            ),
+            cd,
+            credentialId,
+        )
+    }
 
     private suspend fun chooseCreationOptions(prompt: CreationOptionsPrompt): CreationChoice? {
         creationOptions.value = prompt

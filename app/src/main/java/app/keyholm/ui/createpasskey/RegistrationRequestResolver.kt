@@ -144,6 +144,7 @@ internal class RegistrationRequestResolver(
                 caller = caller,
                 algorithm = choice.algorithm,
                 includeAttestation = choice.includeAttestation,
+                includeDeviceProperties = choice.includeDeviceProperties,
                 identifyAsKeyholm = choice.identifyAsKeyholm,
                 prfEvalSalts = prfEvalSalts,
             ),

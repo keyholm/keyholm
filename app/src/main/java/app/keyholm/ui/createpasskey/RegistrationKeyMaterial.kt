@@ -48,9 +48,7 @@ internal class RegistrationKeyMaterial(
         clientDataHash: ClientDataHash,
         createAuthenticators: AuthenticatorPolicy,
         invalidateOnBiometricEnrollment: Boolean,
-    ): Registration<KeyMaterial> {
-        val alias = credentialId.signingKeyAlias
-        val algorithm = registration.algorithm
+    ): Registration<KeyCreation> {
         val authenticators =
             when (val r = resolveAuthenticators(createAuthenticators)) {
                 is Registration.Failed -> return r
@@ -58,23 +56,42 @@ internal class RegistrationKeyMaterial(
             }
         val request =
             SecureKeyManager.CredentialKeyRequest(
-                alias = alias,
+                alias = credentialId.signingKeyAlias,
                 attestationChallenge = clientDataHash,
-                algorithm = algorithm,
+                algorithm = registration.algorithm,
                 authenticators = authenticators,
                 invalidateOnBiometricEnrollment = invalidateOnBiometricEnrollment,
+                includeDeviceProperties = registration.includeDeviceProperties,
             )
         val generated =
             when (val r = generateKey(request)) {
                 is Outcome.Failure -> return Registration.Internal(r.toastMessage)
                 is Outcome.Success -> r.value
             }
+        return when (generated) {
+            is SecureKeyManager.CredentialKeyGeneration.Generated -> {
+                keyMaterialFor(registration, credentialId, clientDataHash, request, generated.credential)
+            }
+
+            SecureKeyManager.CredentialKeyGeneration.DevicePropertiesUnavailable -> {
+                Registration.Ready(KeyCreation.DevicePropertiesUnavailable)
+            }
+        }
+    }
+
+    private fun keyMaterialFor(
+        registration: RegistrationContext,
+        credentialId: CredentialId,
+        clientDataHash: ClientDataHash,
+        request: SecureKeyManager.CredentialKeyRequest,
+        generated: SecureKeyManager.GeneratedCredential,
+    ): Registration<KeyCreation> {
         val aaguid = if (registration.identifyAsKeyholm) WebAuthn.KEYHOLM_AAGUID else WebAuthn.ZERO_AAGUID
         val authData =
-            WebAuthn.registrationAuthData(registration.info.rp.id, credentialId, generated.publicKey, aaguid, algorithm)
+            WebAuthn.registrationAuthData(registration.info.rp.id, credentialId, generated.publicKey, aaguid, request.algorithm)
         val toSign = SigningInput(authData.bytes + clientDataHash.bytes)
         val signature =
-            when (val r = signFor(alias, algorithm)) {
+            when (val r = signFor(request.alias, request.algorithm)) {
                 is Outcome.Failure -> return Registration.Internal(r.toastMessage)
                 is Outcome.Success -> r.value
             }
@@ -83,8 +100,8 @@ internal class RegistrationKeyMaterial(
                 val r =
                     generatePrfKey(
                         credentialId,
-                        authenticators,
-                        invalidateOnBiometricEnrollment,
+                        request.authenticators,
+                        request.invalidateOnBiometricEnrollment,
                         registration.info.prfRequested,
                     )
             ) {
@@ -92,13 +109,15 @@ internal class RegistrationKeyMaterial(
                 is Outcome.Success -> r.value
             }
         return Registration.Ready(
-            KeyMaterial(
-                authenticators = authenticators,
-                generated = generated,
-                authData = authData,
-                toSign = toSign,
-                signature = signature,
-                prfSecurityLevel = prfSecurityLevel,
+            KeyCreation.Created(
+                KeyMaterial(
+                    authenticators = request.authenticators,
+                    generated = generated,
+                    authData = authData,
+                    toSign = toSign,
+                    signature = signature,
+                    prfSecurityLevel = prfSecurityLevel,
+                ),
             ),
         )
     }
@@ -137,7 +156,7 @@ internal class RegistrationKeyMaterial(
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
         }
 
-    private fun generateKey(request: SecureKeyManager.CredentialKeyRequest): Outcome<SecureKeyManager.GeneratedCredential> =
+    private fun generateKey(request: SecureKeyManager.CredentialKeyRequest): Outcome<SecureKeyManager.CredentialKeyGeneration> =
         try {
             Outcome.Success(keyManager.generateCredentialKey(request))
         } catch (e: SecureElementUnavailableException) {

@@ -15,6 +15,7 @@ internal object ErrorMessages {
     const val PLACEHOLDER_CLEANUP_FAILED =
         "Passkey created but failed to remove placeholder."
     const val SECURITY_ERROR_CREATE = "Couldn't create passkey due to a security error."
+    const val DEVICE_PROPERTIES_UNSUPPORTED = "Your device doesn't support device properties attestation."
     const val KEY_INVALIDATED = "Passkey invalidated because of lock screen or biometrics changes."
 
     const val MALFORMED_REQUEST = "Invalid passkey request."
