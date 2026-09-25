@@ -20,14 +20,14 @@ specifiers = ["latest"]
 url = "https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip"
 
 [[tools.gradle]]
-version = "9.7.1"
+version = "9.8.0"
 backend = "aqua:gradle/gradle-distributions"
-specifiers = ["9.7.1"]
+specifiers = ["9.8.0"]
 
 [tools.gradle."platforms.linux-x64"]
-checksum = "sha256:acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a"
-url = "https://github.com/gradle/gradle-distributions/releases/download/v9.7.1/gradle-9.7.1-bin.zip"
-url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/520945879"
+checksum = "sha256:bafd5ce9cfaea0fbccfdc8439a1ac42fbd4cd9c89dc9a988228d8a2639a58e6c"
+url = "https://github.com/gradle/gradle-distributions/releases/download/v9.8.0/gradle-9.8.0-bin.zip"
+url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/586068844"
 
 [[tools.java]]
 version = "temurin-25.0.4+101.0.LTS"
