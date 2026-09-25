@@ -12,6 +12,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MigrationExportEntry(
     val rpId: RpId,
+    val rpName: String,
     val userName: String,
     val displayName: String,
     val createdAt: Long,
@@ -28,7 +29,8 @@ private const val CBOR_INDEX_RP_ID = 0
 private const val CBOR_INDEX_USER_NAME = 1
 private const val CBOR_INDEX_DISPLAY_NAME = 2
 private const val CBOR_INDEX_CREATED_AT = 3
-private const val CBOR_ENTRY_FIELDS = 4
+private const val CBOR_INDEX_RP_NAME = 4
+private const val CBOR_ENTRY_FIELDS = 5
 
 private fun MigrationExportEntry.toCbor(): CBORObject =
     CBORObject
@@ -37,11 +39,13 @@ private fun MigrationExportEntry.toCbor(): CBORObject =
         .Add(userName)
         .Add(displayName)
         .Add(createdAt)
+        .Add(rpName)
 
 private fun CBORObject.toMigrationExportEntry(): MigrationExportEntry {
     require(size() == CBOR_ENTRY_FIELDS) { "a migration entry has ${size()} fields, expected $CBOR_ENTRY_FIELDS" }
     return MigrationExportEntry(
         rpId = RpId(get(CBOR_INDEX_RP_ID).AsString()),
+        rpName = get(CBOR_INDEX_RP_NAME).AsString(),
         userName = get(CBOR_INDEX_USER_NAME).AsString(),
         displayName = get(CBOR_INDEX_DISPLAY_NAME).AsString(),
         createdAt = get(CBOR_INDEX_CREATED_AT).AsInt64Value(),

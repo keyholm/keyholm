@@ -3,6 +3,7 @@ syntax = "proto3";
 package app.keyholm.store.proto;
 
 import "google/protobuf/timestamp.proto";
+import "passkeys.proto";
 
 option java_package = "app.keyholm.store.proto";
 option java_multiple_files = true;
@@ -12,7 +13,7 @@ message MigrationPlaceholdersProto {
 }
 
 message MigrationPlaceholderProto {
-  string rp_id = 1;
+  RelyingPartyProto rp = 1;
   string user_name = 2;
   string display_name = 3;
   google.protobuf.Timestamp original_created_at = 4;

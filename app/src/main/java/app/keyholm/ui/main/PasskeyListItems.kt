@@ -381,6 +381,7 @@ internal fun PasskeyItem(
 @Composable
 internal fun MigrationPlaceholderItem(
     placeholder: MigrationPlaceholder,
+    preferRpName: Boolean,
     onClick: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
@@ -403,7 +404,7 @@ internal fun MigrationPlaceholderItem(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
-            MigrationPlaceholderCardBody(placeholder)
+            MigrationPlaceholderCardBody(placeholder, preferRpName)
         }
     }
 }
@@ -411,6 +412,7 @@ internal fun MigrationPlaceholderItem(
 @Composable
 internal fun MigrationPlaceholderCardBody(
     placeholder: MigrationPlaceholder,
+    preferRpName: Boolean,
     showStatusIcon: Boolean = true,
 ) {
     val df = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
@@ -433,7 +435,7 @@ internal fun MigrationPlaceholderCardBody(
                 },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         ) {
-            Text(placeholder.rpId.value)
+            Text(rpLabel(placeholder.rp, preferRpName))
         }
         if (showStatusIcon) {
             Icon(

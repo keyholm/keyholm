@@ -46,7 +46,7 @@ class MigrationRepository internal constructor(
         userName: String,
     ): Result<Unit> =
         write { current ->
-            val kept = current.placeholdersList.filterNot { it.rpId == rpId.value && it.userName == userName }
+            val kept = current.placeholdersList.filterNot { it.rp.id == rpId.value && it.userName == userName }
             MigrationPlaceholdersProto.newBuilder().addAllPlaceholders(kept).build()
         }
 

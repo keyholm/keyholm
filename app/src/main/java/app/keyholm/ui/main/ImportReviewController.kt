@@ -6,6 +6,7 @@ import app.keyholm.store.MigrationPlaceholder
 import app.keyholm.store.MigrationRepository
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.readStore
+import app.keyholm.webauthn.RelyingParty
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +52,7 @@ class ImportReviewController(
             val parsed =
                 entries.map {
                     MigrationPlaceholder(
-                        rpId = it.rpId,
+                        rp = RelyingParty(id = it.rpId, name = it.rpName),
                         userName = it.userName,
                         displayName = it.displayName,
                         originalCreatedAt = Instant.ofEpochMilli(it.createdAt),
@@ -61,10 +62,10 @@ class ImportReviewController(
                 readStore {
                     (
                         passkeyRepo.passkeys.first().map { it.rp.id to it.user.name } +
-                            migrationRepo.placeholders.first().map { it.rpId to it.userName }
+                            migrationRepo.placeholders.first().map { it.rp.id to it.userName }
                     ).toSet()
                 } ?: return@launch onFailure()
-            val fresh = parsed.filter { (it.rpId to it.userName) !in existing }
+            val fresh = parsed.filter { (it.rp.id to it.userName) !in existing }
             migrationRepo.addAll(fresh).fold(
                 onSuccess = { onResult(ImportResult(fresh.size, parsed.size - fresh.size)) },
                 onFailure = { onFailure() },

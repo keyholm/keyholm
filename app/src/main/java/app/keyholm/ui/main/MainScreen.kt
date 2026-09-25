@@ -188,6 +188,7 @@ private data class PasskeyListActions(
 
 private fun LazyListScope.migrationPlaceholderItems(
     placeholders: List<MigrationPlaceholder>,
+    preferRpName: Boolean,
     actions: PasskeyListActions,
 ) {
     if (!placeholders.isEmpty()) {
@@ -202,11 +203,12 @@ private fun LazyListScope.migrationPlaceholderItems(
     }
     items(
         placeholders,
-        key = { "${it.rpId.value}:${it.userName}" },
+        key = { "${it.rp.id.value}:${it.userName}" },
     ) { placeholder ->
         MigrationPlaceholderItem(
             placeholder = placeholder,
-            onClick = { actions.showMessage("Visit ${placeholder.rpId.value} to recreate this passkey!") },
+            preferRpName = preferRpName,
+            onClick = { actions.showMessage("Visit ${placeholder.rp.id.value} to recreate this passkey!") },
             onDismiss = {
                 actions.onDismissPlaceholder(placeholder)
                 actions.showMessage("Removed placeholder ${placeholder.userName}")
@@ -269,7 +271,7 @@ private fun PasskeyListContent(
             rowGeneration,
             actions.rows,
         )
-        migrationPlaceholderItems(placeholders.value, actions)
+        migrationPlaceholderItems(placeholders.value, uiState.settings.preferRpName, actions)
     }
 }
 

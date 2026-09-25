@@ -196,11 +196,13 @@ private fun MainContent(importEntries: List<MigrationExportEntry>) {
     Box(modifier = Modifier.fillMaxSize()) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             val review = importReview
-            if ((uiState as? MainUiState.Ready)?.locked == true) {
+            val ready = uiState as? MainUiState.Ready
+            if (ready?.locked == true) {
                 LockScreen(viewModel, cryptoPrompt)
-            } else if (review != null) {
+            } else if (review != null && ready != null) {
                 MigrationImportReviewScreen(
                     entries = review.entries,
+                    preferRpName = ready.settings.preferRpName,
                     onConfirm = {
                         viewModel.imports.importList(
                             entries = review.entries,

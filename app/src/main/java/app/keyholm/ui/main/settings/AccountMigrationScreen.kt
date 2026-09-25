@@ -44,6 +44,7 @@ private fun List<PasskeyRecord>.toMigrationExportEntries(): List<MigrationExport
     map {
         MigrationExportEntry(
             rpId = it.rp.id,
+            rpName = it.rp.name,
             userName = it.user.name,
             displayName = it.user.displayName,
             createdAt = it.createdAt.toEpochMilli(),

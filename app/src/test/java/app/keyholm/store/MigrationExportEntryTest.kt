@@ -82,6 +82,7 @@ class MigrationExportEntryTest {
             listOf(
                 MigrationExportEntry(
                     rpId = RpId("example.com"),
+                    rpName = "Example",
                     userName = "alice",
                     displayName = "Alice",
                     createdAt = 42L,

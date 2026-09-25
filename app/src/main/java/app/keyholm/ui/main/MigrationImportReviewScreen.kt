@@ -30,12 +30,14 @@ import androidx.compose.ui.unit.dp
 import app.keyholm.store.MigrationExportEntry
 import app.keyholm.store.MigrationPlaceholder
 import app.keyholm.ui.common.rememberAppIcon
+import app.keyholm.webauthn.RelyingParty
 import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MigrationImportReviewScreen(
     entries: List<MigrationExportEntry>,
+    preferRpName: Boolean,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -44,7 +46,7 @@ internal fun MigrationImportReviewScreen(
         remember(entries) {
             entries.map {
                 MigrationPlaceholder(
-                    rpId = it.rpId,
+                    rp = RelyingParty(id = it.rpId, name = it.rpName),
                     userName = it.userName,
                     displayName = it.displayName,
                     originalCreatedAt = Instant.ofEpochMilli(it.createdAt),
@@ -91,7 +93,7 @@ internal fun MigrationImportReviewScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                 ) {
-                    MigrationPlaceholderCardBody(placeholder, showStatusIcon = false)
+                    MigrationPlaceholderCardBody(placeholder, preferRpName, showStatusIcon = false)
                 }
             }
         }

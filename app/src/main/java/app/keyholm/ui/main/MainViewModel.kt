@@ -327,7 +327,7 @@ class MainViewModel internal constructor(
 
     fun dismissMigrationPlaceholder(placeholder: MigrationPlaceholder) {
         viewModelScope.launch {
-            if (!writeStore { migrationRepo.delete(placeholder.rpId, placeholder.userName) }) {
+            if (!writeStore { migrationRepo.delete(placeholder.rp.id, placeholder.userName) }) {
                 reportError(ErrorMessages.UPDATE_FAILED)
             }
         }
