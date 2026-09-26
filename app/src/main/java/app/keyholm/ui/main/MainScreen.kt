@@ -1,7 +1,6 @@
 package app.keyholm.ui.main
 
 import android.content.Context
-import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,63 +40,15 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.keyholm.iconpack.IconPack
-import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.MigrationPlaceholder
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.CryptoPrompt
-import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.promptContent
 import app.keyholm.ui.common.rememberAppIcon
 import app.keyholm.ui.theme.titleColor
 import app.keyholm.webauthn.CredentialId
-import co.touchlab.kermit.Logger
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import java.security.GeneralSecurityException
-import java.security.ProviderException
-import java.security.UnrecoverableKeyException
-
-private val log = Logger.withTag("app.keyholm.ui.main.MainScreen")
-
-private sealed interface DeletePlan {
-    data class Confirm(
-        val cryptoObject: BiometricPrompt.CryptoObject?,
-        val allowedAuthenticators: AuthenticatorPolicy,
-    ) : DeletePlan
-
-    data object Orphaned : DeletePlan
-
-    data class Failed(
-        val message: String,
-    ) : DeletePlan
-}
-
-private fun buildDeletePlan(record: PasskeyRecord): DeletePlan {
-    val algorithm = record.keystore.coseAlgorithm
-    val keyManager = SecureKeyManager()
-    val allowedAuthenticators =
-        try {
-            keyManager.allowedAuthenticatorsFor(record.keyAlias, algorithm)
-        } catch (e: UnrecoverableKeyException) {
-            log.e(e) { "no key material for ${record.keyAlias.value}, treating as orphaned" }
-            return DeletePlan.Orphaned
-        } catch (e: GeneralSecurityException) {
-            log.e(e) { "couldn't read authenticators for ${record.keyAlias.value}" }
-            return DeletePlan.Failed(ErrorMessages.DELETE_KEY_UNAVAILABLE)
-        } catch (e: ProviderException) {
-            log.e(e) { "couldn't read authenticators for ${record.keyAlias.value}" }
-            return DeletePlan.Failed(ErrorMessages.DELETE_KEY_UNAVAILABLE)
-        }
-    val cryptoObject =
-        try {
-            BiometricPrompt.CryptoObject(keyManager.signatureFor(record.keyAlias, algorithm))
-        } catch (e: GeneralSecurityException) {
-            log.e(e) { "couldn't create a signature for ${record.keyAlias.value}" }
-            null
-        }
-    return DeletePlan.Confirm(cryptoObject, allowedAuthenticators)
-}
 
 @Composable
 private fun HandleDeleteUndo(
@@ -318,7 +269,7 @@ fun MainScreen(
     LaunchedEffect(cryptoPrompt) {
         for (request in confirmationQueue) {
             val confirmed =
-                when (val plan = buildDeletePlan(request.record)) {
+                when (val plan = viewModel.pendingDeletes.planFor(request.record)) {
                     DeletePlan.Orphaned -> {
                         true
                     }

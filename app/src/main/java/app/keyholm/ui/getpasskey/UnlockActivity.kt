@@ -16,6 +16,7 @@ import app.keyholm.ui.common.resolveCreateAuthenticators
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val UNLOCK_TITLE = "Unlock Keyholm"
 private const val UNLOCK_DESCRIPTION = "Confirm your identity to see your passkeys for this site."
@@ -38,7 +39,7 @@ class UnlockActivity internal constructor(
         lifecycleScope.launch {
             // We have to be foreground otherwise the prompt never shows
             lifecycle.withResumed {}
-            val authenticators = resolveCreateAuthenticators(this@UnlockActivity, AuthenticatorPolicy.Either)
+            val authenticators = withContext(dispatcher) { resolveCreateAuthenticators(this@UnlockActivity, AuthenticatorPolicy.Either) }
             val unlocked =
                 when (authenticators) {
                     is AuthenticatorsResolution.Unavailable -> {

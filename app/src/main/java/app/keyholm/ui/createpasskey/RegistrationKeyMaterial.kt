@@ -21,6 +21,8 @@ import app.keyholm.webauthn.KeyAlias
 import app.keyholm.webauthn.SigningInput
 import app.keyholm.webauthn.WebAuthn
 import app.keyholm.webauthn.WebAuthnAlgorithm
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import java.security.GeneralSecurityException
 import java.security.ProviderException
 import java.security.Signature
@@ -30,19 +32,20 @@ internal class RegistrationKeyMaterial(
     private val context: Context,
     private val passkeyRepo: PasskeyRepository,
     private val migrationRepo: MigrationRepository,
+    private val dispatcher: CoroutineDispatcher,
 ) {
-    private val keyManager = SecureKeyManager()
+    private val keyManager by lazy { SecureKeyManager() }
     private val log = logger()
 
-    fun deleteKey(alias: KeyAlias) = keyManager.deleteKey(alias)
+    suspend fun deleteKey(alias: KeyAlias) = withContext(dispatcher) { keyManager.deleteKey(alias) }
 
-    fun resolveAuthenticators(policy: AuthenticatorPolicy): Registration<AuthenticatorPolicy> =
-        when (val r = resolveCreateAuthenticators(context, policy)) {
+    suspend fun resolveAuthenticators(policy: AuthenticatorPolicy): Registration<AuthenticatorPolicy> =
+        when (val r = withContext(dispatcher) { resolveCreateAuthenticators(context, policy) }) {
             is AuthenticatorsResolution.Ready -> Registration.Ready(r.value)
             is AuthenticatorsResolution.Unavailable -> Registration.NoCreateOption(r.message)
         }
 
-    fun create(
+    suspend fun create(
         registration: RegistrationContext,
         credentialId: CredentialId,
         clientDataHash: ClientDataHash,
@@ -79,7 +82,7 @@ internal class RegistrationKeyMaterial(
         }
     }
 
-    private fun keyMaterialFor(
+    private suspend fun keyMaterialFor(
         registration: RegistrationContext,
         credentialId: CredentialId,
         clientDataHash: ClientDataHash,
@@ -137,9 +140,9 @@ internal class RegistrationKeyMaterial(
             },
         )
 
-    fun macFor(alias: KeyAlias): Outcome<Mac> =
+    suspend fun macFor(alias: KeyAlias): Outcome<Mac> =
         try {
-            Outcome.Success(keyManager.macFor(alias))
+            Outcome.Success(withContext(dispatcher) { keyManager.macFor(alias) })
         } catch (e: KeyPermanentlyInvalidatedException) {
             log.e(e) { "macFor failed" }
             Outcome.Failure(ErrorMessages.KEY_INVALIDATED)
@@ -148,17 +151,17 @@ internal class RegistrationKeyMaterial(
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
         }
 
-    fun hmacAuthenticatorsFor(alias: KeyAlias): Outcome<AuthenticatorPolicy> =
+    suspend fun hmacAuthenticatorsFor(alias: KeyAlias): Outcome<AuthenticatorPolicy> =
         try {
-            Outcome.Success(keyManager.allowedAuthenticatorsForHmac(alias))
+            Outcome.Success(withContext(dispatcher) { keyManager.allowedAuthenticatorsForHmac(alias) })
         } catch (e: GeneralSecurityException) {
             log.e(e) { "hmacAuthenticatorsFor failed" }
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
         }
 
-    private fun generateKey(request: SecureKeyManager.CredentialKeyRequest): Outcome<SecureKeyManager.CredentialKeyGeneration> =
+    private suspend fun generateKey(request: SecureKeyManager.CredentialKeyRequest): Outcome<SecureKeyManager.CredentialKeyGeneration> =
         try {
-            Outcome.Success(keyManager.generateCredentialKey(request))
+            Outcome.Success(withContext(dispatcher) { keyManager.generateCredentialKey(request) })
         } catch (e: SecureElementUnavailableException) {
             Outcome.Failure(e.message)
         } catch (e: GeneralSecurityException) {
@@ -169,7 +172,7 @@ internal class RegistrationKeyMaterial(
             Outcome.Failure(ErrorMessages.hardwareError(e))
         }
 
-    private fun generatePrfKey(
+    private suspend fun generatePrfKey(
         credentialId: CredentialId,
         keystoreAuthenticators: AuthenticatorPolicy,
         invalidateOnBiometricEnrollment: Boolean,
@@ -178,12 +181,14 @@ internal class RegistrationKeyMaterial(
         if (!prfRequested) return Outcome.Success(null)
         return try {
             Outcome.Success(
-                keyManager
-                    .generateHmacKey(
-                        credentialId.hmacKeyAlias,
-                        keystoreAuthenticators,
-                        invalidateOnBiometricEnrollment,
-                    ).securityLevel,
+                withContext(dispatcher) {
+                    keyManager
+                        .generateHmacKey(
+                            credentialId.hmacKeyAlias,
+                            keystoreAuthenticators,
+                            invalidateOnBiometricEnrollment,
+                        ).securityLevel
+                },
             )
         } catch (e: SecureElementUnavailableException) {
             Outcome.Failure(e.message)
@@ -196,12 +201,12 @@ internal class RegistrationKeyMaterial(
         }
     }
 
-    private fun signFor(
+    private suspend fun signFor(
         alias: KeyAlias,
         algorithm: WebAuthnAlgorithm,
     ): Outcome<Signature> =
         try {
-            Outcome.Success(keyManager.signatureFor(alias, algorithm))
+            Outcome.Success(withContext(dispatcher) { keyManager.signatureFor(alias, algorithm) })
         } catch (e: KeyPermanentlyInvalidatedException) {
             log.e(e) { "failed to sign" }
             Outcome.Failure(ErrorMessages.KEY_INVALIDATED)

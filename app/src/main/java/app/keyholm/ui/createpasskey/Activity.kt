@@ -70,6 +70,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.security.GeneralSecurityException
 import java.security.SecureRandom
 import java.security.Signature
@@ -292,7 +293,7 @@ class Activity internal constructor(
     private val cryptoPrompt = CryptoPrompt(this)
     private val passkeyRepo by lazy { PasskeyRepository(applicationContext) }
     private val keyMaterial by lazy {
-        RegistrationKeyMaterial(applicationContext, passkeyRepo, MigrationRepository(applicationContext))
+        RegistrationKeyMaterial(applicationContext, passkeyRepo, MigrationRepository(applicationContext), dispatcher)
     }
     private val deniedAppsRepo by lazy { DeniedNativeAppRepository(applicationContext) }
     private val creationChoice = Channel<CreationChoice?>(Channel.CONFLATED)
@@ -454,8 +455,10 @@ class Activity internal constructor(
 
         val attestationSig =
             try {
-                sig.update(pending.toSign.bytes)
-                DerSignature(sig.sign())
+                withContext(dispatcher) {
+                    sig.update(pending.toSign.bytes)
+                    DerSignature(sig.sign())
+                }
             } catch (e: GeneralSecurityException) {
                 log.e(e) { "signing failed" }
                 keyMaterial.deleteKey(pending.alias)
@@ -528,7 +531,7 @@ class Activity internal constructor(
                         userLabel = userLabel(pending.info.user.name, pending.info.user.displayName),
                     ),
             ) as? PromptResult.Success
-        val results = authorized?.crypto?.mac?.let { PrfExtension.evaluate(it, salts) }
+        val results = authorized?.crypto?.mac?.let { withContext(dispatcher) { PrfExtension.evaluate(it, salts) } }
         val outcome = results?.let(RegistrationPrf::Evaluated) ?: RegistrationPrf.Requested
         respondToRegistration(pending, attestationObject, outcome)
     }

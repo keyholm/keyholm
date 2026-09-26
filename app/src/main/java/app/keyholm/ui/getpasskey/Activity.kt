@@ -45,6 +45,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.security.GeneralSecurityException
 import java.security.Signature
 import java.time.Instant
@@ -119,7 +120,7 @@ class Activity internal constructor(
     constructor() : this(Dispatchers.IO)
 
     private val passkeyRepo by lazy { PasskeyRepository(applicationContext) }
-    private val keyMaterial by lazy { SignInKeyMaterial(passkeyRepo) }
+    private val keyMaterial by lazy { SignInKeyMaterial(passkeyRepo, dispatcher) }
     private val cryptoPrompt = CryptoPrompt(this)
     private val deniedAppsRepo by lazy { DeniedNativeAppRepository(applicationContext) }
     private val requestResolver by lazy {
@@ -238,8 +239,10 @@ class Activity internal constructor(
         when (
             val derSignature =
                 try {
-                    sig.update(signIn.toSign.bytes)
-                    Outcome.Success(DerSignature(sig.sign()))
+                    withContext(dispatcher) {
+                        sig.update(signIn.toSign.bytes)
+                        Outcome.Success(DerSignature(sig.sign()))
+                    }
                 } catch (e: GeneralSecurityException) {
                     log.e(e) { "signing failed" }
                     Outcome.Failure(ErrorMessages.SIGN_FAILED_GET)
@@ -299,7 +302,8 @@ class Activity internal constructor(
                                         preferRpName = intent.preferRpName(),
                                     ),
                             ) as? PromptResult.Success
-                        val prfResults = authorized?.crypto?.mac?.let { PrfExtension.evaluate(it, prfSalts) }
+                        val prfResults =
+                            authorized?.crypto?.mac?.let { withContext(dispatcher) { PrfExtension.evaluate(it, prfSalts) } }
                         respond(signIn, derSignature, prfResults)
                     }
                 }

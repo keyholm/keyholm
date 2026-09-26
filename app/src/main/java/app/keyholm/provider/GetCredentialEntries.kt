@@ -23,6 +23,7 @@ import app.keyholm.webauthn.parseRequestOptionsOrLog
 import app.keyholm.webauthn.resolveTrustDecision
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import java.io.IOException
 
 private const val UNLOCK_REQUEST_CODE = 1
@@ -44,16 +45,17 @@ internal class GetCredentialEntries(
             }
         }
 
-    suspend fun of(request: BeginGetCredentialRequest): List<CredentialEntry>? {
-        PendingSignatures.clear()
-        val records = passkeyRepo.passkeys.first()
-        val settings = settingsRepo.settings.first()
-        val perOption =
-            request.beginGetCredentialOptions
-                .filterIsInstance<BeginGetPublicKeyCredentialOption>()
-                .map { entriesFor(it, request.callingAppInfo, records, settings) }
-        return if (perOption.any { it == null }) null else perOption.filterNotNull().flatten()
-    }
+    suspend fun of(request: BeginGetCredentialRequest): List<CredentialEntry>? =
+        withContext(dispatcher) {
+            PendingSignatures.clear()
+            val records = passkeyRepo.passkeys.first()
+            val settings = settingsRepo.settings.first()
+            val perOption =
+                request.beginGetCredentialOptions
+                    .filterIsInstance<BeginGetPublicKeyCredentialOption>()
+                    .map { entriesFor(it, request.callingAppInfo, records, settings) }
+            if (perOption.any { it == null }) null else perOption.filterNotNull().flatten()
+        }
 
     private suspend fun entriesFor(
         option: BeginGetPublicKeyCredentialOption,

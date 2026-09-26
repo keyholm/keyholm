@@ -10,12 +10,15 @@ import app.keyholm.ui.common.Outcome
 import app.keyholm.util.logger
 import app.keyholm.webauthn.KeyAlias
 import app.keyholm.webauthn.WebAuthnAlgorithm
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import java.security.GeneralSecurityException
 import java.security.Signature
 import javax.crypto.Mac
 
 internal class SignInKeyMaterial(
     private val passkeyRepo: PasskeyRepository,
+    private val dispatcher: CoroutineDispatcher,
 ) {
     private val log = logger()
 
@@ -24,7 +27,7 @@ internal class SignInKeyMaterial(
         algorithm: WebAuthnAlgorithm,
     ): Outcome<Signature> =
         try {
-            Outcome.Success(SecureKeyManager().signatureFor(record.keyAlias, algorithm))
+            Outcome.Success(withContext(dispatcher) { SecureKeyManager().signatureFor(record.keyAlias, algorithm) })
         } catch (e: KeyPermanentlyInvalidatedException) {
             log.e(e) { "signatureFor failed" }
             markLikelyInvalid(record)
@@ -36,7 +39,7 @@ internal class SignInKeyMaterial(
 
     suspend fun macFor(record: PasskeyRecord): Outcome<Mac> =
         try {
-            Outcome.Success(SecureKeyManager().macFor(record.hmacKeyAlias))
+            Outcome.Success(withContext(dispatcher) { SecureKeyManager().macFor(record.hmacKeyAlias) })
         } catch (e: KeyPermanentlyInvalidatedException) {
             log.e(e) { "macFor failed" }
             markLikelyInvalid(record)
@@ -46,20 +49,20 @@ internal class SignInKeyMaterial(
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_GET)
         }
 
-    fun hmacAuthenticatorsFor(alias: KeyAlias): Outcome<AuthenticatorPolicy> =
+    suspend fun hmacAuthenticatorsFor(alias: KeyAlias): Outcome<AuthenticatorPolicy> =
         try {
-            Outcome.Success(SecureKeyManager().allowedAuthenticatorsForHmac(alias))
+            Outcome.Success(withContext(dispatcher) { SecureKeyManager().allowedAuthenticatorsForHmac(alias) })
         } catch (e: GeneralSecurityException) {
             log.e(e) { "hmacAuthenticatorsFor failed" }
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_GET)
         }
 
-    fun authenticatorsFor(
+    suspend fun authenticatorsFor(
         alias: KeyAlias,
         algorithm: WebAuthnAlgorithm,
     ): Outcome<AuthenticatorPolicy> =
         try {
-            Outcome.Success(SecureKeyManager().allowedAuthenticatorsFor(alias, algorithm))
+            Outcome.Success(withContext(dispatcher) { SecureKeyManager().allowedAuthenticatorsFor(alias, algorithm) })
         } catch (e: GeneralSecurityException) {
             log.e(e) { "authenticatorsFor failed" }
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_GET)
