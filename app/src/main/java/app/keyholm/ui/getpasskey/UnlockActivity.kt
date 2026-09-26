@@ -2,7 +2,9 @@ package app.keyholm.ui.getpasskey
 
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.compose.setContent
 import androidx.biometric.AuthenticationRequest
+import androidx.compose.runtime.mutableStateOf
 import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.fragment.app.FragmentActivity
@@ -12,7 +14,9 @@ import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.provider.GetCredentialEntries
 import app.keyholm.ui.common.AuthenticatorsResolution
 import app.keyholm.ui.common.CryptoPrompt
+import app.keyholm.ui.common.WorkingIndicator
 import app.keyholm.ui.common.resolveCreateAuthenticators
+import app.keyholm.ui.theme.KeyholmTheme
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,6 +31,7 @@ class UnlockActivity internal constructor(
     constructor() : this(Dispatchers.IO)
 
     private val cryptoPrompt = CryptoPrompt(this)
+    private val working = mutableStateOf(false)
     private val entries by lazy { GetCredentialEntries(applicationContext, dispatcher) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,6 +40,11 @@ class UnlockActivity internal constructor(
         if (request == null) {
             cancel()
             return
+        }
+        setContent {
+            KeyholmTheme {
+                WorkingIndicator(working.value)
+            }
         }
         lifecycleScope.launch {
             // We have to be foreground otherwise the prompt never shows
@@ -54,7 +64,17 @@ class UnlockActivity internal constructor(
                         )
                     }
                 }
-            val unlockedEntries = if (unlocked) entries.of(request) else null
+            val unlockedEntries =
+                if (unlocked) {
+                    working.value = true
+                    try {
+                        entries.of(request)
+                    } finally {
+                        working.value = false
+                    }
+                } else {
+                    null
+                }
             if (unlockedEntries == null) {
                 cancel()
                 return@launch

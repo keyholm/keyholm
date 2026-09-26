@@ -39,6 +39,7 @@ import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.Outcome
 import app.keyholm.ui.common.PRF_PROMPT_TITLE
 import app.keyholm.ui.common.PromptResult
+import app.keyholm.ui.common.WorkingIndicator
 import app.keyholm.ui.common.appLabel
 import app.keyholm.ui.common.promptContent
 import app.keyholm.ui.common.userLabel
@@ -298,6 +299,7 @@ class Activity internal constructor(
     private val deniedAppsRepo by lazy { DeniedNativeAppRepository(applicationContext) }
     private val creationChoice = Channel<CreationChoice?>(Channel.CONFLATED)
     private val creationOptions = mutableStateOf<CreationOptionsPrompt?>(null)
+    private val working = mutableStateOf(false)
     private val prompts by lazy {
         RegistrationPrompts(
             applicationContext,
@@ -322,13 +324,14 @@ class Activity internal constructor(
         super.onCreate(savedInstanceState)
         window.setHideOverlayWindows(true)
         enableEdgeToEdge()
-        setUpCreationOptionsSheet()
+        setUpContent()
         lifecycleScope.launch { registerPasskey() }
     }
 
-    private fun setUpCreationOptionsSheet() {
+    private fun setUpContent() {
         setContent {
             KeyholmTheme {
+                WorkingIndicator(working.value)
                 creationOptions.value?.let { prompt ->
                     CreationOptionsSheet(
                         prompt = prompt,
@@ -370,10 +373,14 @@ class Activity internal constructor(
         credentialId: CredentialId,
     ) {
         val alias = credentialId.signingKeyAlias
-        val created =
-            keyMaterial
-                .create(registration, credentialId, cd.hash, offer.authenticators, offer.invalidateOnBiometricEnrollment)
-                .orFail { failCreateCredential(it.toException(), it.toastMessage) } ?: return
+        working.value = true
+        val generated =
+            try {
+                keyMaterial.create(registration, credentialId, cd.hash, offer.authenticators, offer.invalidateOnBiometricEnrollment)
+            } finally {
+                working.value = false
+            }
+        val created = generated.orFail { failCreateCredential(it.toException(), it.toastMessage) } ?: return
         val material =
             when (created) {
                 is KeyCreation.Created -> created.material
