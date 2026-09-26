@@ -41,7 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -51,7 +50,6 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import app.keyholm.R
 import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.common.rememberAppIcon
@@ -307,7 +305,7 @@ private fun AboutSection() {
                     )
                     Spacer(Modifier.width(16.dp))
                     Text(
-                        stringResource(R.string.app_name),
+                        "Keyholm",
                         style = MaterialTheme.typography.titleLarge,
                         color = titleColor,
                     )
