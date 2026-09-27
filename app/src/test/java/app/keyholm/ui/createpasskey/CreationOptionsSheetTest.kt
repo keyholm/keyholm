@@ -197,8 +197,8 @@ class CreationOptionsSheetTest {
 
         compose
             .onNodeWithText(
-                "You've configured Keyholm to ask you which algorithm to use and whether to identify as Keyholm. " +
-                    "Keyholm always asks whether to include attestation.",
+                "Attestation was requested by example.com and Keyholm always asks whether to include it. " +
+                    "You've configured Keyholm to ask you which algorithm to use and whether to identify as Keyholm.",
             ).assertExists()
     }
 

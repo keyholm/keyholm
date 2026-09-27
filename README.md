@@ -2,19 +2,22 @@
 
 <table>
   <tr>
-    <td width="20%" align="center">
+    <td width="16%" align="center">
       <a href="docs/screenshots/main.png"><img src="docs/screenshots/main.png" alt="Main screen" width="100%"></a>
     </td>
-    <td width="20%" align="center">
+    <td width="16%" align="center">
       <a href="docs/screenshots/create-1.png"><img src="docs/screenshots/create-1.png" alt="Create step 1" width="100%"></a>
     </td>
-    <td width="20%" align="center">
-      <a href="docs/screenshots/create-2.png"><img src="docs/screenshots/create-2.png" alt="Create step 2" width="100%"></a>
+    <td width="16%" align="center">
+      <a href="docs/screenshots/create-2a.png"><img src="docs/screenshots/create-2a.png" alt="Create step 2" width="100%"></a>
     </td>
-    <td width="20%" align="center">
+    <td width="16%" align="center">
+      <a href="docs/screenshots/create-2b.png"><img src="docs/screenshots/create-2b.png" alt="Create step 2 with attestation" width="100%"></a>
+    </td>
+    <td width="16%" align="center">
       <a href="docs/screenshots/settings-1.png"><img src="docs/screenshots/settings-1.png" alt="Settings 1" width="100%"></a>
     </td>
-    <td width="20%" align="center">
+    <td width="16%" align="center">
       <a href="docs/screenshots/settings-2.png"><img src="docs/screenshots/settings-2.png" alt="Settings 2" width="100%"></a>
     </td>
   </tr>

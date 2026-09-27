@@ -95,6 +95,7 @@ internal data class CreationChoice(
 )
 
 private fun creationOptionsExplanation(
+    rpId: RpId,
     algorithmAsked: Boolean,
     showAttestation: Boolean,
     showIdentity: Boolean,
@@ -105,10 +106,10 @@ private fun creationOptionsExplanation(
             if (showIdentity) add("whether to identify as Keyholm")
         }
     return buildList {
+        if (showAttestation) add("Attestation was requested by ${rpId.value} and Keyholm always asks whether to include it.")
         if (configured.isNotEmpty()) {
             add("You've configured Keyholm to ask you " + configured.joinToString(" and ") + ".")
         }
-        if (showAttestation) add("Keyholm always asks whether to include attestation.")
     }.joinToString(" ")
 }
 
@@ -227,6 +228,7 @@ internal fun CreationOptionsSheet(
 ) {
     val explanation =
         creationOptionsExplanation(
+            prompt.rpId,
             prompt.algorithms.size > 1,
             prompt.attestation is OptionChoice.Ask,
             prompt.identity is OptionChoice.Ask,
