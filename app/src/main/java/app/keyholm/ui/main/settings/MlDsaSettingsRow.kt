@@ -27,7 +27,7 @@ private const val LABEL_ML_DSA_OFF = "Off"
 private const val LABEL_ML_DSA_STRONGEST_ONLY = "ML-DSA-87 only"
 private const val LABEL_ML_DSA_PREFER_STRONGEST = "Prefer strongest"
 private const val LABEL_ML_DSA_FIRST_OFFERED = "First offered"
-private const val DESCRIPTION_ML_DSA_TEE = "Falls back to the TEE."
+private const val DESCRIPTION_ML_DSA_TEE = "ML-DSA-65 and ML-DSA-87.\nFalls back to the TEE."
 
 private fun mlDsaLabel(support: MlDsaSupport): String =
     when (support) {
