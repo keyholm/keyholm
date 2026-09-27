@@ -54,6 +54,10 @@ Think of Keyholm as a way to activate the built-in security key on your phone.
 - _account list_ export/import
   - for making it marginally easier to switch devices
   - remember all keys still need to be manually recreated on the new device
+- avoids doing any crypto and instead leans on
+  - Android Keystore
+  - Tink for encrypting stores
+  - `snow` and otherwise Rust for PXP crypto/noise channel
 
 ## Releases
 

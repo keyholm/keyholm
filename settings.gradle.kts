@@ -20,3 +20,4 @@ dependencyResolutionManagement {
 rootProject.name = "Keyholm"
 include(":app")
 include(":publicsuffixlist")
+include(":pxp")
