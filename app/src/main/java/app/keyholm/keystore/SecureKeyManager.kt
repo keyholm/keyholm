@@ -201,6 +201,7 @@ class SecureKeyManager {
         private const val KEY_ALGORITHM_ML_DSA_65 = "ML-DSA-65"
         private const val KEY_ALGORITHM_ML_DSA_87 = "ML-DSA-87"
         private const val MAC_ALGORITHM_HMAC_SHA256 = "HmacSHA256"
+        private const val KEYSTORE_VERSION_ML_DSA = 500
         private const val PRF_NO_SECURE_ELEMENT =
             "This device has no secure element (StrongBox). PRF is not supported."
 
@@ -290,10 +291,11 @@ class SecureKeyManager {
             when (algorithm) {
                 WebAuthnAlgorithm.ES256 -> isSecureElementAvailable(context)
 
-                WebAuthnAlgorithm.ED25519,
+                WebAuthnAlgorithm.ED25519 -> isTeeAvailable(context)
+
                 WebAuthnAlgorithm.ML_DSA_65,
                 WebAuthnAlgorithm.ML_DSA_87,
-                -> isTeeAvailable(context)
+                -> context.packageManager.hasSystemFeature(PackageManager.FEATURE_HARDWARE_KEYSTORE, KEYSTORE_VERSION_ML_DSA)
             }
     }
 }

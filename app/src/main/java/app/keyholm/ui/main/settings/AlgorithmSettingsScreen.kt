@@ -43,6 +43,7 @@ internal fun AlgorithmSection(
         description = DESCRIPTION_SIGNATURE_ALGORITHMS,
     ) {
         AlgorithmFamily.entries.forEach { family ->
+            if (family == AlgorithmFamily.ML_DSA && !uiState.device.teeMlDsa) return@forEach
             item { shape ->
                 when (family) {
                     AlgorithmFamily.ES256 -> {

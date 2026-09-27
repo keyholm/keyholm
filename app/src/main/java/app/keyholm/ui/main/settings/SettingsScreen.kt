@@ -84,8 +84,11 @@ private fun SettingsTopBar(
     )
 }
 
+private const val STATUS_ALL_FEATURES_OK = "All features supported."
 private const val STATUS_TEE_OK = "Hardware-backed (TEE) keystore found."
 private const val STATUS_TEE_NOT_OK = "No hardware-backed (TEE) keystore found on this device."
+private const val STATUS_TEE_ML_DSA_OK = "TEE supports ML-DSA."
+private const val STATUS_TEE_ML_DSA_NOT_OK = "TEE doesn't support ML-DSA."
 internal const val STATUS_SECURE_ELEMENT_OK = "Dedicated secure element (StrongBox) found."
 internal const val STATUS_SECURE_ELEMENT_NOT_OK =
     "No dedicated secure element (StrongBox) found. This app is not supported."
@@ -99,20 +102,37 @@ private fun StatusSection(uiState: MainUiState.Ready) {
             Column(
                 Modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(16.dp),
             ) {
-                StatusRow(
-                    isOk = uiState.device.tee,
-                    okText = STATUS_TEE_OK,
-                    notOkText = STATUS_TEE_NOT_OK,
-                )
+                val device = uiState.device
+                if (device.tee && device.teeMlDsa && device.secureElement) {
+                    StatusRow(
+                        isOk = true,
+                        okText = STATUS_ALL_FEATURES_OK,
+                        notOkText = STATUS_ALL_FEATURES_OK,
+                    )
+                } else {
+                    StatusRow(
+                        isOk = device.tee,
+                        okText = STATUS_TEE_OK,
+                        notOkText = STATUS_TEE_NOT_OK,
+                    )
+                    if (device.tee) {
+                        Spacer(Modifier.height(8.dp))
+                        StatusRow(
+                            isOk = device.teeMlDsa,
+                            okText = STATUS_TEE_ML_DSA_OK,
+                            notOkText = STATUS_TEE_ML_DSA_NOT_OK,
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    StatusRow(
+                        isOk = device.secureElement,
+                        okText = STATUS_SECURE_ELEMENT_OK,
+                        notOkText = STATUS_SECURE_ELEMENT_NOT_OK,
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
                 StatusRow(
-                    isOk = uiState.device.secureElement,
-                    okText = STATUS_SECURE_ELEMENT_OK,
-                    notOkText = STATUS_SECURE_ELEMENT_NOT_OK,
-                )
-                Spacer(Modifier.height(8.dp))
-                StatusRow(
-                    isOk = uiState.device.providerEnabled,
+                    isOk = device.providerEnabled,
                     okText = STATUS_PROVIDER_OK,
                     notOkText = STATUS_PROVIDER_NOT_OK,
                 )

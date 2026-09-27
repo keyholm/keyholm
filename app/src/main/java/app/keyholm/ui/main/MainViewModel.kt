@@ -28,6 +28,7 @@ import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
 import app.keyholm.webauthn.CredentialId
+import app.keyholm.webauthn.WebAuthnAlgorithm
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -94,6 +95,7 @@ sealed interface PasskeyDetails {
 data class DeviceStatus(
     val secureElement: Boolean,
     val tee: Boolean,
+    val teeMlDsa: Boolean,
     val providerEnabled: Boolean,
 )
 
@@ -161,6 +163,7 @@ class MainViewModel internal constructor(
                 DeviceStatus(
                     secureElement = secureElement,
                     tee = SecureKeyManager.isTeeAvailable(context),
+                    teeMlDsa = SecureKeyManager.isAlgorithmAvailable(context, WebAuthnAlgorithm.ML_DSA_87),
                     providerEnabled = isCredentialProviderEnabled(context),
                 )
             }
