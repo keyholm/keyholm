@@ -13,8 +13,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import app.keyholm.ui.theme.titleColor
 import kotlinx.coroutines.delay
 
 // set to 0 to see every operation, however short
@@ -32,6 +32,6 @@ internal fun WorkingIndicator(working: Boolean) {
     }
     if (!show) return
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        LoadingIndicator(Modifier.size(96.dp), color = Color.White)
+        LoadingIndicator(Modifier.size(96.dp), color = titleColor)
     }
 }
