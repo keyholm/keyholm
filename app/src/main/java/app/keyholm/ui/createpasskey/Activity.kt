@@ -69,6 +69,7 @@ import app.keyholm.webauthn.WebAuthnAlgorithm
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -389,24 +390,40 @@ class Activity internal constructor(
 
         val pending = buildPendingRegistration(registration, material, cd.json, credentialId, alias)
 
+        var attestationObject: AttestationObject? = null
+        try {
+            attestationObject = authorizeAndPersist(registration, material, pending)
+        } finally {
+            if (attestationObject == null) {
+                withContext(NonCancellable) {
+                    keyMaterial.deleteKey(alias)
+                    if (material.prfSecurityLevel != null) keyMaterial.deleteKey(credentialId.hmacKeyAlias)
+                }
+            }
+        }
+        attestationObject?.let { evaluatePrfAndRespond(pending, it) }
+    }
+
+    private suspend fun authorizeAndPersist(
+        registration: RegistrationContext,
+        material: KeyMaterial,
+        pending: PendingRegistration,
+    ): AttestationObject? =
         when (val promptResult = promptForRegistration(registration, material)) {
             is PromptResult.Success -> {
-                finishRegistration(pending, promptResult.crypto)
+                signAndPersist(pending, promptResult.crypto)
             }
 
             PromptResult.Canceled -> {
-                keyMaterial.deleteKey(alias)
-                if (material.prfSecurityLevel != null) keyMaterial.deleteKey(credentialId.hmacKeyAlias)
                 cancelCreateCredential()
+                null
             }
 
             PromptResult.Failed, PromptResult.NoCryptoObject -> {
-                keyMaterial.deleteKey(alias)
-                if (material.prfSecurityLevel != null) keyMaterial.deleteKey(credentialId.hmacKeyAlias)
                 failCreateCredential(CreateCredentialUnknownException())
+                null
             }
         }
-    }
 
     private suspend fun promptForRegistration(
         registration: RegistrationContext,
@@ -452,13 +469,15 @@ class Activity internal constructor(
         return creationChoice.receive()
     }
 
-    private suspend fun finishRegistration(
+    private suspend fun signAndPersist(
         pending: PendingRegistration,
         crypto: BiometricPrompt.CryptoObject,
-    ) {
-        val sig =
-            crypto.signature
-                ?: return failCreateCredential(CreateCredentialUnknownException(), ErrorMessages.CREATE_NO_SIGNATURE)
+    ): AttestationObject? {
+        val sig = crypto.signature
+        if (sig == null) {
+            failCreateCredential(CreateCredentialUnknownException(), ErrorMessages.CREATE_NO_SIGNATURE)
+            return null
+        }
 
         val attestationSig =
             try {
@@ -468,9 +487,8 @@ class Activity internal constructor(
                 }
             } catch (e: GeneralSecurityException) {
                 log.e(e) { "signing failed" }
-                keyMaterial.deleteKey(pending.alias)
-                if (pending.prfSecurityLevel != null) keyMaterial.deleteKey(pending.credentialId.hmacKeyAlias)
-                return failCreateCredential(CreateCredentialUnknownException(), ErrorMessages.SIGN_FAILED_CREATE)
+                failCreateCredential(CreateCredentialUnknownException(), ErrorMessages.SIGN_FAILED_CREATE)
+                return null
             }
 
         val attestationObject =
@@ -485,16 +503,14 @@ class Activity internal constructor(
                 AttestationObjects.attestationObjectNone(pending.authData)
             }
 
-        val persisted = keyMaterial.persist(pending.toPasskeyRecord())
-        when (persisted) {
+        return when (val persisted = keyMaterial.persist(pending.toPasskeyRecord())) {
             is Registration.Failed -> {
-                keyMaterial.deleteKey(pending.alias)
-                if (pending.prfSecurityLevel != null) keyMaterial.deleteKey(pending.credentialId.hmacKeyAlias)
                 failCreateCredential(persisted.toException(), persisted.toastMessage)
+                null
             }
 
             is Registration.Ready -> {
-                evaluatePrfAndRespond(pending, attestationObject)
+                attestationObject
             }
         }
     }

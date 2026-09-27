@@ -22,6 +22,7 @@ import app.keyholm.webauthn.SigningInput
 import app.keyholm.webauthn.WebAuthn
 import app.keyholm.webauthn.WebAuthnAlgorithm
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import java.security.GeneralSecurityException
 import java.security.ProviderException
@@ -73,7 +74,18 @@ internal class RegistrationKeyMaterial(
             }
         return when (generated) {
             is SecureKeyManager.CredentialKeyGeneration.Generated -> {
-                keyMaterialFor(registration, credentialId, clientDataHash, request, generated.credential)
+                var material: Registration<KeyCreation>? = null
+                try {
+                    material = keyMaterialFor(registration, credentialId, clientDataHash, request, generated.credential)
+                } finally {
+                    if (material !is Registration.Ready) {
+                        withContext(NonCancellable) {
+                            deleteKey(request.alias)
+                            deleteKey(credentialId.hmacKeyAlias)
+                        }
+                    }
+                }
+                material
             }
 
             SecureKeyManager.CredentialKeyGeneration.DevicePropertiesUnavailable -> {
