@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.CredentialUser
 import app.keyholm.ctap.RelyingParty
+import app.keyholm.ctap.RpId
 import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.webauthn.PackageName
@@ -40,3 +41,8 @@ data class PasskeyRecord(
 
     val hasPrf: Boolean get() = keystore.prfSecurityLevel != null
 }
+
+fun List<PasskeyRecord>.anyExcluded(
+    rpId: RpId,
+    excludeIds: Set<CredentialId>,
+): Boolean = any { it.credentialId in excludeIds && it.rp.id == rpId }

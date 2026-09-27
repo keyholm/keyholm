@@ -12,12 +12,16 @@ import app.keyholm.pxp.PxpStage
 import app.keyholm.pxp.PxpStatus
 import app.keyholm.pxp.crypto.PxpNoise
 import app.keyholm.pxp.qr.PxpQrPayload
+import app.keyholm.settings.SettingsRepository
+import app.keyholm.store.PasskeyRepository
+import app.keyholm.ui.common.PromptRelay
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -26,8 +30,11 @@ class PxpViewModel internal constructor(
     application: Application,
     private val dispatcher: CoroutineDispatcher,
 ) : AndroidViewModel(application) {
-    constructor(application: Application) : this(application, Dispatchers.Default)
+    constructor(application: Application) : this(application, Dispatchers.IO)
 
+    private val settingsRepo = SettingsRepository(application)
+    private val passkeyRepo = PasskeyRepository(application)
+    val prompts = PromptRelay()
     private var running: Job? = null
     var intentHandled = false
     private val _status = MutableStateFlow<PxpStatus?>(null)
@@ -40,10 +47,12 @@ class PxpViewModel internal constructor(
     )
     fun start(payload: PxpQrPayload) {
         stop()
-        val pxp = PxpCeremony(getApplication(), payload, CtapAuthenticator(), PxpNoise)
-        _confirmationCode.value = pxp.confirmationCode
         running =
             viewModelScope.launch(dispatcher) {
+                val app = getApplication<Application>()
+                val authenticator = CtapAuthenticator(app, settingsRepo.settings.first(), passkeyRepo, prompts, dispatcher)
+                val pxp = PxpCeremony(app, payload, authenticator, PxpNoise)
+                _confirmationCode.value = pxp.confirmationCode
                 pxp.status.onEach { _status.value = it }.launchIn(this)
                 pxp.run()
             }

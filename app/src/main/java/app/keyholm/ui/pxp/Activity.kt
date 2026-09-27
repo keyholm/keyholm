@@ -18,10 +18,12 @@ import app.keyholm.pxp.PxpFailure
 import app.keyholm.pxp.PxpStage
 import app.keyholm.pxp.qr.PxpChannel
 import app.keyholm.pxp.qr.PxpQrPayload
+import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.theme.KeyholmTheme
 
 class Activity : FragmentActivity() {
     private val viewModel: PxpViewModel by viewModels()
+    private val cryptoPrompt = CryptoPrompt(this)
     private val requestPermissions =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
             val denied = results.filterValues { !it }.keys
@@ -52,7 +54,7 @@ class Activity : FragmentActivity() {
                     if (current.failure == null && current.stage in setOf(PxpStage.ChannelClosed, PxpStage.ClientShutdown)) {
                         LaunchedEffect(Unit) { finish() }
                     }
-                    PxpStatusSheet(current, confirmationCode, onClose = ::finish)
+                    PxpStatusSheet(current, confirmationCode, cryptoPrompt, viewModel.prompts, onClose = ::finish)
                 }
             }
         }

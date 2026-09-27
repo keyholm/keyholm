@@ -28,6 +28,9 @@ import app.keyholm.pxp.PxpStatus
 import app.keyholm.pxp.ble.AdvertisingFailure
 import app.keyholm.pxp.ble.L2capFailure
 import app.keyholm.pxp.ble.OversizedMessage
+import app.keyholm.ui.common.CryptoPrompt
+import app.keyholm.ui.common.PromptRelay
+import app.keyholm.ui.common.RelayedPrompts
 import app.keyholm.ui.common.Sheet
 import app.keyholm.ui.common.SheetHeader
 import app.keyholm.ui.common.rememberAppIcon
@@ -46,11 +49,14 @@ private val PxpStage.label: String
 internal fun PxpStatusSheet(
     status: PxpStatus,
     confirmationCode: String?,
+    cryptoPrompt: CryptoPrompt,
+    prompts: PromptRelay,
     onClose: () -> Unit,
 ) {
     val (stage, failure) = status
     val icon = rememberAppIcon()
     Sheet(onDismiss = onClose) {
+        RelayedPrompts(cryptoPrompt, prompts)
         SheetHeader(icon, stage.label)
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),

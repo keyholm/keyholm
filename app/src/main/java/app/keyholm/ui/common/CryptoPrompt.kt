@@ -104,6 +104,9 @@ class CryptoPrompt internal constructor(
         content: AuthenticationRequest.BodyContent,
     ): Boolean = prompt(title, cryptoObject, allowedAuthenticators, content) is AuthenticationResult.Success
 
+    // The prompt waits on a particular view
+    fun forView(view: View): CryptoPrompt = CryptoPrompt(launcher, slot) { view }
+
     private suspend fun prompt(
         title: String,
         cryptoObject: BiometricPrompt.CryptoObject?,

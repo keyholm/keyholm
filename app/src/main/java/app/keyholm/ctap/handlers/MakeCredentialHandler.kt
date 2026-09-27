@@ -1,0 +1,311 @@
+package app.keyholm.ctap.handlers
+
+import android.content.Context
+import androidx.biometric.BiometricPrompt
+import app.keyholm.authenticator.AlgorithmNegotiation
+import app.keyholm.authenticator.CredentialKeyCreation
+import app.keyholm.authenticator.CredentialKeyMaterial
+import app.keyholm.authenticator.availableFamilies
+import app.keyholm.authenticator.availableMlDsaSupport
+import app.keyholm.ctap.AuthenticatorData
+import app.keyholm.ctap.CredentialId
+import app.keyholm.ctap.Ctap2Response
+import app.keyholm.ctap.Ctap2Result
+import app.keyholm.ctap.Ctap2Status
+import app.keyholm.ctap.WebAuthnAlgorithm
+import app.keyholm.ctap.requests.MakeCredentialRequest
+import app.keyholm.ctap.requests.parseMakeCredential
+import app.keyholm.keystore.AuthenticatorPolicy
+import app.keyholm.keystore.PasskeyKeyManager
+import app.keyholm.settings.Settings
+import app.keyholm.store.PasskeyRecord
+import app.keyholm.store.PasskeyRepository
+import app.keyholm.store.RecordLifecycle
+import app.keyholm.store.anyExcluded
+import app.keyholm.store.readStore
+import app.keyholm.ui.common.AuthenticatorsResolution
+import app.keyholm.ui.common.PromptRelay
+import app.keyholm.ui.common.PromptResult
+import app.keyholm.ui.common.promptContent
+import app.keyholm.ui.common.resolveCreateAuthenticators
+import app.keyholm.ui.common.userLabel
+import app.keyholm.ui.createpasskey.registrationDescription
+import app.keyholm.util.logger
+import com.google.protobuf.ByteString
+import com.upokecenter.cbor.CBORObject
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
+import java.security.SecureRandom
+import java.security.Signature
+import java.time.Instant
+
+internal const val CREDENTIAL_ID_BYTES = 32
+private const val ATTESTATION_NONE = "none"
+private const val ATTESTATION_ANDROID_KEY = "android-key"
+private const val ATTACH_ATTESTATION = false
+
+private const val MC_RESPONSE_FMT = 1
+private const val MC_RESPONSE_AUTH_DATA = 2
+private const val MC_RESPONSE_ATT_STMT = 3
+
+private class PendingCredential(
+    val credentialId: CredentialId,
+    val algorithm: WebAuthnAlgorithm,
+    val generated: PasskeyKeyManager.GeneratedCredential,
+    val authData: AuthenticatorData,
+    val signature: Signature,
+    val authenticators: AuthenticatorPolicy,
+)
+
+internal class MakeCredentialHandler(
+    private val context: Context,
+    private val settings: Settings,
+    private val passkeyRepo: PasskeyRepository,
+    private val prompt: PromptRelay,
+    private val dispatcher: CoroutineDispatcher,
+) {
+    private val log = logger()
+    private val keys = CredentialKeyMaterial(dispatcher)
+
+    suspend fun handle(body: ByteArray): Ctap2Response =
+        when (val parsed = parseMakeCredential(body)) {
+            is Ctap2Result.Rejected -> Ctap2Response(parsed.status)
+            is Ctap2Result.Ok -> handle(parsed.value)
+        }
+
+    private suspend fun handle(request: MakeCredentialRequest): Ctap2Response {
+        val authenticators =
+            when (val resolution = resolveCreateAuthenticators(context, settings.createAuthenticators)) {
+                is AuthenticatorsResolution.Unavailable -> {
+                    log.w { resolution.message }
+                    return Ctap2Response(Ctap2Status.OPERATION_DENIED)
+                }
+
+                is AuthenticatorsResolution.Ready -> {
+                    resolution.value
+                }
+            }
+        val algorithm = selectAlgorithm(request.algorithms) ?: return Ctap2Response(Ctap2Status.UNSUPPORTED_ALGORITHM)
+        return when (excluded(request)) {
+            null -> {
+                Ctap2Response(Ctap2Status.OTHER)
+            }
+
+            true -> {
+                confirmExcluded(request, algorithm, authenticators)
+            }
+
+            false -> {
+                when (val generated = generate(request, algorithm, authenticators)) {
+                    is Ctap2Result.Rejected -> Ctap2Response(generated.status)
+                    is Ctap2Result.Ok -> authorizeOrDiscard(request, generated.value)
+                }
+            }
+        }
+    }
+
+    private suspend fun confirmExcluded(
+        request: MakeCredentialRequest,
+        algorithm: WebAuthnAlgorithm,
+        authenticators: AuthenticatorPolicy,
+    ): Ctap2Response {
+        prompt.confirm(
+            title = "Create passkey",
+            allowedAuthenticators = authenticators,
+            content = registrationContent(request, algorithm),
+        )
+        return Ctap2Response(Ctap2Status.CREDENTIAL_EXCLUDED)
+    }
+
+    private suspend fun authorizeOrDiscard(
+        request: MakeCredentialRequest,
+        pending: PendingCredential,
+    ): Ctap2Response {
+        var response: Ctap2Response? = null
+        try {
+            response = authorize(request, pending)
+            return response
+        } finally {
+            if (response?.status != Ctap2Status.OK) {
+                withContext(NonCancellable) { keys.discard(pending.credentialId) }
+            }
+        }
+    }
+
+    private suspend fun generate(
+        request: MakeCredentialRequest,
+        algorithm: WebAuthnAlgorithm,
+        authenticators: AuthenticatorPolicy,
+    ): Ctap2Result<PendingCredential> {
+        val credentialId = CredentialId.of(ByteArray(CREDENTIAL_ID_BYTES).also(SecureRandom()::nextBytes))
+        val created =
+            keys.create(
+                PasskeyKeyManager.CredentialKeyRequest(
+                    credentialId = credentialId,
+                    attestationChallenge = request.clientDataHash,
+                    algorithm = algorithm,
+                    authenticators = authenticators,
+                    invalidateOnBiometricEnrollment = settings.invalidateOnBiometricEnrollment,
+                    // TODO comes from creation sheet
+                    includeDeviceProperties = false,
+                ),
+                prfRequested = false,
+            )
+        return when (created) {
+            is CredentialKeyCreation.Created -> {
+                val authData =
+                    AuthenticatorData.forRegistration(
+                        request.info.rp.id,
+                        credentialId,
+                        created.keys.generated.publicKey,
+                        aaguid(settings),
+                        algorithm,
+                    )
+                Ctap2Result.Ok(
+                    PendingCredential(
+                        credentialId = credentialId,
+                        algorithm = algorithm,
+                        generated = created.keys.generated,
+                        authData = authData,
+                        signature = created.keys.signature,
+                        authenticators = authenticators,
+                    ),
+                )
+            }
+
+            CredentialKeyCreation.DevicePropertiesUnavailable -> {
+                log.w { "device properties attestation is unavailable" }
+                Ctap2Result.Rejected(Ctap2Status.OTHER)
+            }
+
+            is CredentialKeyCreation.Failed -> {
+                Ctap2Result.Rejected(Ctap2Status.OTHER)
+            }
+        }
+    }
+
+    private suspend fun authorize(
+        request: MakeCredentialRequest,
+        pending: PendingCredential,
+    ): Ctap2Response {
+        val result =
+            prompt.authenticate(
+                title = "Create passkey",
+                cryptoObject = BiometricPrompt.CryptoObject(pending.signature),
+                allowedAuthenticators = pending.authenticators,
+                content = registrationContent(request, pending.algorithm),
+            )
+        val signature = (result as? PromptResult.Success)?.crypto?.signature
+        return if (signature == null) {
+            log.w { "the credential was not authorised" }
+            Ctap2Response(Ctap2Status.OPERATION_DENIED)
+        } else {
+            respond(request, pending, signature)
+        }
+    }
+
+    private fun registrationContent(
+        request: MakeCredentialRequest,
+        algorithm: WebAuthnAlgorithm,
+    ) = promptContent(
+        description =
+            registrationDescription(
+                "The device whose QR code you scanned",
+                algorithm,
+                ATTACH_ATTESTATION,
+            ),
+        lastUsedAt = null,
+        rp = request.info.rp,
+        preferRpName = settings.preferRpName,
+        userLabel = userLabel(request.info.user.name, request.info.user.displayName),
+    )
+
+    private suspend fun respond(
+        request: MakeCredentialRequest,
+        pending: PendingCredential,
+        signature: Signature,
+    ): Ctap2Response {
+        val attestation =
+            runCatching {
+                withContext(dispatcher) {
+                    signature.update(pending.authData.bytes + request.clientDataHash.bytes)
+                    signature.sign()
+                }
+            }.getOrElse {
+                log.e(it) { "signing failed" }
+                return Ctap2Response(Ctap2Status.OTHER)
+            }
+        return passkeyRepo.put(record(request, pending)).fold(
+            onSuccess = { Ctap2Response(attestationObject(pending, attestation)) },
+            onFailure = {
+                log.e(it) { "saving the passkey failed" }
+                Ctap2Response(Ctap2Status.OTHER)
+            },
+        )
+    }
+
+    private fun selectAlgorithm(requested: List<WebAuthnAlgorithm>): WebAuthnAlgorithm? {
+        val enabled = availableFamilies(context, settings.enabledFamilies)
+        val mlDsa = availableMlDsaSupport(context, settings.mlDsaSupport)
+        return AlgorithmNegotiation
+            .offeredAlgorithms(
+                requested,
+                enabled,
+                settings.preferredAlgorithm,
+                settings.fallbackAlgorithm,
+                mlDsa,
+            ).firstOrNull()
+    }
+
+    private suspend fun excluded(request: MakeCredentialRequest): Boolean? {
+        if (request.excludeIds.isEmpty()) return false
+        val stored = readStore { passkeyRepo.activePasskeys.first() } ?: return null
+        return stored.anyExcluded(request.info.rp.id, request.excludeIds)
+    }
+}
+
+private fun attestationObject(
+    pending: PendingCredential,
+    signature: ByteArray,
+): CBORObject {
+    val withChain = ATTACH_ATTESTATION && pending.generated.attestationChain.isNotEmpty()
+    val attStmt = CBORObject.NewMap()
+    if (withChain) {
+        val x5c = CBORObject.NewArray()
+        pending.generated.attestationChain.forEach { x5c.Add(it) }
+        attStmt.Add("alg", pending.generated.coseAlgorithm.coseAlg).Add("sig", signature).Add("x5c", x5c)
+    }
+    return CBORObject
+        .NewMap()
+        .Add(MC_RESPONSE_FMT, if (withChain) ATTESTATION_ANDROID_KEY else ATTESTATION_NONE)
+        .Add(MC_RESPONSE_AUTH_DATA, pending.authData.bytes)
+        .Add(MC_RESPONSE_ATT_STMT, attStmt)
+}
+
+private fun record(
+    request: MakeCredentialRequest,
+    pending: PendingCredential,
+): PasskeyRecord {
+    val now = Instant.now()
+    return PasskeyRecord(
+        credentialId = pending.credentialId,
+        rp = request.info.rp,
+        user = request.info.user,
+        signCount = 0,
+        callingPackage = request.info.callingPackage,
+        createdAt = now,
+        keystore =
+            PasskeyRecord.Keystore(
+                coseAlgorithm = pending.generated.coseAlgorithm,
+                securityLevel = pending.generated.securityLevel,
+                publicKeySpki = ByteString.copyFrom(pending.generated.publicKey.encoded),
+                prfSecurityLevel = null,
+            ),
+        lifecycle = RecordLifecycle.Active,
+        lastUsedAt = now,
+        likelyInvalid = false,
+        discoverable = request.info.discoverable,
+    )
+}

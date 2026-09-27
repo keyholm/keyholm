@@ -17,6 +17,7 @@ import app.keyholm.provider.CreationOffer
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
+import app.keyholm.store.anyExcluded
 import app.keyholm.store.readStore
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.B64
@@ -109,7 +110,7 @@ internal class RegistrationRequestResolver(
             )
 
         val excludeIds = options.excludeCredentials.mapTo(mutableSetOf()) { CredentialId(it.id) }
-        return if (existing.any { it.credentialId in excludeIds && it.rp.id == rpId }) {
+        return if (existing.anyExcluded(rpId, excludeIds)) {
             prompts.confirmAlreadyRegistered(request, offer, info)
         } else {
             buildRegistrationContext(request, offer, caller, info)
