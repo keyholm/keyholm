@@ -2,12 +2,18 @@
 cascade = true
 shell = "bash -c -o errexit"
 
+[settings]
+idiomatic_version_file_enable_tools = ["rust"]
+
 [tools]
 android-sdk = "latest"
 gradle = "9.8.2"
-java = "temurin-25"
+java = "openjdk-25"
+"cargo:cargo-ndk" = "latest"
 uv = "latest"
 "pypi:apksigcopier" = "latest"
+jq = "latest"
+"pypi:yq" = "latest"
 
 [hooks]
 postinstall = "mise run setup-android-sdk"
@@ -16,7 +22,7 @@ postinstall = "mise run setup-android-sdk"
 # and have gradle install the right versions of things
 [tasks.setup-android-sdk]
 run = """
-  android sdk install platform-tools
+  android sdk install platform-tools "ndk/$(tomlq -r .versions.ndk gradle/libs.versions.toml)"
   gradle assembleRelease --dry-run
 """
 

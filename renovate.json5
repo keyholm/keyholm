@@ -1,8 +1,24 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", "helpers:pinGitHubActionDigests", "schedule:weekly"],
-  "enabledManagers": ["gradle", "gradle-wrapper", "github-actions", "mise", "custom.regex"],
+  "enabledManagers": ["gradle", "gradle-wrapper", "github-actions", "mise", "custom.regex", "custom.jsonata"],
+  "customDatasources": {
+    "android-ndk": {
+      "defaultRegistryUrlTemplate": "https://dl.google.com/android/repository/repository2-1.xml",
+      "format": "plain",
+    },
+  },
   "customManagers": [
+    {
+      "customType": "jsonata",
+      "fileFormat": "toml",
+      "managerFilePatterns": ["/^gradle/libs\\.versions\\.toml$/"],
+      "matchStrings": ["{ \"currentValue\": versions.ndk }"],
+      "depNameTemplate": "android-ndk",
+      "datasourceTemplate": "custom.android-ndk",
+      "versioningTemplate": "semver",
+      "extractVersionTemplate": "ndk;(?<version>\\d+\\.\\d+\\.\\d+)",
+    },
     {
       "customType": "regex",
       "managerFilePatterns": ["/^publicsuffixlist/version\\.txt$/"],

@@ -10,7 +10,7 @@ plugins {
 
 spotless {
     kotlin {
-        target("app/src/**/*.kt")
+        target("app/src/**/*.kt", "pxp/src/**/*.kt")
         targetExclude("**/build/**")
         ktlint()
             .editorConfigOverride(
@@ -23,7 +23,7 @@ spotless {
         endWithNewline()
     }
     kotlinGradle {
-        target("*.gradle.kts", "app/*.gradle.kts", "publicsuffixlist/*.gradle.kts")
+        target("*.gradle.kts", "app/*.gradle.kts", "publicsuffixlist/*.gradle.kts", "pxp/*.gradle.kts")
         ktlint()
             .editorConfigOverride(
                 mapOf("ktlint_code_style" to "ktlint_official"),

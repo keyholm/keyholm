@@ -86,6 +86,9 @@ android {
         targetSdk = 37
         versionCode = 6
         versionName = "0.1.0"
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     androidResources {
@@ -135,6 +138,8 @@ android {
             keepDebugSymbols.add("**/libandroidx.graphics.path.so")
             // Prebuilt and already stripped; ships via androidx.datastore:datastore.
             keepDebugSymbols.add("**/libdatastore_shared_counter.so")
+            // Already stripped by cargo (strip = true in the release profile).
+            keepDebugSymbols.add("**/libpxp_crypto.so")
         }
         resources {
             excludes += "google/protobuf/*.proto"
@@ -142,6 +147,7 @@ android {
         }
     }
     lint {
+        disable += "ChromeOsAbiSupport"
         baseline = file("lint-baseline.xml")
         // Only releases fail on newer dependency versions
         if (!providers.gradleProperty("checkDependencyVersions").isPresent) {
@@ -216,6 +222,7 @@ dependencies {
     implementation("com.upokecenter:cbor:4.5.6")
     implementation("com.caverock:androidsvg-aar:1.4")
     implementation(project(":publicsuffixlist"))
+    implementation(project(":pxp"))
 
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.ui:ui")
