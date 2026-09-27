@@ -7,11 +7,14 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,7 +38,6 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -54,6 +56,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -73,10 +78,46 @@ import java.util.Date
 import kotlin.math.abs
 
 private val ICON_FULLY_VISIBLE_WIDTH = 72.dp
+private val MIN_DELETE_SWIPE = 120.dp
 private const val BOUNCE_OVERSHOOT_SCALE = 1.3f
 private const val BOUNCE_OVERSHOOT_ROTATION = 12f
 private const val BOUNCE_IMPACT_MS = 80
 private const val GROWTH_IMPACT_MS = 180
+
+@Composable
+internal fun SwipeToDeleteBox(
+    onDelete: (reset: () -> Unit) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val minSwipePx = with(LocalDensity.current) { MIN_DELETE_SWIPE.toPx() }
+    val dismissState = remember { SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled) { minSwipePx } }
+    val scope = rememberCoroutineScope()
+    val reset: () -> Unit = { scope.launch { dismissState.reset() } }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier =
+            modifier.pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    var event: PointerEvent
+                    do {
+                        event = awaitPointerEvent(PointerEventPass.Initial)
+                    } while (event.changes.any { it.pressed })
+                    // consuming the up cancels the fling, so a short flick snaps back
+                    val offset = dismissState.requireOffset()
+                    if (offset != 0f && abs(offset) < minSwipePx) event.changes.forEach { it.consume() }
+                }
+            },
+        enableDismissFromStartToEnd = false,
+        onDismiss = { direction ->
+            if (direction == SwipeToDismissBoxValue.EndToStart) onDelete(reset)
+        },
+        backgroundContent = { SwipeToDeleteBackground(dismissState) },
+        content = content,
+    )
+}
 
 @Composable
 internal fun SwipeToDeleteBackground(dismissState: SwipeToDismissBoxState) {
@@ -356,26 +397,17 @@ internal fun PasskeyItem(
         return
     }
 
-    val positionalThreshold = SwipeToDismissBoxDefaults.positionalThreshold
-    val dismissState = remember { SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled, positionalThreshold) }
-    val scope = rememberCoroutineScope()
-
-    SwipeToDismissBox(
-        state = dismissState,
-        modifier = modifier,
-        enableDismissFromStartToEnd = false,
-        onDismiss = { direction ->
-            if (direction == SwipeToDismissBoxValue.EndToStart) {
-                actions.requestDeleteConfirmation(
-                    DeleteConfirmationRequest(
-                        record = record,
-                        onConfirmed = { actions.onDelete(record) },
-                        onDenied = { scope.launch { dismissState.reset() } },
-                    ),
-                )
-            }
+    SwipeToDeleteBox(
+        onDelete = { reset ->
+            actions.requestDeleteConfirmation(
+                DeleteConfirmationRequest(
+                    record = record,
+                    onConfirmed = { actions.onDelete(record) },
+                    onDenied = reset,
+                ),
+            )
         },
-        backgroundContent = { SwipeToDeleteBackground(dismissState) },
+        modifier = modifier,
     ) {
         Card(
             onClick = { actions.onOpenDetails(record) },
