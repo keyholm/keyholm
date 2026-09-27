@@ -19,6 +19,11 @@ specifiers = ["latest"]
 [tools.android-sdk."platforms.linux-x64"]
 url = "https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip"
 
+[[tools."cargo:cargo-ndk"]]
+version = "4.1.2"
+backend = "cargo:cargo-ndk"
+specifiers = ["latest"]
+
 [[tools.gradle]]
 version = "9.8.1"
 backend = "aqua:gradle/gradle-distributions"
@@ -43,6 +48,14 @@ version = "1.1.1"
 backend = "pypi:apksigcopier"
 specifiers = ["latest"]
 uv = { path = ".mise/locks/pypi-apksigcopier/1.1.1", digest = "sha256:b1d4da64e9de27a61705cde118cdfdf84babf4801af6fc6690b632dc2553f678" }
+
+[[tools.rust]]
+version = "stable"
+backend = "core:rust"
+specifiers = ["stable"]
+
+[tools.rust.options]
+targets = "aarch64-linux-android"
 
 [[tools.uv]]
 version = "0.13.0"

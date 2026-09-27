@@ -84,6 +84,9 @@ android {
         targetSdk = 37
         versionCode = 4
         versionName = "0.0.4"
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     buildTypes {
@@ -129,9 +132,12 @@ android {
             keepDebugSymbols.add("**/libandroidx.graphics.path.so")
             // Prebuilt and already stripped; ships via androidx.datastore:datastore.
             keepDebugSymbols.add("**/libdatastore_shared_counter.so")
+            // Already stripped by cargo (strip = true in the release profile).
+            keepDebugSymbols.add("**/libpxp_crypto.so")
         }
     }
     lint {
+        disable += "ChromeOsAbiSupport"
         baseline = file("lint-baseline.xml")
         // Compat drawable loading exists for pre-API-21 vector and theme handling.
         disable += "UseCompatLoadingForDrawables"
@@ -208,6 +214,7 @@ dependencies {
     implementation("com.upokecenter:cbor:4.5.6")
     implementation("com.caverock:androidsvg-aar:1.4")
     implementation(project(":publicsuffixlist"))
+    implementation(project(":pxp"))
 
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.ui:ui")

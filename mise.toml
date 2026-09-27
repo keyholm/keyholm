@@ -7,6 +7,8 @@ android-sdk = "latest"
 android-cli = "latest"
 gradle = "9.8.1"
 java = "temurin-25"
+"cargo:cargo-ndk" = "latest"
+rust = { version = "stable", targets = "aarch64-linux-android" }
 uv = "latest"
 "pypi:apksigcopier" = "latest"
 
@@ -15,7 +17,7 @@ postinstall = "mise run android-sdk-install"
 
 [tasks.android-sdk-install]
 run = """
-  android sdk install build-tools/36.0.0 platforms/android-37.0
+  android sdk install build-tools/36.0.0 platforms/android-37.0 ndk/30.0.16248370
 """
 
 [tasks.refresh-gradle]
