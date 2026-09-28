@@ -56,5 +56,4 @@ jobs:
             --draft \
             --base "${{ github.ref_name }}" \
             --head "$branch" \
-            --title "chore: bump version to ${{ steps.bump.outputs.next_name }}" \
-            --body "versionCode ${{ steps.bump.outputs.code }} -> $(( ${{ steps.bump.outputs.code }} + 1 )), versionName ${{ steps.bump.outputs.name }} -> ${{ steps.bump.outputs.next_name }}."
+            --title "chore: bump version to ${{ steps.bump.outputs.next_name }}"
