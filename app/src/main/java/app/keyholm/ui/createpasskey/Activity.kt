@@ -547,7 +547,9 @@ class Activity internal constructor(
                 allowedAuthenticators = hmacAuthenticators,
                 content =
                     promptContent(
-                        description = "${appLabel(pending.info.callingPackage)} wants access to the secret for:",
+                        description =
+                            "${appLabel(pending.info.callingPackage)} wants access to the secret for this passkey. " +
+                                "Cancel to decline and create the passkey anyway.",
                         lastUsedAt = null,
                         rp = pending.info.rp,
                         preferRpName = intent.preferRpName(),

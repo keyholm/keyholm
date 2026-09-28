@@ -297,7 +297,9 @@ class Activity internal constructor(
                                 allowedAuthenticators = hmac.value,
                                 content =
                                     promptContent(
-                                        description = "${appLabel(signIn.callingPackage)} wants access to the secret for:",
+                                        description =
+                                            "${appLabel(signIn.callingPackage)} wants access to the secret for this passkey. " +
+                                                "Cancel to decline and sign in anyway.",
                                         record = signIn.record,
                                         preferRpName = intent.preferRpName(),
                                     ),
