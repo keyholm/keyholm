@@ -4,6 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.widget.Toast
 import app.keyholm.keystore.AuthenticatorPolicy
+import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.keystore.SecureElementUnavailableException
 import app.keyholm.keystore.SecureKeyManager
@@ -36,6 +37,7 @@ internal class RegistrationKeyMaterial(
     private val dispatcher: CoroutineDispatcher,
 ) {
     private val keyManager by lazy { SecureKeyManager() }
+    private val hmacKeyManager by lazy { HmacKeyManager() }
     private val log = logger()
 
     suspend fun deleteKey(alias: KeyAlias) = withContext(dispatcher) { keyManager.deleteKey(alias) }
@@ -154,7 +156,7 @@ internal class RegistrationKeyMaterial(
 
     suspend fun macFor(alias: KeyAlias): Outcome<Mac> =
         try {
-            Outcome.Success(withContext(dispatcher) { keyManager.macFor(alias) })
+            Outcome.Success(withContext(dispatcher) { hmacKeyManager.macFor(alias) })
         } catch (e: KeyPermanentlyInvalidatedException) {
             log.e(e) { "macFor failed" }
             Outcome.Failure(ErrorMessages.KEY_INVALIDATED)
@@ -165,7 +167,7 @@ internal class RegistrationKeyMaterial(
 
     suspend fun hmacAuthenticatorsFor(alias: KeyAlias): Outcome<AuthenticatorPolicy> =
         try {
-            Outcome.Success(withContext(dispatcher) { keyManager.allowedAuthenticatorsForHmac(alias) })
+            Outcome.Success(withContext(dispatcher) { hmacKeyManager.allowedAuthenticatorsForHmac(alias) })
         } catch (e: GeneralSecurityException) {
             log.e(e) { "hmacAuthenticatorsFor failed" }
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
@@ -194,7 +196,7 @@ internal class RegistrationKeyMaterial(
         return try {
             Outcome.Success(
                 withContext(dispatcher) {
-                    keyManager
+                    hmacKeyManager
                         .generateHmacKey(
                             credentialId.hmacKeyAlias,
                             keystoreAuthenticators,

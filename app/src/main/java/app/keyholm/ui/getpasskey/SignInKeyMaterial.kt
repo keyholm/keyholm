@@ -2,6 +2,7 @@ package app.keyholm.ui.getpasskey
 
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import app.keyholm.keystore.AuthenticatorPolicy
+import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureElementUnavailableException
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.PasskeyRecord
@@ -41,7 +42,7 @@ internal class SignInKeyMaterial(
 
     suspend fun macFor(record: PasskeyRecord): Outcome<Mac> =
         try {
-            Outcome.Success(withContext(dispatcher) { SecureKeyManager().macFor(record.hmacKeyAlias) })
+            Outcome.Success(withContext(dispatcher) { HmacKeyManager().macFor(record.hmacKeyAlias) })
         } catch (e: KeyPermanentlyInvalidatedException) {
             log.e(e) { "macFor failed" }
             markLikelyInvalid(record)
@@ -55,7 +56,8 @@ internal class SignInKeyMaterial(
         val generated =
             try {
                 withContext(dispatcher) {
-                    SecureKeyManager().generateHmacKeyFor(record.keyAlias, record.keystore.coseAlgorithm, record.hmacKeyAlias)
+                    val credentialKey = SecureKeyManager().credentialKeyInfo(record.keyAlias, record.keystore.coseAlgorithm)
+                    HmacKeyManager().generateHmacKeyFor(credentialKey, record.hmacKeyAlias)
                 }
             } catch (e: SecureElementUnavailableException) {
                 log.e(e) { "failed to generate prf key" }
@@ -76,7 +78,7 @@ internal class SignInKeyMaterial(
 
     suspend fun hmacAuthenticatorsFor(alias: KeyAlias): Outcome<AuthenticatorPolicy> =
         try {
-            Outcome.Success(withContext(dispatcher) { SecureKeyManager().allowedAuthenticatorsForHmac(alias) })
+            Outcome.Success(withContext(dispatcher) { HmacKeyManager().allowedAuthenticatorsForHmac(alias) })
         } catch (e: GeneralSecurityException) {
             log.e(e) { "hmacAuthenticatorsFor failed" }
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_GET)

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import app.keyholm.iconpack.IconPackController
 import app.keyholm.iconpack.IconPackStorage
 import app.keyholm.keystore.AuthenticatorPolicy
+import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.provider.isCredentialProviderEnabled
 import app.keyholm.provider.setCredentialProviderComponentEnabled
@@ -272,7 +273,7 @@ class MainViewModel internal constructor(
                         val mainKey =
                             keyManager.allowedAuthenticatorsFor(record.keyAlias, record.keystore.coseAlgorithm)
                         if (record.hasPrf) {
-                            KeyAuthenticators.WithPrf(mainKey, keyManager.allowedAuthenticatorsForHmac(record.hmacKeyAlias))
+                            KeyAuthenticators.WithPrf(mainKey, HmacKeyManager().allowedAuthenticatorsForHmac(record.hmacKeyAlias))
                         } else {
                             KeyAuthenticators.SigningOnly(mainKey)
                         }
