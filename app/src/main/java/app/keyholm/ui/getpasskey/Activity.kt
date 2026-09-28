@@ -2,6 +2,7 @@ package app.keyholm.ui.getpasskey
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.biometric.BiometricPrompt
 import androidx.credentials.GetCredentialResponse
 import androidx.credentials.PublicKeyCredential
@@ -260,7 +261,7 @@ class Activity internal constructor(
                     )
                 when (val updated = keyMaterial.updateRecord(updatedRecord)) {
                     is Outcome.Failure -> failGetCredential(GetCredentialUnknownException(), updated.toastMessage)
-                    is Outcome.Success -> finishSignInWithSignature(signIn, derSignature.value)
+                    is Outcome.Success -> finishSignInWithSignature(signIn.copy(record = updatedRecord), derSignature.value)
                 }
             }
         }
@@ -276,14 +277,31 @@ class Activity internal constructor(
             return
         }
 
-        when (val mac = keyMaterial.macFor(signIn.record)) {
+        val record =
+            if (signIn.record.hasPrf) {
+                signIn.record
+            } else {
+                when (val setUp = keyMaterial.setUpPrf(signIn.record)) {
+                    is Outcome.Failure -> {
+                        setUp.toastMessage?.let { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
+                        respond(signIn, derSignature, prfResults = null)
+                        return
+                    }
+
+                    is Outcome.Success -> {
+                        setUp.value
+                    }
+                }
+            }
+
+        when (val mac = keyMaterial.macFor(record)) {
             is Outcome.Failure -> {
                 failGetCredential(GetCredentialUnknownException(), mac.toastMessage)
             }
 
             is Outcome.Success -> {
                 when (
-                    val hmac = keyMaterial.hmacAuthenticatorsFor(signIn.record.hmacKeyAlias)
+                    val hmac = keyMaterial.hmacAuthenticatorsFor(record.hmacKeyAlias)
                 ) {
                     is Outcome.Failure -> {
                         failGetCredential(GetCredentialUnknownException(), hmac.toastMessage)
@@ -300,7 +318,7 @@ class Activity internal constructor(
                                         description =
                                             "${appLabel(signIn.callingPackage)} wants access to the secret for this passkey. " +
                                                 "Cancel to decline and sign in anyway.",
-                                        record = signIn.record,
+                                        record = record,
                                         preferRpName = intent.preferRpName(),
                                     ),
                             ) as? PromptResult.Success

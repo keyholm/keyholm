@@ -150,7 +150,7 @@ internal class SignInRequestResolver(
         request: RequestOptions,
     ): Result<PrfExtension.Salts?> =
         try {
-            Result.success(if (record.hasPrf) PrfExtension.saltsForAssertion(request, record.credentialId) else null)
+            Result.success(PrfExtension.saltsForAssertion(request, record.credentialId))
         } catch (e: IllegalArgumentException) {
             log.e(e) { "couldn't decode PRF salt" }
             Result.failure(e)

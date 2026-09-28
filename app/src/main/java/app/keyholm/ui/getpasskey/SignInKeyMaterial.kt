@@ -2,6 +2,7 @@ package app.keyholm.ui.getpasskey
 
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import app.keyholm.keystore.AuthenticatorPolicy
+import app.keyholm.keystore.SecureElementUnavailableException
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
@@ -13,6 +14,7 @@ import app.keyholm.webauthn.WebAuthnAlgorithm
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.security.GeneralSecurityException
+import java.security.ProviderException
 import java.security.Signature
 import javax.crypto.Mac
 
@@ -48,6 +50,29 @@ internal class SignInKeyMaterial(
             log.e(e) { "macFor failed" }
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_GET)
         }
+
+    suspend fun setUpPrf(record: PasskeyRecord): Outcome<PasskeyRecord> {
+        val generated =
+            try {
+                withContext(dispatcher) {
+                    SecureKeyManager().generateHmacKeyFor(record.keyAlias, record.keystore.coseAlgorithm, record.hmacKeyAlias)
+                }
+            } catch (e: SecureElementUnavailableException) {
+                log.e(e) { "failed to generate prf key" }
+                return Outcome.Failure(e.message)
+            } catch (e: GeneralSecurityException) {
+                log.e(e) { "failed to generate prf key" }
+                return Outcome.Failure(ErrorMessages.PRF_SETUP_FAILED)
+            } catch (e: ProviderException) {
+                log.e(e) { "failed to generate prf key" }
+                return Outcome.Failure(ErrorMessages.PRF_SETUP_FAILED)
+            }
+        val updated = record.copy(keystore = record.keystore.copy(prfSecurityLevel = generated.securityLevel))
+        return when (updateRecord(updated)) {
+            is Outcome.Failure -> Outcome.Failure(ErrorMessages.PRF_SETUP_FAILED)
+            is Outcome.Success -> Outcome.Success(updated)
+        }
+    }
 
     suspend fun hmacAuthenticatorsFor(alias: KeyAlias): Outcome<AuthenticatorPolicy> =
         try {

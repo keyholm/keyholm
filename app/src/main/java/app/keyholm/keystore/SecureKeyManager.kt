@@ -164,13 +164,24 @@ class SecureKeyManager {
     fun allowedAuthenticatorsFor(
         alias: KeyAlias,
         algorithm: WebAuthnAlgorithm,
-    ): AuthenticatorPolicy {
-        val keyInfo =
-            KeyFactory
-                .getInstance(keyAlgorithmFor(algorithm), ANDROID_KEYSTORE)
-                .getKeySpec(keyFor<PrivateKey>(alias), KeyInfo::class.java)
-        return policyFromKeyInfo(keyInfo)
+    ): AuthenticatorPolicy = policyFromKeyInfo(credentialKeyInfo(alias, algorithm))
+
+    fun generateHmacKeyFor(
+        credentialAlias: KeyAlias,
+        algorithm: WebAuthnAlgorithm,
+        hmacAlias: KeyAlias,
+    ): GeneratedHmacKey {
+        val keyInfo = credentialKeyInfo(credentialAlias, algorithm)
+        return generateHmacKey(hmacAlias, policyFromKeyInfo(keyInfo), keyInfo.isInvalidatedByBiometricEnrollment)
     }
+
+    private fun credentialKeyInfo(
+        alias: KeyAlias,
+        algorithm: WebAuthnAlgorithm,
+    ): KeyInfo =
+        KeyFactory
+            .getInstance(keyAlgorithmFor(algorithm), ANDROID_KEYSTORE)
+            .getKeySpec(keyFor<PrivateKey>(alias), KeyInfo::class.java)
 
     fun allowedAuthenticatorsForHmac(alias: KeyAlias): AuthenticatorPolicy = policyFromKeyInfo(hmacKeyInfo(keyFor<SecretKey>(alias)))
 
