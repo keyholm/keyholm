@@ -21,6 +21,7 @@ internal object ErrorMessages {
     const val SECURITY_ERROR_CREATE = "Couldn't create passkey due to a security error."
     const val DEVICE_PROPERTIES_UNSUPPORTED = "Your device doesn't support device properties attestation."
     const val KEY_INVALIDATED = "Passkey invalidated because of lock screen or biometrics changes."
+    const val PRF_UNAVAILABLE_AFTER_CREATE = "Shared secret couldn't be unlocked."
 
     const val MALFORMED_REQUEST = "Invalid passkey request."
     const val MIGRATION_LINK_MALFORMED = "Import list is corrupt."

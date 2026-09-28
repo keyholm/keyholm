@@ -533,12 +533,18 @@ class Activity internal constructor(
         val mac =
             when (val r = keyMaterial.macFor(prfAlias)) {
                 is Outcome.Success -> r.value
-                is Outcome.Failure -> return failCreateCredential(CreateCredentialUnknownException(), r.toastMessage)
+                is Outcome.Failure -> {
+                    Toast.makeText(this, ErrorMessages.PRF_UNAVAILABLE_AFTER_CREATE, Toast.LENGTH_LONG).show()
+                    return respondToRegistration(pending, attestationObject, RegistrationPrf.Requested)
+                }
             }
         val hmacAuthenticators =
             when (val r = keyMaterial.hmacAuthenticatorsFor(prfAlias)) {
                 is Outcome.Success -> r.value
-                is Outcome.Failure -> return failCreateCredential(CreateCredentialUnknownException(), r.toastMessage)
+                is Outcome.Failure -> {
+                    Toast.makeText(this, ErrorMessages.PRF_UNAVAILABLE_AFTER_CREATE, Toast.LENGTH_LONG).show()
+                    return respondToRegistration(pending, attestationObject, RegistrationPrf.Requested)
+                }
             }
         val authorized =
             cryptoPrompt.authenticate(
