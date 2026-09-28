@@ -113,12 +113,21 @@ jobs:
           \`\`\`
           EOF
 
-          gh release create "$TAG" \
-            --draft \
-            --target "${{ github.sha }}" \
-            --title "$TAG" \
-            --notes-file dist/notes.md \
-            dist/keyholm-unsigned.apk dist/keyholm-unsigned.apk.sigstore.json
+          if [ "$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null)" = "true" ]; then
+            gh release view "$TAG" --json body --jq .body > dist/existing-notes.md
+            printf '\n' >> dist/existing-notes.md
+            cat dist/notes.md >> dist/existing-notes.md
+            gh release edit "$TAG" --draft --target "$SHA" --notes-file dist/existing-notes.md
+            gh release upload "$TAG" --clobber \
+              dist/keyholm-unsigned.apk dist/keyholm-unsigned.apk.sigstore.json
+          else
+            gh release create "$TAG" \
+              --draft \
+              --target "$SHA" \
+              --title "$TAG" \
+              --notes-file dist/notes.md \
+              dist/keyholm-unsigned.apk dist/keyholm-unsigned.apk.sigstore.json
+          fi
 
   verify:
     needs: build
