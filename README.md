@@ -1,4 +1,4 @@
-# <img src="docs/title.svg" alt="Keyholm" width="328">
+# <img src="docs/title.svg" alt="Keyholm" width="164">
 
 <table>
   <tr>
