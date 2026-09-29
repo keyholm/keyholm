@@ -1,3 +1,4 @@
-# Updated by .github/workflows/release.yaml
+# RPs listed here have their .well-known/assetlinks.json embedded in the build
 amazon.com
 bitwarden.com
+revolut.com
