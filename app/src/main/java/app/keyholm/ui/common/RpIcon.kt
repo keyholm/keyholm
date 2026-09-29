@@ -31,12 +31,24 @@ internal val RP_ICON_SIZE = 40.dp
 internal val RP_ICON_START = 16.dp
 
 private const val LETTER_ICON_CHROMA = 0.12f
-private const val LETTER_ICON_HUES = 360
+private const val LETTER_ICON_HUE_SLOTS = 12
 private const val HALF_TURN_DEGREES = 180f
+private const val FULL_TURN_DEGREES = 360f
 private const val LETTER_BACKGROUND_LIGHTNESS_DARK = 0.38f
 private const val LETTER_BACKGROUND_LIGHTNESS_LIGHT = 0.80f
 private const val LETTER_LIGHTNESS_DARK = 0.93f
 private const val LETTER_LIGHTNESS_LIGHT = 0.30f
+
+private const val GAMUT_SEARCH_STEPS = 16
+
+private fun oklab(
+    lightness: Float,
+    radians: Float,
+    chroma: Float,
+) = Color(lightness, chroma * cos(radians), chroma * sin(radians), colorSpace = ColorSpaces.Oklab)
+    .convert(ColorSpaces.ExtendedSrgb)
+
+private fun Color.inSrgbGamut() = red in 0f..1f && green in 0f..1f && blue in 0f..1f
 
 // more consistent difference between color
 private fun oklch(
@@ -44,12 +56,13 @@ private fun oklch(
     hue: Float,
 ): Color {
     val radians = hue * PI.toFloat() / HALF_TURN_DEGREES
-    return Color(
-        lightness,
-        LETTER_ICON_CHROMA * cos(radians),
-        LETTER_ICON_CHROMA * sin(radians),
-        colorSpace = ColorSpaces.Oklab,
-    ).convert(ColorSpaces.Srgb)
+    var low = 0f
+    var high = LETTER_ICON_CHROMA
+    repeat(GAMUT_SEARCH_STEPS) {
+        val mid = (low + high) / 2
+        if (oklab(lightness, radians, mid).inSrgbGamut()) low = mid else high = mid
+    }
+    return oklab(lightness, radians, low).convert(ColorSpaces.Srgb)
 }
 
 @Composable
@@ -89,11 +102,7 @@ internal fun RpLetterIcon(
     rpId: RpId,
     modifier: Modifier = Modifier,
 ) {
-    val hue =
-        rpId.value
-            .hashCode()
-            .mod(LETTER_ICON_HUES)
-            .toFloat()
+    val hue = rpId.value.hashCode().mod(LETTER_ICON_HUE_SLOTS) * (FULL_TURN_DEGREES / LETTER_ICON_HUE_SLOTS)
     val dark = isSystemInDarkTheme()
     val background = if (dark) LETTER_BACKGROUND_LIGHTNESS_DARK else LETTER_BACKGROUND_LIGHTNESS_LIGHT
     val foreground = if (dark) LETTER_LIGHTNESS_DARK else LETTER_LIGHTNESS_LIGHT
