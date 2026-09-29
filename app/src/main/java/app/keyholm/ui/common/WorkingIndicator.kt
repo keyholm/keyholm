@@ -18,7 +18,7 @@ import app.keyholm.ui.theme.titleColor
 import kotlinx.coroutines.delay
 
 // set to 0 to see every operation, however short
-private const val WORKING_INDICATOR_DELAY_MS = 150L
+private const val WORKING_INDICATOR_DELAY_MS = 50L
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
