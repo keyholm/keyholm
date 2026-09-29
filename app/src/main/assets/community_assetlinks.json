@@ -475,5 +475,160 @@
         ]
       }
     }
+  ],
+  "revolut.com": [
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.revolut",
+        "sha256_cert_fingerprints": [
+          "9C:9B:E0:71:35:E9:72:78:02:82:C2:E5:D2:7D:A0:6E:CB:8E:E3:AD:FC:75:30:39:17:DD:F6:6D:6F:AA:EF:A4",
+          "11:F2:5B:D6:30:60:CE:B4:EF:EC:48:7C:C8:1F:6D:3D:D0:3A:75:C3:E9:D2:C5:32:3D:69:55:9D:C1:7F:6A:23"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.revolut.test",
+        "sha256_cert_fingerprints": [
+          "90:EC:5D:75:11:4E:67:B7:F1:3F:C0:D0:57:85:9B:78:0D:A0:BA:49:E2:22:4C:60:42:7E:D2:EA:00:84:D1:B7"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.retail.india",
+        "sha256_cert_fingerprints": [
+          "9C:9B:E0:71:35:E9:72:78:02:82:C2:E5:D2:7D:A0:6E:CB:8E:E3:AD:FC:75:30:39:17:DD:F6:6D:6F:AA:EF:A4",
+          "11:F2:5B:D6:30:60:CE:B4:EF:EC:48:7C:C8:1F:6D:3D:D0:3A:75:C3:E9:D2:C5:32:3D:69:55:9D:C1:7F:6A:23"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.retail.india.test",
+        "sha256_cert_fingerprints": [
+          "90:EC:5D:75:11:4E:67:B7:F1:3F:C0:D0:57:85:9B:78:0D:A0:BA:49:E2:22:4C:60:42:7E:D2:EA:00:84:D1:B7"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.invest",
+        "sha256_cert_fingerprints": [
+          "9C:9B:E0:71:35:E9:72:78:02:82:C2:E5:D2:7D:A0:6E:CB:8E:E3:AD:FC:75:30:39:17:DD:F6:6D:6F:AA:EF:A4",
+          "11:F2:5B:D6:30:60:CE:B4:EF:EC:48:7C:C8:1F:6D:3D:D0:3A:75:C3:E9:D2:C5:32:3D:69:55:9D:C1:7F:6A:23"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.invest.test",
+        "sha256_cert_fingerprints": [
+          "90:EC:5D:75:11:4E:67:B7:F1:3F:C0:D0:57:85:9B:78:0D:A0:BA:49:E2:22:4C:60:42:7E:D2:EA:00:84:D1:B7"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.revolutx",
+        "sha256_cert_fingerprints": [
+          "9C:9B:E0:71:35:E9:72:78:02:82:C2:E5:D2:7D:A0:6E:CB:8E:E3:AD:FC:75:30:39:17:DD:F6:6D:6F:AA:EF:A4",
+          "11:F2:5B:D6:30:60:CE:B4:EF:EC:48:7C:C8:1F:6D:3D:D0:3A:75:C3:E9:D2:C5:32:3D:69:55:9D:C1:7F:6A:23"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.revolutx.test",
+        "sha256_cert_fingerprints": [
+          "90:EC:5D:75:11:4E:67:B7:F1:3F:C0:D0:57:85:9B:78:0D:A0:BA:49:E2:22:4C:60:42:7E:D2:EA:00:84:D1:B7"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.business",
+        "sha256_cert_fingerprints": [
+          "9C:9B:E0:71:35:E9:72:78:02:82:C2:E5:D2:7D:A0:6E:CB:8E:E3:AD:FC:75:30:39:17:DD:F6:6D:6F:AA:EF:A4"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.business.test",
+        "sha256_cert_fingerprints": [
+          "90:EC:5D:75:11:4E:67:B7:F1:3F:C0:D0:57:85:9B:78:0D:A0:BA:49:E2:22:4C:60:42:7E:D2:EA:00:84:D1:B7"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.junior",
+        "sha256_cert_fingerprints": [
+          "9C:9B:E0:71:35:E9:72:78:02:82:C2:E5:D2:7D:A0:6E:CB:8E:E3:AD:FC:75:30:39:17:DD:F6:6D:6F:AA:EF:A4",
+          "15:01:2B:E8:25:6D:35:AB:AA:8F:30:E7:96:3E:56:B8:DE:2C:97:A4:23:D4:27:1A:92:87:04:04:4D:F0:86:C6"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.revolut.junior.test",
+        "sha256_cert_fingerprints": [
+          "90:EC:5D:75:11:4E:67:B7:F1:3F:C0:D0:57:85:9B:78:0D:A0:BA:49:E2:22:4C:60:42:7E:D2:EA:00:84:D1:B7"
+        ]
+      }
+    }
   ]
 }
