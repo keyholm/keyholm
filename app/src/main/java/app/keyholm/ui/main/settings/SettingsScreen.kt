@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -52,10 +51,10 @@ import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.common.resolveCreateAuthenticators
+import app.keyholm.ui.main.DeviceStatusRows
 import app.keyholm.ui.main.LOAD_ERROR
 import app.keyholm.ui.main.MainUiState
 import app.keyholm.ui.main.MainViewModel
-import app.keyholm.ui.main.StatusRow
 import app.keyholm.ui.main.Stored
 import app.keyholm.webauthn.NativeAppTrust
 import app.keyholm.webauthn.TrustMode
@@ -84,17 +83,6 @@ private fun SettingsTopBar(
     )
 }
 
-private const val STATUS_ALL_FEATURES_OK = "All features supported."
-private const val STATUS_TEE_OK = "Hardware-backed (TEE) keystore found."
-private const val STATUS_TEE_NOT_OK = "No hardware-backed (TEE) keystore found on this device."
-private const val STATUS_TEE_ML_DSA_OK = "TEE supports ML-DSA."
-private const val STATUS_TEE_ML_DSA_NOT_OK = "TEE doesn't support ML-DSA."
-internal const val STATUS_SECURE_ELEMENT_OK = "Dedicated secure element (StrongBox) found."
-internal const val STATUS_SECURE_ELEMENT_NOT_OK =
-    "No dedicated secure element (StrongBox) found. This app is not supported."
-private const val STATUS_PROVIDER_OK = "Keyholm is enabled as a passkey service."
-private const val STATUS_PROVIDER_NOT_OK = "Keyholm is not enabled as a passkey service."
-
 @Composable
 private fun StatusSection(uiState: MainUiState.Ready) {
     Section(title = SECTION_TITLE_STATUS) {
@@ -102,40 +90,7 @@ private fun StatusSection(uiState: MainUiState.Ready) {
             Column(
                 Modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(16.dp),
             ) {
-                val device = uiState.device
-                if (device.tee && device.teeMlDsa && device.secureElement) {
-                    StatusRow(
-                        isOk = true,
-                        okText = STATUS_ALL_FEATURES_OK,
-                        notOkText = STATUS_ALL_FEATURES_OK,
-                    )
-                } else {
-                    StatusRow(
-                        isOk = device.tee,
-                        okText = STATUS_TEE_OK,
-                        notOkText = STATUS_TEE_NOT_OK,
-                    )
-                    if (device.tee) {
-                        Spacer(Modifier.height(8.dp))
-                        StatusRow(
-                            isOk = device.teeMlDsa,
-                            okText = STATUS_TEE_ML_DSA_OK,
-                            notOkText = STATUS_TEE_ML_DSA_NOT_OK,
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    StatusRow(
-                        isOk = device.secureElement,
-                        okText = STATUS_SECURE_ELEMENT_OK,
-                        notOkText = STATUS_SECURE_ELEMENT_NOT_OK,
-                    )
-                }
-                Spacer(Modifier.height(8.dp))
-                StatusRow(
-                    isOk = device.providerEnabled,
-                    okText = STATUS_PROVIDER_OK,
-                    notOkText = STATUS_PROVIDER_NOT_OK,
-                )
+                DeviceStatusRows(uiState.device)
             }
         }
     }

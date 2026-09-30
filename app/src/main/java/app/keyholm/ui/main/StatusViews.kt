@@ -27,8 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import app.keyholm.ui.main.settings.STATUS_SECURE_ELEMENT_NOT_OK
-import app.keyholm.ui.main.settings.STATUS_SECURE_ELEMENT_OK
 
 @Composable
 internal fun WarningCard(
@@ -151,23 +149,57 @@ internal fun StatusRow(
     }
 }
 
+private const val STATUS_ALL_FEATURES_OK = "All features supported."
+private const val STATUS_TEE_OK = "Hardware-backed (TEE) keystore found."
+private const val STATUS_TEE_NOT_OK = "No hardware-backed (TEE) keystore found on this device."
+private const val STATUS_TEE_ML_DSA_OK = "TEE supports ML-DSA."
+private const val STATUS_TEE_ML_DSA_NOT_OK = "TEE doesn't support ML-DSA."
+private const val STATUS_SECURE_ELEMENT_OK = "Dedicated secure element (StrongBox) found."
+private const val STATUS_SECURE_ELEMENT_NOT_OK =
+    "No dedicated secure element (StrongBox) found. This app is not supported."
+private const val STATUS_PROVIDER_OK = "Keyholm is enabled as a passkey service."
+private const val STATUS_PROVIDER_NOT_OK = "Keyholm is not enabled as a passkey service."
+
 @Composable
-internal fun SecureElementStatusRow(isAvailable: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (!isAvailable) {
-            Icon(imageVector = Icons.Default.Error, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
+internal fun DeviceStatusRows(device: DeviceStatus) {
+    if (device.tee && device.teeMlDsa && device.secureElement) {
+        StatusRow(
+            isOk = true,
+            okText = STATUS_ALL_FEATURES_OK,
+            notOkText = STATUS_ALL_FEATURES_OK,
+        )
+    } else {
+        StatusRow(
+            isOk = device.tee,
+            okText = STATUS_TEE_OK,
+            notOkText = STATUS_TEE_NOT_OK,
+        )
+        if (device.tee) {
+            Spacer(Modifier.height(8.dp))
+            StatusRow(
+                isOk = device.teeMlDsa,
+                okText = STATUS_TEE_ML_DSA_OK,
+                notOkText = STATUS_TEE_ML_DSA_NOT_OK,
+            )
         }
-        Text(
-            text = if (isAvailable) STATUS_SECURE_ELEMENT_OK else STATUS_SECURE_ELEMENT_NOT_OK,
-            style = MaterialTheme.typography.bodyMedium,
+        Spacer(Modifier.height(8.dp))
+        StatusRow(
+            isOk = device.secureElement,
+            okText = STATUS_SECURE_ELEMENT_OK,
+            notOkText = STATUS_SECURE_ELEMENT_NOT_OK,
         )
     }
+    Spacer(Modifier.height(8.dp))
+    StatusRow(
+        isOk = device.providerEnabled,
+        okText = STATUS_PROVIDER_OK,
+        notOkText = STATUS_PROVIDER_NOT_OK,
+    )
 }
 
 @Composable
 internal fun StatusCard(
-    isAvailable: Boolean,
+    device: DeviceStatus,
     onOpenSettings: () -> Unit,
 ) {
     Card(
@@ -179,13 +211,13 @@ internal fun StatusCard(
                 start = 16.dp,
                 top = 16.dp,
                 end = 16.dp,
-                bottom = if (isAvailable) 8.dp else 16.dp,
+                bottom = if (device.secureElement) 8.dp else 16.dp,
             ),
         ) {
-            SecureElementStatusRow(isAvailable)
-            if (isAvailable) {
+            DeviceStatusRows(device)
+            if (device.secureElement) {
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = onOpenSettings) { Text("Keyholm must be enabled as a passkey service.") }
+                Button(onClick = onOpenSettings) { Text("Open Settings to enable") }
             }
         }
     }

@@ -165,7 +165,7 @@ private fun PasskeyListContent(
         if (!uiState.device.providerEnabled) {
             item {
                 StatusCard(
-                    isAvailable = uiState.device.secureElement,
+                    device = uiState.device,
                     onOpenSettings = actions.onOpenSettings,
                 )
             }
