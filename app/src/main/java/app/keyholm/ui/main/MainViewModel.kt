@@ -207,7 +207,7 @@ class MainViewModel internal constructor(
         }
 
     val pendingDeletes =
-        PendingDeleteController(passkeyRepo, viewModelScope, dispatcher, reportError)
+        PendingDeleteController(PasskeyPendingDeletes(passkeyRepo), viewModelScope, dispatcher, reportError)
 
     val uiState: StateFlow<MainUiState> =
         combine(

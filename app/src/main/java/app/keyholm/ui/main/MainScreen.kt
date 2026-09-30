@@ -20,11 +20,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
@@ -43,42 +41,11 @@ import app.keyholm.iconpack.IconPack
 import app.keyholm.store.MigrationPlaceholder
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.CryptoPrompt
-import app.keyholm.ui.common.promptContent
 import app.keyholm.ui.common.rememberAppIcon
 import app.keyholm.ui.theme.titleColor
 import app.keyholm.webauthn.CredentialId
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-
-@Composable
-private fun HandleDeleteUndo(
-    pendingDeleteBatch: List<PasskeyRecord>,
-    snackbarHostState: SnackbarHostState,
-    rowGeneration: MutableMap<CredentialId, Int>,
-    onUndo: () -> Unit,
-) {
-    LaunchedEffect(pendingDeleteBatch) {
-        if (pendingDeleteBatch.isEmpty()) return@LaunchedEffect
-        val mostRecent = pendingDeleteBatch.last()
-        val othersCount = pendingDeleteBatch.size - 1
-        val message =
-            "Deleted ${mostRecent.user.name}" +
-                if (othersCount > 0) " and $othersCount other passkey${if (othersCount == 1) "" else "s"}" else ""
-        val result =
-            snackbarHostState.showSnackbar(
-                message = message,
-                actionLabel = "Undo",
-                duration = SnackbarDuration.Long,
-            )
-        if (result == SnackbarResult.ActionPerformed) {
-            // Force a fresh SwipeToDismissBoxState for every row in the batch: without this,
-            // LazyColumn restores each row's old (fully-swiped) saved state under the same key
-            // and immediately re-fires onDismiss, looping the delete right back on.
-            pendingDeleteBatch.forEach { rowGeneration[it.credentialId] = (rowGeneration[it.credentialId] ?: 0) + 1 }
-            onUndo()
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,12 +71,6 @@ private fun MainTopBar(onOpenSettings: () -> Unit) {
         },
     )
 }
-
-internal class DeleteConfirmationRequest(
-    val record: PasskeyRecord,
-    val onConfirmed: () -> Unit,
-    val onDenied: () -> Unit,
-)
 
 private fun LazyListScope.passkeyItems(
     passkeys: List<PasskeyRecord>,
@@ -245,11 +206,12 @@ fun MainScreen(
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
-    HandleDeleteUndo(uiState.pendingDeleteBatch, snackbarHostState, rowGeneration, viewModel.pendingDeletes::undoAll)
+    PasskeyDeleteUndo(uiState.pendingDeleteBatch, snackbarHostState, rowGeneration, viewModel.pendingDeletes::undoAll)
 
     // This is for when multiple rows are swiped before the prompt shows up
     val confirmationQueue = remember { Channel<DeleteConfirmationRequest>(Channel.UNLIMITED) }
-    val requestDeleteConfirmation: DeleteConfirmationRequester = { confirmationQueue.trySend(it) }
+    val requestPasskeyDeleteConfirmation =
+        passkeyDeleteRequester(confirmationQueue, uiState.settings.preferRpName, viewModel.pendingDeletes::planFor)
     val scope = rememberCoroutineScope()
     val listActions =
         PasskeyListActions(
@@ -258,7 +220,7 @@ fun MainScreen(
                     onDelete = viewModel.pendingDeletes::start,
                     onOpenDetails = onOpenDetails,
                     onCancelDelete = viewModel.pendingDeletes::cancel,
-                    requestDeleteConfirmation = requestDeleteConfirmation,
+                    requestDeleteConfirmation = requestPasskeyDeleteConfirmation,
                 ),
             onDismissWarning = viewModel.settings::dismissDeviceBoundWarning,
             onOpenSettings = { openCredentialSettings(context) },
@@ -266,36 +228,11 @@ fun MainScreen(
             showMessage = { scope.launch { snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short) } },
         )
 
-    LaunchedEffect(cryptoPrompt) {
-        for (request in confirmationQueue) {
-            val confirmed =
-                when (val plan = viewModel.pendingDeletes.planFor(request.record)) {
-                    DeletePlan.Orphaned -> {
-                        true
-                    }
-
-                    is DeletePlan.Failed -> {
-                        viewModel.reportError(plan.message)
-                        false
-                    }
-
-                    is DeletePlan.Confirm -> {
-                        cryptoPrompt.confirm(
-                            title = "Delete passkey",
-                            cryptoObject = plan.cryptoObject,
-                            allowedAuthenticators = plan.allowedAuthenticators,
-                            content =
-                                promptContent(
-                                    description = "Confirm your identity to delete this passkey:",
-                                    record = request.record,
-                                    preferRpName = uiState.settings.preferRpName,
-                                ),
-                        )
-                    }
-                }
-            if (confirmed) request.onConfirmed() else request.onDenied()
-        }
-    }
+    HandleDeleteConfirmations(
+        confirmationQueue = confirmationQueue,
+        cryptoPrompt = cryptoPrompt,
+        reportError = viewModel.reportError,
+    )
 
     Scaffold(topBar = { MainTopBar(onOpenSettings) }) { innerPadding ->
         PasskeyListContent(uiState, iconPack, innerPadding, rowGeneration, listActions)

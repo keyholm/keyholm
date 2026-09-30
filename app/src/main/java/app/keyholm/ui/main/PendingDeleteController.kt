@@ -2,15 +2,10 @@ package app.keyholm.ui.main
 
 import androidx.biometric.BiometricPrompt
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.keystore.SecureKeyManager
-import app.keyholm.store.PasskeyRecord
-import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.RecordLifecycle
 import app.keyholm.store.readStore
 import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
-import app.keyholm.util.logger
-import app.keyholm.webauthn.CredentialId
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,9 +19,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.security.GeneralSecurityException
-import java.security.ProviderException
-import java.security.UnrecoverableKeyException
 import java.time.Duration
 import java.time.Instant
 
@@ -45,69 +37,91 @@ sealed interface DeletePlan {
     ) : DeletePlan
 }
 
-private class Pending(
-    val record: PasskeyRecord,
+interface PendingDeleteStore<Id, R> {
+    val records: Flow<List<R>>
+
+    fun id(record: R): Id
+
+    fun lifecycle(record: R): RecordLifecycle
+
+    fun withLifecycle(
+        record: R,
+        lifecycle: RecordLifecycle,
+    ): R
+
+    suspend fun update(record: R): Result<Unit>
+
+    suspend fun delete(id: Id): Result<Unit>
+
+    fun planDelete(record: R): DeletePlan
+
+    fun deleteKeyMaterial(record: R)
+}
+
+private class Pending<R>(
+    val record: R,
     val job: Job,
 )
 
-private typealias PendingDeletes = MutableStateFlow<Map<CredentialId, Pending>>
+private typealias PendingDeletes<Id, R> = MutableStateFlow<Map<Id, Pending<R>>>
 
-private fun PendingDeletes.cancel(credentialId: CredentialId) {
-    getAndUpdate { it - credentialId }[credentialId]?.job?.cancel()
+private fun <Id, R> PendingDeletes<Id, R>.cancel(id: Id) {
+    getAndUpdate { it - id }[id]?.job?.cancel()
 }
 
-private fun PendingDeletes.cancelAll(): List<Pending> = getAndUpdate { emptyMap() }.values.onEach { it.job.cancel() }.toList()
+private fun <Id, R> PendingDeletes<Id, R>.cancelAll(): List<Pending<R>> =
+    getAndUpdate { emptyMap() }.values.onEach { it.job.cancel() }.toList()
 
-class PendingDeleteController(
-    private val passkeyRepo: PasskeyRepository,
+class PendingDeleteController<Id, R>(
+    private val store: PendingDeleteStore<Id, R>,
     private val scope: CoroutineScope,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val onError: (String) -> Unit,
 ) {
-    private val log = logger()
-    private val pending: PendingDeletes = MutableStateFlow(emptyMap())
+    private val pending: PendingDeletes<Id, R> = MutableStateFlow(emptyMap())
 
-    val batch: Flow<List<PasskeyRecord>> = pending.map { it.values.map(Pending::record) }
+    val batch: Flow<List<R>> = pending.map { it.values.map(Pending<R>::record) }
 
     fun resume() {
         scope.launch {
             val now = Instant.now()
-            val stored = readStore { passkeyRepo.passkeys.first() } ?: return@launch
+            val stored = readStore { store.records.first() } ?: return@launch
             val pendingFromStore =
                 stored.mapNotNull { record ->
-                    (record.lifecycle as? RecordLifecycle.PendingDelete)?.let { record to it.at }
+                    (store.lifecycle(record) as? RecordLifecycle.PendingDelete)?.let { record to it.at }
                 }
             val (overdue, inFlight) = pendingFromStore.partition { (_, at) -> !at.isAfter(now) }
             overdue.forEach { (record, _) -> deleteKeyMaterial(record) }
-            overdue.forEach { (record, _) -> forget(record.credentialId) }
+            overdue.forEach { (record, _) -> forget(store.id(record)) }
             inFlight.forEach { (record, at) -> arm(record, Duration.between(now, at).toMillis()) }
         }
     }
 
-    fun start(record: PasskeyRecord) {
+    fun start(record: R) {
         val deleteAt = RecordLifecycle.PendingDelete(Instant.now().plusMillis(UNDO_WINDOW_MS))
-        val newPending = record.copy(lifecycle = deleteAt)
-        scope.launch { write { passkeyRepo.update(newPending) } }
+        val newPending = store.withLifecycle(record, deleteAt)
+        scope.launch { write { store.update(newPending) } }
         arm(newPending, UNDO_WINDOW_MS)
     }
 
     private fun arm(
-        record: PasskeyRecord,
+        record: R,
         remainingMs: Long,
     ) {
-        if (record.credentialId in pending.value) return
+        val id = store.id(record)
+        if (id in pending.value) return
         val job =
             scope.launch {
                 delay(remainingMs)
                 deleteKeyMaterial(record)
-                forget(record.credentialId)
-                pending.update { it - record.credentialId }
+                forget(id)
+                pending.update { it - id }
             }
-        pending.update { it + (record.credentialId to Pending(record, job)) }
+        pending.update { it + (id to Pending(record, job)) }
     }
 
-    fun cancel(record: PasskeyRecord) {
-        pending.cancel(record.credentialId)
+    fun cancel(record: R) {
+        pending.cancel(store.id(record))
         scope.launch { restore(record) }
     }
 
@@ -120,43 +134,15 @@ class PendingDeleteController(
         pending.cancelAll()
     }
 
-    suspend fun planFor(record: PasskeyRecord): DeletePlan =
-        withContext(dispatcher) {
-            val algorithm = record.keystore.coseAlgorithm
-            val keyManager = SecureKeyManager()
-            val allowedAuthenticators =
-                try {
-                    keyManager.allowedAuthenticatorsFor(record.keyAlias, algorithm)
-                } catch (e: UnrecoverableKeyException) {
-                    log.e(e) { "no key material for ${record.keyAlias.value}, treating as orphaned" }
-                    return@withContext DeletePlan.Orphaned
-                } catch (e: GeneralSecurityException) {
-                    log.e(e) { "couldn't read authenticators for ${record.keyAlias.value}" }
-                    return@withContext DeletePlan.Failed(ErrorMessages.DELETE_KEY_UNAVAILABLE)
-                } catch (e: ProviderException) {
-                    log.e(e) { "couldn't read authenticators for ${record.keyAlias.value}" }
-                    return@withContext DeletePlan.Failed(ErrorMessages.DELETE_KEY_UNAVAILABLE)
-                }
-            val cryptoObject =
-                try {
-                    BiometricPrompt.CryptoObject(keyManager.signatureFor(record.keyAlias, algorithm))
-                } catch (e: GeneralSecurityException) {
-                    log.e(e) { "couldn't create a signature for ${record.keyAlias.value}" }
-                    null
-                }
-            DeletePlan.Confirm(cryptoObject, allowedAuthenticators)
-        }
+    suspend fun planFor(record: R): DeletePlan = withContext(dispatcher) { store.planDelete(record) }
 
-    private suspend fun deleteKeyMaterial(record: PasskeyRecord) {
-        withContext(dispatcher) {
-            SecureKeyManager().deleteKey(record.keyAlias)
-            if (record.hasPrf) SecureKeyManager().deleteKey(record.hmacKeyAlias)
-        }
+    private suspend fun deleteKeyMaterial(record: R) {
+        withContext(dispatcher) { store.deleteKeyMaterial(record) }
     }
 
-    private suspend fun restore(record: PasskeyRecord) = write { passkeyRepo.update(record.copy(lifecycle = RecordLifecycle.Active)) }
+    private suspend fun restore(record: R) = write { store.update(store.withLifecycle(record, RecordLifecycle.Active)) }
 
-    private suspend fun forget(credentialId: CredentialId) = write { passkeyRepo.delete(credentialId) }
+    private suspend fun forget(id: Id) = write { store.delete(id) }
 
     private suspend fun write(block: suspend () -> Result<Unit>) {
         if (!writeStore(block)) onError(ErrorMessages.UPDATE_FAILED)

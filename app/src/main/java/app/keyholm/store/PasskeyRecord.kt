@@ -42,11 +42,3 @@ data class PasskeyRecord(
     val hmacKeyAlias: KeyAlias get() = credentialId.hmacKeyAlias
     val hasPrf: Boolean get() = keystore.prfSecurityLevel != null
 }
-
-sealed interface RecordLifecycle {
-    data object Active : RecordLifecycle
-
-    data class PendingDelete(
-        val at: Instant,
-    ) : RecordLifecycle
-}
