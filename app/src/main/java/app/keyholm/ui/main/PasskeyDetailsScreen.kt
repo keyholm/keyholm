@@ -13,11 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,6 +54,7 @@ import app.keyholm.util.sha256
 import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.RelyingParty
 import com.google.protobuf.ByteString
+import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
@@ -209,12 +213,18 @@ private fun PasskeyDetailsTopBar(
     rp: RelyingParty,
     preferRpName: Boolean,
     onBack: () -> Unit,
+    onOpen: () -> Unit,
 ) {
     val title = (if (preferRpName) rpDisplayName(rp) else null) ?: rp.id.value
     TopAppBar(
         title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         navigationIcon = {
             BackButton(onBack)
+        },
+        actions = {
+            IconButton(onClick = onOpen) {
+                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open RP or app")
+            }
         },
     )
 }
@@ -253,7 +263,10 @@ internal fun PasskeyDetailsScreen(
 
     val preferRpName = uiState.settings.preferRpName
     val iconPack by viewModel.iconPacks.pack.collectAsStateWithLifecycle()
-    Scaffold(topBar = { PasskeyDetailsTopBar(record.rp, preferRpName, onBack) }) { innerPadding ->
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val onOpen: () -> Unit = { scope.launch { context.startActivity(viewModel.details.openPasskeyCallerIntent(record)) } }
+    Scaffold(topBar = { PasskeyDetailsTopBar(record.rp, preferRpName, onBack, onOpen) }) { innerPadding ->
         Column(
             modifier =
                 Modifier

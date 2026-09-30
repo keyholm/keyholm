@@ -1,5 +1,7 @@
 package app.keyholm.ui.main
 
+import android.content.Context
+import android.content.Intent
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
@@ -43,6 +45,7 @@ sealed interface PasskeyDetails {
 }
 
 class PasskeyDetailsController(
+    private val context: Context,
     private val scope: CoroutineScope,
     private val dispatcher: CoroutineDispatcher,
 ) {
@@ -105,4 +108,6 @@ class PasskeyDetailsController(
     fun clear() {
         details.value = PasskeyDetails.Closed
     }
+
+    suspend fun openPasskeyCallerIntent(record: PasskeyRecord): Intent = openPasskeyCallerIntent(context, record, dispatcher, log)
 }

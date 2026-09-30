@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
@@ -101,12 +100,6 @@ private fun BoxScope.PasskeyListItemTrailingIcon(
                 contentDescription = "Permanently invalidated",
                 tint = contentColor ?: MaterialTheme.colorScheme.error,
             )
-        } else {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = contentColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
@@ -126,7 +119,12 @@ private fun PasskeyListItemContent(
         ListItem(
             supportingContent = { PasskeyListItemSupportingContent(record, display.compactView, df) },
             leadingContent = { Spacer(Modifier.size(RP_ICON_SIZE)) },
-            trailingContent = { Spacer(Modifier.size(48.dp)) },
+            trailingContent =
+                if (onCancelDelete != null || record.likelyInvalid) {
+                    { Spacer(Modifier.size(48.dp)) }
+                } else {
+                    null
+                },
             colors =
                 if (effectiveContentColor != null) {
                     ListItemDefaults.colors(
