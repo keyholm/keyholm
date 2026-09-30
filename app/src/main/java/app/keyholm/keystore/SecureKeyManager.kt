@@ -8,6 +8,7 @@ import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
 import android.util.Base64
+import app.keyholm.util.logger
 import app.keyholm.webauthn.ClientDataHash
 import app.keyholm.webauthn.KeyAlias
 import app.keyholm.webauthn.WebAuthnAlgorithm
@@ -53,6 +54,7 @@ class SecureKeyManager {
         val includeDeviceProperties: Boolean,
     )
 
+    private val log = logger()
     private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
 
     fun generateCredentialKey(request: CredentialKeyRequest): CredentialKeyGeneration {
@@ -80,13 +82,8 @@ class SecureKeyManager {
             }
 
         fun fallbackFromStrongBox(e: Exception): CredentialKeyGeneration {
+            log.w(e) { "StrongBox can't generate ${algorithm.displayName} keys, falling back to the TEE" }
             deleteKey(alias)
-            if (algorithm == WebAuthnAlgorithm.ES256) {
-                throw SecureElementUnavailableException(
-                    "This device has no secure element (StrongBox). Hardware passkeys are not supported.",
-                    e,
-                )
-            }
             return generate(strongBox = false)
         }
 
@@ -239,9 +236,7 @@ class SecureKeyManager {
             algorithm: WebAuthnAlgorithm,
         ): Boolean =
             when (algorithm) {
-                WebAuthnAlgorithm.ES256 -> isSecureElementAvailable(context)
-
-                WebAuthnAlgorithm.ED25519 -> isTeeAvailable(context)
+                WebAuthnAlgorithm.ES256, WebAuthnAlgorithm.ED25519 -> isTeeAvailable(context)
 
                 WebAuthnAlgorithm.ML_DSA_65,
                 WebAuthnAlgorithm.ML_DSA_87,

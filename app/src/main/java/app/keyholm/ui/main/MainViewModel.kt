@@ -128,11 +128,11 @@ class MainViewModel internal constructor(
         refreshTicks.map {
             withContext(dispatcher) {
                 val context = getApplication<Application>()
-                val secureElement = SecureKeyManager.isSecureElementAvailable(context)
-                setCredentialProviderComponentEnabled(context, secureElement)
+                val tee = SecureKeyManager.isTeeAvailable(context)
+                setCredentialProviderComponentEnabled(context, tee)
                 DeviceStatus(
-                    secureElement = secureElement,
-                    tee = SecureKeyManager.isTeeAvailable(context),
+                    secureElement = SecureKeyManager.isSecureElementAvailable(context),
+                    tee = tee,
                     teeMlDsa = SecureKeyManager.isAlgorithmAvailable(context, WebAuthnAlgorithm.ML_DSA_87),
                     providerEnabled = isCredentialProviderEnabled(context),
                 )

@@ -6,6 +6,7 @@ import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
 import app.keyholm.keystore.SecureKeyManager.Companion.ANDROID_KEYSTORE
 import app.keyholm.keystore.SecureKeyManager.Companion.policyFromKeyInfo
+import app.keyholm.util.logger
 import app.keyholm.webauthn.KeyAlias
 import java.security.KeyStore
 import java.security.UnrecoverableKeyException
@@ -20,6 +21,7 @@ class HmacKeyManager {
         val securityLevel: KeySecurityLevel,
     )
 
+    private val log = logger()
     private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
 
     fun generateHmacKey(
@@ -27,28 +29,32 @@ class HmacKeyManager {
         authenticatorTypes: AuthenticatorPolicy,
         invalidateOnBiometricEnrollment: Boolean,
     ): GeneratedHmacKey {
-        val spec =
-            KeyGenParameterSpec
-                .Builder(alias.value, KeyProperties.PURPOSE_SIGN)
-                .setUnlockedDeviceRequired(true)
-                .setUserAuthenticationRequired(true)
-                .setUserAuthenticationParameters(0, authenticatorTypes.keystoreMask)
-                .setInvalidatedByBiometricEnrollment(invalidateOnBiometricEnrollment)
-                .setIsStrongBoxBacked(true)
-                .build()
-        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_HMAC_SHA256, ANDROID_KEYSTORE)
+        fun generate(strongBox: Boolean): SecretKey {
+            val spec =
+                KeyGenParameterSpec
+                    .Builder(alias.value, KeyProperties.PURPOSE_SIGN)
+                    .setUnlockedDeviceRequired(true)
+                    .setUserAuthenticationRequired(true)
+                    .setUserAuthenticationParameters(0, authenticatorTypes.keystoreMask)
+                    .setInvalidatedByBiometricEnrollment(invalidateOnBiometricEnrollment)
+                    .setIsStrongBoxBacked(strongBox)
+                    .build()
+            val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_HMAC_SHA256, ANDROID_KEYSTORE)
+            generator.init(spec)
+            return generator.generateKey()
+        }
         val key =
             try {
-                generator.init(spec)
-                generator.generateKey()
+                generate(strongBox = true)
             } catch (e: StrongBoxUnavailableException) {
+                log.w(e) { "StrongBox unavailable for the PRF key, falling back to the TEE" }
                 deleteKey(alias)
-                throw SecureElementUnavailableException(PRF_NO_SECURE_ELEMENT, e)
+                generate(strongBox = false)
             }
         val securityLevel = KeySecurityLevel.ofKeyInfo(hmacKeyInfo(key))
         if (securityLevel == null) {
             deleteKey(alias)
-            throw SecureElementUnavailableException(PRF_NO_SECURE_ELEMENT)
+            throw SecureElementUnavailableException(PRF_NO_SECURE_HARDWARE)
         }
         return GeneratedHmacKey(key, securityLevel)
     }
@@ -77,7 +83,6 @@ class HmacKeyManager {
 
     companion object {
         private const val MAC_ALGORITHM_HMAC_SHA256 = "HmacSHA256"
-        private const val PRF_NO_SECURE_ELEMENT =
-            "This device has no secure element (StrongBox). PRF is not supported."
+        private const val PRF_NO_SECURE_HARDWARE = "This device doesn't support PRF keys with secure hardware."
     }
 }

@@ -151,12 +151,11 @@ internal fun StatusRow(
 
 private const val STATUS_ALL_FEATURES_OK = "All features supported."
 private const val STATUS_TEE_OK = "Hardware-backed (TEE) keystore found."
-private const val STATUS_TEE_NOT_OK = "No hardware-backed (TEE) keystore found on this device."
+private const val STATUS_TEE_NOT_OK = "No hardware-backed (TEE) keystore found on this device. This app is not supported."
 private const val STATUS_TEE_ML_DSA_OK = "TEE supports ML-DSA."
 private const val STATUS_TEE_ML_DSA_NOT_OK = "TEE doesn't support ML-DSA."
 private const val STATUS_SECURE_ELEMENT_OK = "Dedicated secure element (StrongBox) found."
-private const val STATUS_SECURE_ELEMENT_NOT_OK =
-    "No dedicated secure element (StrongBox) found. This app is not supported."
+private const val STATUS_SECURE_ELEMENT_NOT_OK = "No dedicated secure element (StrongBox) found."
 private const val STATUS_PROVIDER_OK = "Keyholm is enabled as a passkey service."
 private const val STATUS_PROVIDER_NOT_OK = "Keyholm is not enabled as a passkey service."
 
@@ -211,11 +210,11 @@ internal fun StatusCard(
                 start = 16.dp,
                 top = 16.dp,
                 end = 16.dp,
-                bottom = if (device.secureElement) 8.dp else 16.dp,
+                bottom = if (device.tee) 8.dp else 16.dp,
             ),
         ) {
             DeviceStatusRows(device)
-            if (device.secureElement) {
+            if (device.tee) {
                 Spacer(Modifier.height(12.dp))
                 Button(onClick = onOpenSettings) { Text("Open Settings to enable") }
             }

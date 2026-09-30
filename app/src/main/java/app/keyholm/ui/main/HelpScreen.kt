@@ -118,7 +118,7 @@ private val HELP_INTRO =
     [Attestation]($WEBAUTHN_ATTESTATION) is supported. Attestation certificates can be viewed from Keyholm.
     Every relying party must check the attestation against the key it's actually presented.
 
-    The [PRF extension]($WEBAUTHN_PRF_EXTENSION) is supported and always uses the dedicated secure hardware.
+    The [PRF extension]($WEBAUTHN_PRF_EXTENSION) is supported and uses the dedicated secure hardware when available.
     Using PRF requires a second prompt.
 
     Keyholm is focused on compatibility with Pixel devices. Any changes to support other devices are welcome,
@@ -169,7 +169,7 @@ private val HELP_BODY_SIGNATURE_ALGORITHMS =
     Enabling other algorithms entails falling back to the TEE.
     In particular, this is the only way to use ed25519/ML-DSA keys.
 
-    ES256 keys as well as PRF enforce use of the dedicated hardware.
+    ES256 keys as well as PRF use the dedicated hardware when available and fall back to the TEE otherwise.
     """.trimIndent()
 
 private val HELP_BODY_ACCOUNT_MIGRATION =

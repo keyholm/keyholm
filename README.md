@@ -39,7 +39,7 @@ You can never export or sync these passkeys.
 
 Think of Keyholm as a way to activate the built-in security key on your phone.
 
-- target devices: Google Pixels (with Titan M2+)
+- target devices: phones with secure hardware
 - no network permission
 - GrapheneOS
   - no Google Play Services ever
