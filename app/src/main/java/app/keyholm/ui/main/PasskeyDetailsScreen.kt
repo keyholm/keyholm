@@ -245,10 +245,10 @@ internal fun PasskeyDetailsScreen(
     var showAttestationDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(record.credentialId) {
-        viewModel.loadPasskeyInfo(record)
+        viewModel.details.load(record)
     }
     DisposableEffect(Unit) {
-        onDispose { viewModel.clearPasskeyInfo() }
+        onDispose { viewModel.details.clear() }
     }
 
     val preferRpName = uiState.settings.preferRpName

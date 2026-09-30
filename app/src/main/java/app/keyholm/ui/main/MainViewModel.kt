@@ -6,8 +6,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.keyholm.iconpack.IconPackController
 import app.keyholm.iconpack.IconPackStorage
-import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.provider.isCredentialProviderEnabled
 import app.keyholm.provider.setCredentialProviderComponentEnabled
@@ -28,7 +26,6 @@ import app.keyholm.store.deletePasskeyStoreFile
 import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
-import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.WebAuthnAlgorithm
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -48,23 +45,6 @@ import kotlinx.coroutines.withContext
 
 private const val STATE_STOP_TIMEOUT_MS = 5_000L
 
-data class AttestationInfo(
-    val pemCerts: List<String>,
-)
-
-sealed interface KeyAuthenticators {
-    val mainKey: AuthenticatorPolicy
-
-    data class SigningOnly(
-        override val mainKey: AuthenticatorPolicy,
-    ) : KeyAuthenticators
-
-    data class WithPrf(
-        override val mainKey: AuthenticatorPolicy,
-        val prfKey: AuthenticatorPolicy,
-    ) : KeyAuthenticators
-}
-
 sealed interface Loadable<out T> {
     data object Loading : Loadable<Nothing>
 
@@ -81,16 +61,6 @@ sealed interface Stored<out T> {
     ) : Stored<T>
 
     data object Unavailable : Stored<Nothing>
-}
-
-sealed interface PasskeyDetails {
-    data object Closed : PasskeyDetails
-
-    data class Open(
-        val credentialId: CredentialId,
-        val attestation: Loadable<AttestationInfo>,
-        val authenticators: Loadable<KeyAuthenticators>,
-    ) : PasskeyDetails
 }
 
 data class DeviceStatus(
@@ -153,7 +123,6 @@ class MainViewModel internal constructor(
     }
 
     private val refreshTicks = MutableStateFlow(0)
-    private val details = MutableStateFlow<PasskeyDetails>(PasskeyDetails.Closed)
 
     private val deviceStatus: Flow<DeviceStatus> =
         refreshTicks.map {
@@ -209,12 +178,14 @@ class MainViewModel internal constructor(
     val pendingDeletes =
         PendingDeleteController(PasskeyPendingDeletes(passkeyRepo), viewModelScope, dispatcher, reportError)
 
+    val details = PasskeyDetailsController(viewModelScope, dispatcher)
+
     val uiState: StateFlow<MainUiState> =
         combine(
             settingsState,
             storesState,
             deviceStatus,
-            details,
+            details.state,
             pendingDeletes.batch,
         ) { settingsState, stores, device, openDetails, pendingDeleteBatch ->
             MainUiState.Ready(
@@ -246,62 +217,6 @@ class MainViewModel internal constructor(
 
     fun refresh() {
         refreshTicks.update { it + 1 }
-    }
-
-    fun loadPasskeyInfo(record: PasskeyRecord) {
-        details.value = PasskeyDetails.Open(record.credentialId, Loadable.Loading, Loadable.Loading)
-        viewModelScope.launch {
-            val pem =
-                withContext(dispatcher) {
-                    runCatching { SecureKeyManager().certificateChainPem(record.keyAlias) }
-                }
-            val attestation: Loadable<AttestationInfo> =
-                pem.fold(
-                    onSuccess = { Loadable.Loaded(AttestationInfo(it)) },
-                    onFailure = { e ->
-                        log.e(e) { "couldn't read the certificate chain" }
-                        Loadable.Failed
-                    },
-                )
-            updateOpenDetails(record.credentialId) { it.copy(attestation = attestation) }
-        }
-        viewModelScope.launch {
-            val read =
-                withContext(dispatcher) {
-                    runCatching {
-                        val keyManager = SecureKeyManager()
-                        val mainKey =
-                            keyManager.allowedAuthenticatorsFor(record.keyAlias, record.keystore.coseAlgorithm)
-                        if (record.hasPrf) {
-                            KeyAuthenticators.WithPrf(mainKey, HmacKeyManager().allowedAuthenticatorsForHmac(record.hmacKeyAlias))
-                        } else {
-                            KeyAuthenticators.SigningOnly(mainKey)
-                        }
-                    }
-                }
-            val authenticators: Loadable<KeyAuthenticators> =
-                read.fold(
-                    onSuccess = { Loadable.Loaded(it) },
-                    onFailure = { e ->
-                        log.e(e) { "couldn't read the key authenticators" }
-                        Loadable.Failed
-                    },
-                )
-            updateOpenDetails(record.credentialId) { it.copy(authenticators = authenticators) }
-        }
-    }
-
-    private fun updateOpenDetails(
-        credentialId: CredentialId,
-        transform: (PasskeyDetails.Open) -> PasskeyDetails.Open,
-    ) {
-        details.update { current ->
-            if (current is PasskeyDetails.Open && current.credentialId == credentialId) transform(current) else current
-        }
-    }
-
-    fun clearPasskeyInfo() {
-        details.value = PasskeyDetails.Closed
     }
 
     fun resetEverything() {
