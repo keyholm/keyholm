@@ -14,7 +14,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -35,7 +34,6 @@ import app.keyholm.ui.common.RP_ICON_SIZE
 import app.keyholm.ui.common.RP_ICON_START
 import app.keyholm.ui.common.RpIcon
 import app.keyholm.ui.common.rpLabel
-import app.keyholm.webauthn.RpId
 import java.text.DateFormat
 import java.util.Date
 
@@ -172,4 +170,3 @@ private fun MigrationPlaceholderListItem(
         }
     }
 }
-

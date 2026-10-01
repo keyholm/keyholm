@@ -7,6 +7,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import app.keyholm.ui.common.CryptoPrompt
+import app.keyholm.ui.common.rpLabel
 import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.RpId
 import kotlinx.coroutines.channels.Channel
@@ -20,10 +21,13 @@ private fun <K> MutableMap<K, Int>.bump(key: K) {
     this[key] = (this[key] ?: 0) + 1
 }
 
-private fun pendingDeleteMessage(batches: PendingDeleteBatches): String {
+private fun pendingDeleteMessage(
+    batches: PendingDeleteBatches,
+    preferRpName: Boolean,
+): String {
     val lead =
-        batches.passkeys.lastOrNull()?.let { "Deleted ${it.user.name}" }
-            ?: "Removed placeholder ${batches.placeholders.last().userName}"
+        batches.passkeys.lastOrNull()?.let { "Deleted ${rpLabel(it.rp, preferRpName)} passkey" }
+            ?: "Deleted ${rpLabel(batches.placeholders.last().rp, preferRpName)} placeholder"
     val othersCount = batches.passkeys.size + batches.placeholders.size - 1
     if (othersCount == 0) return lead
     val noun =
@@ -40,13 +44,14 @@ internal fun PendingDeleteUndo(
     batches: PendingDeleteBatches,
     snackbarHostState: SnackbarHostState,
     rowGenerations: RowGenerations,
+    preferRpName: Boolean,
     onUndo: () -> Unit,
 ) {
     LaunchedEffect(batches) {
         if (batches.passkeys.isEmpty() && batches.placeholders.isEmpty()) return@LaunchedEffect
         val result =
             snackbarHostState.showSnackbar(
-                message = pendingDeleteMessage(batches),
+                message = pendingDeleteMessage(batches, preferRpName),
                 actionLabel = "Undo",
                 duration = SnackbarDuration.Long,
             )

@@ -20,7 +20,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -39,7 +38,6 @@ import app.keyholm.ui.common.RpIcon
 import app.keyholm.ui.common.promptContent
 import app.keyholm.ui.common.rpLabel
 import app.keyholm.ui.common.userLabel
-import app.keyholm.webauthn.CredentialId
 import kotlinx.coroutines.channels.Channel
 import java.text.DateFormat
 import java.time.Instant

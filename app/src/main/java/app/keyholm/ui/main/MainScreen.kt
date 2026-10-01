@@ -197,7 +197,7 @@ fun MainScreen(
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
-    PendingDeleteUndo(uiState.pendingDeleteBatches, snackbarHostState, rowGenerations) {
+    PendingDeleteUndo(uiState.pendingDeleteBatches, snackbarHostState, rowGenerations, uiState.settings.preferRpName) {
         viewModel.pendingDeletes.undoAll()
         viewModel.placeholderDeletes.undoAll()
     }
