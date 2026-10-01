@@ -34,8 +34,6 @@ import app.keyholm.ui.common.rpLabel
 import java.text.DateFormat
 import java.util.Date
 
-internal const val QUEUED_FOR_RECREATION_LABEL = "Queued for recreation"
-
 private val PLACEHOLDER_BORDER_WIDTH = 2.dp
 private val PLACEHOLDER_DASH = 10.dp
 private val PLACEHOLDER_DASH_GAP = 7.dp
@@ -65,29 +63,32 @@ internal fun MigrationPlaceholderItem(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .drawBehind {
-                        val width = PLACEHOLDER_BORDER_WIDTH.toPx()
-                        drawRoundRect(
-                            color = borderColor,
-                            topLeft = Offset(width / 2, width / 2),
-                            size = Size(size.width - width, size.height - width),
-                            cornerRadius = CornerRadius(PLACEHOLDER_CORNER_RADIUS.toPx()),
-                            style =
-                                Stroke(
-                                    width,
-                                    pathEffect =
-                                        PathEffect.dashPathEffect(
-                                            floatArrayOf(PLACEHOLDER_DASH.toPx(), PLACEHOLDER_DASH_GAP.toPx()),
-                                        ),
-                                ),
-                        )
-                    },
+                    .placeholderBorder(borderColor),
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         ) {
             MigrationPlaceholderCardBody(placeholder, display)
         }
     }
 }
+
+internal fun Modifier.placeholderBorder(color: Color): Modifier =
+    drawBehind {
+        val width = PLACEHOLDER_BORDER_WIDTH.toPx()
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(width / 2, width / 2),
+            size = Size(size.width - width, size.height - width),
+            cornerRadius = CornerRadius(PLACEHOLDER_CORNER_RADIUS.toPx()),
+            style =
+                Stroke(
+                    width,
+                    pathEffect =
+                        PathEffect.dashPathEffect(
+                            floatArrayOf(PLACEHOLDER_DASH.toPx(), PLACEHOLDER_DASH_GAP.toPx()),
+                        ),
+                ),
+        )
+    }
 
 @Composable
 internal fun MigrationPlaceholderCardBody(

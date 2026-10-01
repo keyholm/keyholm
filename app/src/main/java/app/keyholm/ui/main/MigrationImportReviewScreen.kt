@@ -23,38 +23,30 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.keyholm.iconpack.IconPack
-import app.keyholm.store.MigrationExportEntry
 import app.keyholm.store.MigrationPlaceholder
 import app.keyholm.ui.common.rememberAppIcon
-import app.keyholm.webauthn.RelyingParty
-import java.time.Instant
+
+private const val QUEUED_FOR_RECREATION_LABEL = "Queued for recreation"
+private const val DUPLICATE_LABEL = "Skipped duplicates"
+private const val KNOWN_ENTRY_ALPHA = 0.38f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MigrationImportReviewScreen(
-    entries: List<MigrationExportEntry>,
+    preview: ImportPreview,
     preferRpName: Boolean,
     iconPack: IconPack?,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ) {
     BackHandler(onBack = onCancel)
-    val placeholders =
-        remember(entries) {
-            entries.map {
-                MigrationPlaceholder(
-                    rp = RelyingParty(id = it.rpId, name = it.rpName),
-                    userName = it.userName,
-                    displayName = it.displayName,
-                    originalCreatedAt = Instant.ofEpochMilli(it.createdAt),
-                )
-            }
-        }
+    val display = PlaceholderRowDisplay(preferRpName, iconPack)
     Scaffold(
         topBar = {
             TopAppBar(
@@ -74,7 +66,7 @@ internal fun MigrationImportReviewScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Cancel") }
-                Button(onClick = onConfirm, modifier = Modifier.weight(1f)) { Text("Import") }
+                Button(onClick = onConfirm, enabled = preview.fresh.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Import") }
             }
         },
     ) { innerPadding ->
@@ -83,21 +75,53 @@ internal fun MigrationImportReviewScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
-                Text(
-                    QUEUED_FOR_RECREATION_LABEL,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                )
+            if (preview.fresh.isNotEmpty()) {
+                item { ReviewSectionLabel(QUEUED_FOR_RECREATION_LABEL) }
+                items(preview.fresh) { PlaceholderReviewCard(it, display) }
             }
-            items(placeholders) { placeholder ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                ) {
-                    MigrationPlaceholderCardBody(placeholder, PlaceholderRowDisplay(preferRpName, iconPack))
-                }
+            if (preview.duplicatePasskeys.isNotEmpty() || preview.duplicatePlaceholders.isNotEmpty()) {
+                item { ReviewSectionLabel(DUPLICATE_LABEL) }
+                items(preview.duplicatePlaceholders) { PlaceholderReviewCard(it, display, Modifier.alpha(KNOWN_ENTRY_ALPHA)) }
+                items(preview.duplicatePasskeys) { PasskeyReviewCard(it, display, Modifier.alpha(KNOWN_ENTRY_ALPHA)) }
             }
         }
+    }
+}
+
+@Composable
+private fun ReviewSectionLabel(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(horizontal = 8.dp),
+    )
+}
+
+@Composable
+private fun PasskeyReviewCard(
+    placeholder: MigrationPlaceholder,
+    display: PlaceholderRowDisplay,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+    ) {
+        MigrationPlaceholderCardBody(placeholder, display)
+    }
+}
+
+@Composable
+private fun PlaceholderReviewCard(
+    placeholder: MigrationPlaceholder,
+    display: PlaceholderRowDisplay,
+    modifier: Modifier = Modifier,
+) {
+    val borderColor = MaterialTheme.colorScheme.tertiary
+    Card(
+        modifier = modifier.fillMaxWidth().placeholderBorder(borderColor),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+    ) {
+        MigrationPlaceholderCardBody(placeholder, display)
     }
 }

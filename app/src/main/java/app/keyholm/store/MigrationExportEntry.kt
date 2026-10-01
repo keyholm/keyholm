@@ -100,4 +100,8 @@ data class ImportResult(
 
 fun migrationImportResultMessage(result: ImportResult): String =
     "Imported ${result.imported} account${if (result.imported == 1) "" else "s"}" +
-        if (result.skipped > 0) ", skipped ${result.skipped} already known" else ""
+        if (result.skipped > 0) {
+            ", skipped ${result.skipped} duplicate${if (result.skipped == 1) "" else "s"}"
+        } else {
+            ""
+        } + "."

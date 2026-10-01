@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import app.keyholm.store.MigrationExportEntry
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.migrationExportUri
+import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.main.ImportReview
 import app.keyholm.ui.main.MainUiState
@@ -88,7 +89,9 @@ private fun importMigrationList(
         viewModel.reportError("No import list found.")
         return
     }
-    viewModel.imports.request(ImportReview.InApp(entries))
+    viewModel.imports.request(ImportReview.InApp(entries)) {
+        viewModel.reportError(ErrorMessages.CHECK_EXISTING_FAILED)
+    }
 }
 
 private const val QR_SIZE_PX = 768

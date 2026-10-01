@@ -56,6 +56,7 @@ import app.keyholm.ui.main.settings.SettingsScreen
 import app.keyholm.ui.theme.KeyholmTheme
 import app.keyholm.util.logger
 import app.keyholm.webauthn.CredentialId
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -169,21 +170,21 @@ private fun mainEntryProvider(
 
 @Composable
 private fun MigrationImportReview(
-    review: ImportReview,
+    preview: ImportPreview,
     preferRpName: Boolean,
     viewModel: MainViewModel,
     snackbarHostState: SnackbarHostState,
+    scope: CoroutineScope,
 ) {
     val iconPack by viewModel.iconPacks.pack.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
-    val scope = rememberCoroutineScope()
     MigrationImportReviewScreen(
-        entries = review.entries,
+        preview = preview,
         preferRpName = preferRpName,
         iconPack = iconPack,
         onConfirm = {
             viewModel.imports.importList(
-                entries = review.entries,
+                entries = preview.review.entries,
                 onResult = { result ->
                     val message = migrationImportResultMessage(result)
                     scope.launch { snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Long) }
@@ -195,7 +196,7 @@ private fun MigrationImportReview(
             viewModel.imports.dismiss()
         },
         onCancel = {
-            when (review) {
+            when (preview.review) {
                 is ImportReview.DeepLink -> activity?.finish()
                 is ImportReview.InApp -> viewModel.imports.dismiss()
             }
@@ -207,13 +208,18 @@ private fun MigrationImportReview(
 private fun MainContent(importEntries: List<MigrationExportEntry>) {
     val viewModel: MainViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val importReview by viewModel.imports.review.collectAsStateWithLifecycle()
+    val importPreview by viewModel.imports.preview.collectAsStateWithLifecycle()
     val backStack = rememberNavBackStack(MainRoute)
     val density = LocalDensity.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(importEntries) {
-        if (importEntries.isNotEmpty()) viewModel.imports.request(ImportReview.DeepLink(importEntries))
+        if (importEntries.isNotEmpty()) {
+            viewModel.imports.request(ImportReview.DeepLink(importEntries)) {
+                viewModel.reportError(ErrorMessages.CHECK_EXISTING_FAILED)
+            }
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -227,12 +233,12 @@ private fun MainContent(importEntries: List<MigrationExportEntry>) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            val review = importReview
+            val preview = importPreview
             val ready = uiState as? MainUiState.Ready
             if (ready?.locked == true) {
                 LockScreen(viewModel, cryptoPrompt)
-            } else if (review != null && ready != null) {
-                MigrationImportReview(review, ready.settings.preferRpName, viewModel, snackbarHostState)
+            } else if (preview != null && ready != null) {
+                MigrationImportReview(preview, ready.settings.preferRpName, viewModel, snackbarHostState, scope)
             } else {
                 MainNavDisplay(viewModel, cryptoPrompt, backStack, density, snackbarHostState)
             }

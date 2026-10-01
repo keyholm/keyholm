@@ -16,7 +16,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -104,16 +103,6 @@ private fun LazyListScope.migrationPlaceholderItems(
     display: PlaceholderRowDisplay,
     actions: PasskeyListActions,
 ) {
-    if (!placeholders.isEmpty()) {
-        item {
-            Text(
-                QUEUED_FOR_RECREATION_LABEL,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 8.dp),
-            )
-        }
-    }
     items(
         placeholders,
         key = { "${it.rp.id.value}:${it.userName}" },
@@ -179,13 +168,13 @@ private fun PasskeyListContent(
         if (passkeys.value.isEmpty() && placeholders.value.isEmpty()) {
             item { EmptyPasskeysMessage(modifier = Modifier.fillParentMaxSize()) }
         }
+        migrationPlaceholderItems(placeholders.value, PlaceholderRowDisplay(uiState.settings.preferRpName, iconPack), actions)
         passkeyItems(
             passkeys.value,
             PasskeyRowDisplay(uiState.settings.compactView, uiState.settings.preferRpName, iconPack),
             rowGeneration,
             actions.rows,
         )
-        migrationPlaceholderItems(placeholders.value, PlaceholderRowDisplay(uiState.settings.preferRpName, iconPack), actions)
     }
 }
 
