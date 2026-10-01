@@ -43,6 +43,7 @@ import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.rememberAppIcon
 import app.keyholm.ui.theme.titleColor
 import app.keyholm.webauthn.CredentialId
+import app.keyholm.webauthn.RpId
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
@@ -94,27 +95,23 @@ private data class PasskeyListActions(
     val rows: PasskeyRowActions,
     val onDismissWarning: () -> Unit,
     val onOpenSettings: () -> Unit,
-    val onDismissPlaceholder: (MigrationPlaceholder) -> Unit,
-    val showMessage: (String) -> Unit,
+    val placeholderRows: PlaceholderRowActions,
 )
 
 private fun LazyListScope.migrationPlaceholderItems(
     placeholders: List<MigrationPlaceholder>,
     display: PlaceholderRowDisplay,
-    actions: PasskeyListActions,
+    rowGeneration: Map<Pair<RpId, String>, Int>,
+    actions: PlaceholderRowActions,
 ) {
     items(
         placeholders,
-        key = { "${it.rp.id.value}:${it.userName}" },
+        key = { "${it.rp.id.value}:${it.userName}:${rowGeneration[it.rp.id to it.userName] ?: 0}" },
     ) { placeholder ->
         MigrationPlaceholderItem(
             placeholder = placeholder,
             display = display,
-            onClick = { actions.showMessage("Visit ${placeholder.rp.id.value} to recreate this passkey!") },
-            onDismiss = {
-                actions.onDismissPlaceholder(placeholder)
-                actions.showMessage("Removed placeholder ${placeholder.userName}")
-            },
+            actions = actions,
             modifier = Modifier.animateItem(),
         )
     }
@@ -125,7 +122,7 @@ private fun PasskeyListContent(
     uiState: MainUiState.Ready,
     iconPack: IconPack?,
     innerPadding: PaddingValues,
-    rowGeneration: MutableMap<CredentialId, Int>,
+    rowGenerations: RowGenerations,
     actions: PasskeyListActions,
 ) {
     LazyColumn(
@@ -168,11 +165,16 @@ private fun PasskeyListContent(
         if (passkeys.value.isEmpty() && placeholders.value.isEmpty()) {
             item { EmptyPasskeysMessage(modifier = Modifier.fillParentMaxSize()) }
         }
-        migrationPlaceholderItems(placeholders.value, PlaceholderRowDisplay(uiState.settings.preferRpName, iconPack), actions)
+        migrationPlaceholderItems(
+            placeholders.value,
+            PlaceholderRowDisplay(uiState.settings.preferRpName, iconPack),
+            rowGenerations.placeholders,
+            actions.placeholderRows,
+        )
         passkeyItems(
             passkeys.value,
             PasskeyRowDisplay(uiState.settings.compactView, uiState.settings.preferRpName, iconPack),
-            rowGeneration,
+            rowGenerations.passkeys,
             actions.rows,
         )
     }
@@ -191,11 +193,14 @@ fun MainScreen(
     val uiState = state as? MainUiState.Ready ?: return
     val iconPack by viewModel.iconPacks.pack.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val rowGeneration = remember { mutableStateMapOf<CredentialId, Int>() }
+    val rowGenerations = remember { RowGenerations(mutableStateMapOf(), mutableStateMapOf()) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
-    PasskeyDeleteUndo(uiState.pendingDeleteBatch, snackbarHostState, rowGeneration, viewModel.pendingDeletes::undoAll)
+    PendingDeleteUndo(uiState.pendingDeleteBatches, snackbarHostState, rowGenerations) {
+        viewModel.pendingDeletes.undoAll()
+        viewModel.placeholderDeletes.undoAll()
+    }
 
     // This is for when multiple rows are swiped before the prompt shows up
     val confirmationQueue = remember { Channel<DeleteConfirmationRequest>(Channel.UNLIMITED) }
@@ -213,8 +218,19 @@ fun MainScreen(
                 ),
             onDismissWarning = viewModel.settings::dismissDeviceBoundWarning,
             onOpenSettings = { openCredentialSettings(context) },
-            onDismissPlaceholder = viewModel::dismissMigrationPlaceholder,
-            showMessage = { scope.launch { snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short) } },
+            placeholderRows =
+                PlaceholderRowActions(
+                    onClick = {
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                "Visit ${it.rp.id.value} to recreate this passkey!",
+                                duration = SnackbarDuration.Short,
+                            )
+                        }
+                    },
+                    onDelete = viewModel.placeholderDeletes::start,
+                    onCancelDelete = viewModel.placeholderDeletes::cancel,
+                ),
         )
 
     HandleDeleteConfirmations(
@@ -224,7 +240,7 @@ fun MainScreen(
     )
 
     Scaffold(topBar = { MainTopBar(onOpenSettings) }) { innerPadding ->
-        PasskeyListContent(uiState, iconPack, innerPadding, rowGeneration, listActions)
+        PasskeyListContent(uiState, iconPack, innerPadding, rowGenerations, listActions)
     }
 }
 

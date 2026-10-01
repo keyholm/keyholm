@@ -83,9 +83,14 @@ sealed interface MainUiState {
         val nativeApps: Stored<DeniedNativeApps>,
         val details: PasskeyDetails,
         val settings: Settings,
-        val pendingDeleteBatch: List<PasskeyRecord>,
+        val pendingDeleteBatches: PendingDeleteBatches,
     ) : MainUiState
 }
+
+data class PendingDeleteBatches(
+    val passkeys: List<PasskeyRecord>,
+    val placeholders: List<MigrationPlaceholder>,
+)
 
 private data class SettingsState(
     val settings: Settings,
@@ -178,6 +183,9 @@ class MainViewModel internal constructor(
     val pendingDeletes =
         PendingDeleteController(PasskeyPendingDeletes(passkeyRepo), viewModelScope, dispatcher, reportError)
 
+    val placeholderDeletes =
+        PendingDeleteController(PlaceholderPendingDeletes(migrationRepo), viewModelScope, dispatcher, reportError)
+
     val details = PasskeyDetailsController(application, viewModelScope, dispatcher)
 
     val uiState: StateFlow<MainUiState> =
@@ -186,8 +194,8 @@ class MainViewModel internal constructor(
             storesState,
             deviceStatus,
             details.state,
-            pendingDeletes.batch,
-        ) { settingsState, stores, device, openDetails, pendingDeleteBatch ->
+            combine(pendingDeletes.batch, placeholderDeletes.batch, ::PendingDeleteBatches),
+        ) { settingsState, stores, device, openDetails, pendingDeleteBatches ->
             MainUiState.Ready(
                 locked = settingsState.locked,
                 device = device,
@@ -196,7 +204,7 @@ class MainViewModel internal constructor(
                 nativeApps = stores.nativeApps,
                 details = openDetails,
                 settings = settingsState.settings,
-                pendingDeleteBatch = pendingDeleteBatch,
+                pendingDeleteBatches = pendingDeleteBatches,
             )
         }.stateIn(
             viewModelScope,
@@ -213,6 +221,7 @@ class MainViewModel internal constructor(
 
     init {
         pendingDeletes.resume()
+        placeholderDeletes.resume()
     }
 
     fun refresh() {
@@ -221,6 +230,7 @@ class MainViewModel internal constructor(
 
     fun resetEverything() {
         pendingDeletes.clear()
+        placeholderDeletes.clear()
         viewModelScope.launch {
             withContext(dispatcher) { SecureKeyManager().deleteAllKeys() }
             val failure =
@@ -249,14 +259,6 @@ class MainViewModel internal constructor(
             deleteDeniedNativeAppStoreFile(context),
             deleteSettingsStoreFile(context),
         ).all { it }
-
-    fun dismissMigrationPlaceholder(placeholder: MigrationPlaceholder) {
-        viewModelScope.launch {
-            if (!writeStore { migrationRepo.delete(placeholder.rp.id, placeholder.userName) }) {
-                reportError(ErrorMessages.UPDATE_FAILED)
-            }
-        }
-    }
 
     fun applyNativeAppException(
         key: DeniedNativeAppKey,

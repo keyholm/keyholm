@@ -196,13 +196,13 @@ private fun Modifier.tintSweptContent(
 @Composable
 internal fun PendingDeleteItem(
     pendingDeleteAt: Instant,
+    baseColor: Color,
     overlay: @Composable BoxScope.() -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable (contentColor: Color) -> Unit,
 ) {
     val progress = rememberDeleteProgress(pendingDeleteAt)
     val fillColor = MaterialTheme.colorScheme.error
-    val baseColor = MaterialTheme.colorScheme.surfaceContainerHigh
     Card(
         modifier =
             modifier

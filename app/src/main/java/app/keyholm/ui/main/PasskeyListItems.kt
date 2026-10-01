@@ -85,21 +85,25 @@ private fun BoxScope.PasskeyListItemTrailingIcon(
         contentAlignment = Alignment.Center,
     ) {
         if (onCancelDelete != null) {
-            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-                IconButton(onClick = onCancelDelete) {
-                    Icon(
-                        Icons.Default.Replay,
-                        contentDescription = "Cancel delete",
-                        tint = contentColor ?: LocalContentColor.current,
-                    )
-                }
-            }
+            CancelDeleteButton(onCancelDelete, contentColor ?: LocalContentColor.current)
         } else if (likelyInvalid) {
             Icon(
                 Icons.Default.Warning,
                 contentDescription = "Permanently invalidated",
                 tint = contentColor ?: MaterialTheme.colorScheme.error,
             )
+        }
+    }
+}
+
+@Composable
+internal fun CancelDeleteButton(
+    onClick: () -> Unit,
+    tint: Color,
+) {
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+        IconButton(onClick = onClick) {
+            Icon(Icons.Default.Replay, contentDescription = "Cancel delete", tint = tint)
         }
     }
 }
@@ -126,11 +130,11 @@ private fun PasskeyListItemContent(
                     null
                 },
             colors =
-                if (effectiveContentColor != null) {
+                if (contentColor == null && record.likelyInvalid) {
                     ListItemDefaults.colors(
                         containerColor = Color.Transparent,
-                        headlineColor = effectiveContentColor,
-                        supportingColor = effectiveContentColor,
+                        headlineColor = MaterialTheme.colorScheme.onErrorContainer,
+                        supportingColor = MaterialTheme.colorScheme.onErrorContainer,
                     )
                 } else {
                     ListItemDefaults.colors(containerColor = Color.Transparent)
@@ -156,6 +160,7 @@ private fun PendingPasskeyItem(
 ) {
     PendingDeleteItem(
         pendingDeleteAt = pendingDeleteAt,
+        baseColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         overlay = {
             RpIcon(
                 display.iconPack,
@@ -254,23 +259,3 @@ internal fun passkeyDeleteRequester(
             ),
         )
     }
-
-@Composable
-internal fun PasskeyDeleteUndo(
-    pendingDeleteBatch: List<PasskeyRecord>,
-    snackbarHostState: SnackbarHostState,
-    rowGeneration: MutableMap<CredentialId, Int>,
-    onUndo: () -> Unit,
-) {
-    HandleDeleteUndo(
-        pendingDeleteBatch = pendingDeleteBatch,
-        snackbarHostState = snackbarHostState,
-        message = { batch ->
-            val othersCount = batch.size - 1
-            "Deleted ${batch.last().user.name}" +
-                if (othersCount > 0) " and $othersCount other passkey${if (othersCount == 1) "" else "s"}" else ""
-        },
-        onUndone = { batch -> batch.forEach { rowGeneration[it.credentialId] = (rowGeneration[it.credentialId] ?: 0) + 1 } },
-        onUndo = onUndo,
-    )
-}

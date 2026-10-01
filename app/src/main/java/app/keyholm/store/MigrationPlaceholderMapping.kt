@@ -11,13 +11,22 @@ internal fun MigrationPlaceholderProto.toDomain(): MigrationPlaceholder =
         userName = userName,
         displayName = displayName,
         originalCreatedAt = originalCreatedAt.toInstant(),
+        lifecycle =
+            if (hasPendingDeleteAt()) {
+                RecordLifecycle.PendingDelete(pendingDeleteAt.toInstant())
+            } else {
+                RecordLifecycle.Active
+            },
     )
 
-internal fun MigrationPlaceholder.toProto(): MigrationPlaceholderProto =
-    MigrationPlaceholderProto
-        .newBuilder()
-        .setRp(RelyingPartyProto.newBuilder().setId(rp.id.value).setName(rp.name))
-        .setUserName(userName)
-        .setDisplayName(displayName)
-        .setOriginalCreatedAt(originalCreatedAt.toTimestamp())
-        .build()
+internal fun MigrationPlaceholder.toProto(): MigrationPlaceholderProto {
+    val builder =
+        MigrationPlaceholderProto
+            .newBuilder()
+            .setRp(RelyingPartyProto.newBuilder().setId(rp.id.value).setName(rp.name))
+            .setUserName(userName)
+            .setDisplayName(displayName)
+            .setOriginalCreatedAt(originalCreatedAt.toTimestamp())
+    if (lifecycle is RecordLifecycle.PendingDelete) builder.pendingDeleteAt = lifecycle.at.toTimestamp()
+    return builder.build()
+}

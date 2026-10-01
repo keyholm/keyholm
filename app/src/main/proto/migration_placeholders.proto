@@ -17,4 +17,5 @@ message MigrationPlaceholderProto {
   string user_name = 2;
   string display_name = 3;
   google.protobuf.Timestamp original_created_at = 4;
+  google.protobuf.Timestamp pending_delete_at = 5;
 }

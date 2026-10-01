@@ -5,6 +5,7 @@ import app.keyholm.store.MigrationExportEntry
 import app.keyholm.store.MigrationPlaceholder
 import app.keyholm.store.MigrationRepository
 import app.keyholm.store.PasskeyRepository
+import app.keyholm.store.RecordLifecycle
 import app.keyholm.store.readStore
 import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.RpId
@@ -106,4 +107,5 @@ private fun MigrationExportEntry.toPlaceholder() =
         userName = userName,
         displayName = displayName,
         originalCreatedAt = Instant.ofEpochMilli(createdAt),
+        lifecycle = RecordLifecycle.Active,
     )

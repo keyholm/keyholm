@@ -7,21 +7,46 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import app.keyholm.ui.common.CryptoPrompt
+import app.keyholm.webauthn.CredentialId
+import app.keyholm.webauthn.RpId
 import kotlinx.coroutines.channels.Channel
 
+internal class RowGenerations(
+    val passkeys: MutableMap<CredentialId, Int>,
+    val placeholders: MutableMap<Pair<RpId, String>, Int>,
+)
+
+private fun <K> MutableMap<K, Int>.bump(key: K) {
+    this[key] = (this[key] ?: 0) + 1
+}
+
+private fun pendingDeleteMessage(batches: PendingDeleteBatches): String {
+    val lead =
+        batches.passkeys.lastOrNull()?.let { "Deleted ${it.user.name}" }
+            ?: "Removed placeholder ${batches.placeholders.last().userName}"
+    val othersCount = batches.passkeys.size + batches.placeholders.size - 1
+    if (othersCount == 0) return lead
+    val noun =
+        when {
+            batches.placeholders.isEmpty() -> "passkey"
+            batches.passkeys.isEmpty() -> "placeholder"
+            else -> "item"
+        }
+    return "$lead and $othersCount other $noun${if (othersCount == 1) "" else "s"}"
+}
+
 @Composable
-internal fun <T> HandleDeleteUndo(
-    pendingDeleteBatch: List<T>,
+internal fun PendingDeleteUndo(
+    batches: PendingDeleteBatches,
     snackbarHostState: SnackbarHostState,
-    message: (List<T>) -> String,
-    onUndone: (List<T>) -> Unit,
+    rowGenerations: RowGenerations,
     onUndo: () -> Unit,
 ) {
-    LaunchedEffect(pendingDeleteBatch) {
-        if (pendingDeleteBatch.isEmpty()) return@LaunchedEffect
+    LaunchedEffect(batches) {
+        if (batches.passkeys.isEmpty() && batches.placeholders.isEmpty()) return@LaunchedEffect
         val result =
             snackbarHostState.showSnackbar(
-                message = message(pendingDeleteBatch),
+                message = pendingDeleteMessage(batches),
                 actionLabel = "Undo",
                 duration = SnackbarDuration.Long,
             )
@@ -29,7 +54,8 @@ internal fun <T> HandleDeleteUndo(
             // Force a fresh SwipeToDismissBoxState for every row in the batch: without this,
             // LazyColumn restores each row's old (fully-swiped) saved state under the same key
             // and immediately re-fires onDismiss, looping the delete right back on.
-            onUndone(pendingDeleteBatch)
+            batches.passkeys.forEach { rowGenerations.passkeys.bump(it.credentialId) }
+            batches.placeholders.forEach { rowGenerations.placeholders.bump(it.rp.id to it.userName) }
             onUndo()
         }
     }

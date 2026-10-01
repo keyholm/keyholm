@@ -41,6 +41,15 @@ class MigrationRepository internal constructor(
         return write { it.toBuilder().addAllPlaceholders(records.map { r -> r.toProto() }).build() }
     }
 
+    suspend fun update(record: MigrationPlaceholder): Result<Unit> =
+        write { current ->
+            val updated =
+                current.placeholdersList.map {
+                    if (it.rp.id == record.rp.id.value && it.userName == record.userName) record.toProto() else it
+                }
+            MigrationPlaceholdersProto.newBuilder().addAllPlaceholders(updated).build()
+        }
+
     suspend fun delete(
         rpId: RpId,
         userName: String,

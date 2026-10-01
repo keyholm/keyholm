@@ -14,4 +14,5 @@ data class MigrationPlaceholder(
     val userName: String,
     val displayName: String,
     val originalCreatedAt: Instant,
+    val lifecycle: RecordLifecycle,
 )
