@@ -1,0 +1,21 @@
+<p>Keyholm is all about single-device passkeys (i.e. client-side discoverable credentials) whose private key is protected by secure hardware.</p>
+
+<p>You can never export or sync these passkeys. Think of Keyholm as a way to activate the built-in security key on your phone.</p>
+
+<ul>
+<li>target devices: phones with secure hardware (including Pixels)</li>
+<li>no INTERNET permission</li>
+<li>no Google Play Services ever</li>
+<li>takes advantage of latest Android version/APIs</li>
+<li>allows extensive control over particulars of what credentials it creates and how
+<ul>
+<li>supports ES256: it's the only EC, StrongBox-backed algorithm</li>
+<li>supports Ed25519: it's not NIST, it's fast and safe but TEE-only</li>
+<li>supports ML-DSA: post-quantum! but Android 17 and TEE-only</li>
+</ul>
+</li>
+<li>supports android-key attestation</li>
+<li>supports PRF extension</li>
+<li>uses QUERY_ALL_PACKAGES in order to display icons for apps that were denied passkey usage</li>
+<li>account list export/import for making it marginally easier to switch devices. All keys still need to be manually recreated on the new device!</li>
+</ul>

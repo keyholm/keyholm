@@ -39,22 +39,20 @@ You can never export or sync these passkeys.
 
 Think of Keyholm as a way to activate the built-in security key on your phone.
 
-- target devices: phones with secure hardware
-- no network permission
-- GrapheneOS
-  - no Google Play Services ever
-- requires latest Android version/APIs
+- target devices: phones with secure hardware (including Pixels)
+- no INTERNET permission
+  no Google Play Services ever
+- takes advantage of latest Android version/APIs
 - allows extensive control over particulars of what credentials it creates and how.
   - supports ES256: it's the only EC, StrongBox-backed algorithm
-  - supports Ed25519: it's not NIST and it's fast and safer, TEE-only
-  - supports ML-DSA: post-quantum!, TEE-only
+  - supports Ed25519: it's not NIST, it's fast and safe but TEE-only
+  - supports ML-DSA: post-quantum! but Android 17 and TEE-only
 - supports `android-key` attestation
-- supports `prf` extension
-- uses `QUERY_ALL_PACKAGES` in order to icons for apps that were denied trust
-  - since we don't have network I don't see any danger to this
+- supports PRF extension
+- uses `QUERY_ALL_PACKAGES` in order to display icons for apps that were denied passkey usage
 - _account list_ export/import
   - for making it marginally easier to switch devices
-  - still all keys still need to be manually recreated on the new device
+  - remember all keys still need to be manually recreated on the new device
 
 ## Releases
 

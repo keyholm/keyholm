@@ -1,0 +1,10 @@
+Keyholm's first release! It's quite feature complete already when it comes to single-device passkeys:
+
+- Passkey creation/passkey use as an Android passkey service
+- Passkey management
+- Extensive settings for configuring exactly how to create/use your passkeys
+- PRF support
+- Passkey list export/import
+- Icon pack support
+
+Note: backwards compatibility isn't yet guaranteed!
