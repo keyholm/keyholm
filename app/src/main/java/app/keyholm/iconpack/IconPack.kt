@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.createBitmap
 import app.keyholm.util.logger
+import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.RpId
 import com.caverock.androidsvg.SVG
 import kotlinx.coroutines.CoroutineDispatcher
@@ -65,9 +66,10 @@ sealed interface RenderedIcon {
 }
 
 private fun cacheKey(
-    rpId: RpId,
+    rp: RelyingParty,
+    preferRpName: Boolean,
     sizePx: Int,
-) = "${rpId.value}@$sizePx"
+) = "${rp.id.value}:${if (preferRpName) rp.name else ""}@$sizePx"
 
 @Stable
 class IconPack internal constructor(
@@ -86,24 +88,32 @@ class IconPack internal constructor(
     override fun close() = zip.close()
 
     fun cachedIcon(
-        rpId: RpId,
+        rp: RelyingParty,
+        preferRpName: Boolean,
         sizePx: Int,
-    ): RenderedIcon? = cache.get(cacheKey(rpId, sizePx))
+    ): RenderedIcon? = cache.get(cacheKey(rp, preferRpName, sizePx))
 
     suspend fun icon(
-        rpId: RpId,
+        rp: RelyingParty,
+        preferRpName: Boolean,
         sizePx: Int,
     ): RenderedIcon {
-        val key = cacheKey(rpId, sizePx)
-        return cache.get(key) ?: load(rpId, sizePx).also { cache.put(key, it) }
+        val key = cacheKey(rp, preferRpName, sizePx)
+        return cache.get(key) ?: load(rp, preferRpName, sizePx).also { cache.put(key, it) }
+    }
+
+    private suspend fun domainEntry(rpId: RpId): String? {
+        val registrableDomain = publicSuffixes.getPublicSuffixPlusOne(rpId.value).await() ?: return null
+        return matchIconEntry(byName, registrableDomain)
     }
 
     private suspend fun load(
-        rpId: RpId,
+        rp: RelyingParty,
+        preferRpName: Boolean,
         sizePx: Int,
     ): RenderedIcon {
-        val registrableDomain = publicSuffixes.getPublicSuffixPlusOne(rpId.value).await() ?: return RenderedIcon.NotInPack
-        val entry = matchIconEntry(byName, registrableDomain) ?: return RenderedIcon.NotInPack
+        val nameEntry = if (preferRpName && rp.name.isNotEmpty()) byName[normalize(rp.name)] else null
+        val entry = nameEntry ?: domainEntry(rp.id) ?: return RenderedIcon.NotInPack
         val bytes = withContext(ioDispatcher) { readIcon(entry) } ?: return RenderedIcon.NotInPack
         return withContext(renderDispatcher) { render(entry, bytes, sizePx) }
     }

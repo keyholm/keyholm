@@ -68,16 +68,19 @@ private fun oklch(
 @Composable
 private fun RpPackIcon(
     pack: IconPack,
-    rpId: RpId,
+    rp: RelyingParty,
+    preferRpName: Boolean,
     letter: Char?,
     modifier: Modifier = Modifier,
 ) {
     val sizePx = with(LocalDensity.current) { RP_ICON_SIZE.roundToPx() }
-    val icon by produceState(pack.cachedIcon(rpId, sizePx), pack, rpId, sizePx) { value = pack.icon(rpId, sizePx) }
+    val icon by produceState(pack.cachedIcon(rp, preferRpName, sizePx), pack, rp, preferRpName, sizePx) {
+        value = pack.icon(rp, preferRpName, sizePx)
+    }
     when (val rendered = icon) {
         null -> Spacer(modifier.size(RP_ICON_SIZE))
         is RenderedIcon.Drawn -> Image(rendered.bitmap, contentDescription = null, modifier = modifier.size(RP_ICON_SIZE))
-        RenderedIcon.NotInPack -> RpLetterIcon(letter, rpId, modifier)
+        RenderedIcon.NotInPack -> RpLetterIcon(letter, rp.id, modifier)
     }
 }
 
@@ -92,7 +95,7 @@ internal fun RpIcon(
     if (iconPack == null) {
         RpLetterIcon(letter, rp.id, modifier)
     } else {
-        RpPackIcon(iconPack, rp.id, letter, modifier)
+        RpPackIcon(iconPack, rp, preferRpName, letter, modifier)
     }
 }
 
