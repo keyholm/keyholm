@@ -28,6 +28,18 @@ import java.io.IOException
 
 private const val UNLOCK_REQUEST_CODE = 1
 
+internal sealed interface EntriesRequest {
+    val request: BeginGetCredentialRequest
+
+    data class WithoutUnlock(
+        override val request: BeginGetCredentialRequest,
+    ) : EntriesRequest
+
+    data class AfterUnlock(
+        override val request: BeginGetCredentialRequest,
+    ) : EntriesRequest
+}
+
 internal class GetCredentialEntries(
     private val context: Context,
     private val dispatcher: CoroutineDispatcher,
@@ -45,31 +57,40 @@ internal class GetCredentialEntries(
             }
         }
 
-    suspend fun of(request: BeginGetCredentialRequest): List<CredentialEntry>? =
+    suspend fun build(entriesRequest: EntriesRequest): List<CredentialEntry>? =
         withContext(dispatcher) {
             PendingSignatures.clear()
             val records = passkeyRepo.passkeys.first()
             val settings = settingsRepo.settings.first()
             val perOption =
-                request.beginGetCredentialOptions
+                entriesRequest.request.beginGetCredentialOptions
                     .filterIsInstance<BeginGetPublicKeyCredentialOption>()
-                    .map { entriesFor(it, request.callingAppInfo, records, settings) }
+                    .map { entriesFor(it, entriesRequest, records, settings) }
             if (perOption.any { it == null }) null else perOption.filterNotNull().flatten()
         }
 
     private suspend fun entriesFor(
         option: BeginGetPublicKeyCredentialOption,
-        callingAppInfo: CallingAppInfo?,
+        entriesRequest: EntriesRequest,
         records: List<PasskeyRecord>,
         settings: Settings,
     ): List<CredentialEntry>? {
         val requestOptions = parseRequestOptionsOrLog(option.requestJson, log) ?: return null
         val matching = entryBuilder.matchingRecords(records, requestOptions)
-        // We don't want to prompt the user if we _know_ we'll deny the request. But we want to
-        // persist that this app was denied and tell the user about it.
         val allowSingleTap =
-            matching.isNotEmpty() &&
-                singleTapAllowed(callingAppInfo, RpId(requestOptions.rpId), settings.nativeAppTrust)
+            when (entriesRequest) {
+                // After unlock the selector restarts and its one-tap prompt cancels ours
+                is EntriesRequest.AfterUnlock -> {
+                    false
+                }
+
+                // We don't want to prompt the user if we _know_ we'll deny the request. But we want to
+                // persist that this app was denied and tell the user about it.
+                is EntriesRequest.WithoutUnlock -> {
+                    matching.isNotEmpty() &&
+                        singleTapAllowed(entriesRequest.request.callingAppInfo, RpId(requestOptions.rpId), settings.nativeAppTrust)
+                }
+            }
         return entryBuilder.buildEntries(
             option,
             matching,

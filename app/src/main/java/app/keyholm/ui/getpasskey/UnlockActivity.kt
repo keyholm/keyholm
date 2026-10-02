@@ -11,6 +11,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.withResumed
 import app.keyholm.keystore.AuthenticatorPolicy
+import app.keyholm.provider.EntriesRequest
 import app.keyholm.provider.GetCredentialEntries
 import app.keyholm.ui.common.AuthenticatorsResolution
 import app.keyholm.ui.common.CryptoPrompt
@@ -68,7 +69,7 @@ class UnlockActivity internal constructor(
                 if (unlocked) {
                     working.value = true
                     try {
-                        entries.of(request)
+                        entries.build(EntriesRequest.AfterUnlock(request))
                     } finally {
                         working.value = false
                     }

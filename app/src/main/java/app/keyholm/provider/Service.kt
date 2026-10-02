@@ -232,7 +232,7 @@ class Service internal constructor(
                         )
                         return@launch
                     }
-                    val entries = getEntries.of(request)
+                    val entries = getEntries.build(EntriesRequest.WithoutUnlock(request))
                     if (entries == null) {
                         callback.onError(
                             GetPublicKeyCredentialDomException(
