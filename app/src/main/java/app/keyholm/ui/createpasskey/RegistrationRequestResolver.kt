@@ -38,6 +38,14 @@ import java.io.IOException
 
 private val USER_ID_BYTES = 1..64
 
+// Something I ran into while testing, some identity proxy defaults we should just ignore
+private val UNINFORMATIVE_RP_NAMES = setOf("keycloak")
+
+internal fun storedRpName(
+    rpId: RpId,
+    requested: String,
+): String = requested.takeUnless { it.isBlank() || it == rpId.value || it in UNINFORMATIVE_RP_NAMES }.orEmpty()
+
 private val log = Logger.withTag("app.keyholm.ui.createpasskey.RegistrationRequestResolver")
 
 internal class RegistrationRequestResolver(
@@ -100,7 +108,7 @@ internal class RegistrationRequestResolver(
         }
         val info =
             RegistrantInfo(
-                rp = RelyingParty(rpId, options.rp.name),
+                rp = RelyingParty(rpId, storedRpName(rpId, options.rp.name)),
                 user =
                     CredentialUser(
                         handle = UserHandle.of(userId),

@@ -34,8 +34,7 @@ class RpInitialTest {
     }
 
     @Test
-    fun `preferring the rp name falls back to the id when the name says nothing`() {
-        assertThat(initial("auth.acme.test", rpName = "keycloak", preferRpName = true)).isEqualTo('A')
+    fun `preferring the rp name falls back to the id when there is no name`() {
         assertThat(initial("auth.acme.test", rpName = "", preferRpName = true)).isEqualTo('A')
     }
 

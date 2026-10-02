@@ -7,13 +7,10 @@ import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.RpId
 import java.text.BreakIterator
 
-// Something I ran into while testing, some identity proxy defaults we should just ignore
-private val UNINFORMATIVE_RP_NAMES = setOf("keycloak")
-
 private const val MAX_DISPLAY_LENGTH = 64
 
 // WebAuthn 6.4.1
-private fun String.truncated(): String {
+internal fun String.truncated(): String {
     if (length <= MAX_DISPLAY_LENGTH) return this
     val breaks = BreakIterator.getCharacterInstance()
     breaks.setText(this)
@@ -21,18 +18,12 @@ private fun String.truncated(): String {
     return substring(0, cut) + "\u2026"
 }
 
-internal fun rpDisplayName(rp: RelyingParty): String? =
-    rp.name
-        .takeUnless {
-            it.isBlank() || it == rp.id.value ||
-                it in UNINFORMATIVE_RP_NAMES
-        }?.truncated()
-
 internal fun rpLabel(
     rp: RelyingParty,
     preferRpName: Boolean,
 ): String {
-    val name = rpDisplayName(rp) ?: return rp.id.value
+    if (rp.name.isEmpty()) return rp.id.value
+    val name = rp.name.truncated()
     return if (preferRpName) "$name (${rp.id.value})" else "${rp.id.value} ($name)"
 }
 
@@ -80,6 +71,6 @@ internal fun rpInitial(
     rp: RelyingParty,
     preferRpName: Boolean,
 ): Char? {
-    val name = if (preferRpName) rpDisplayName(rp) else null
+    val name = if (preferRpName) rp.name.ifEmpty { null } else null
     return name?.substringBefore(' ')?.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar() ?: rpInitial(rp.id)
 }

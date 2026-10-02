@@ -47,8 +47,8 @@ import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.RpIcon
 import app.keyholm.ui.common.Section
-import app.keyholm.ui.common.rpDisplayName
 import app.keyholm.ui.common.rpLabel
+import app.keyholm.ui.common.truncated
 import app.keyholm.ui.common.userLabel
 import app.keyholm.util.sha256
 import app.keyholm.webauthn.CredentialId
@@ -215,7 +215,7 @@ private fun PasskeyDetailsTopBar(
     onBack: () -> Unit,
     onOpen: () -> Unit,
 ) {
-    val title = (if (preferRpName) rpDisplayName(rp) else null) ?: rp.id.value
+    val title = if (preferRpName && rp.name.isNotEmpty()) rp.name.truncated() else rp.id.value
     TopAppBar(
         title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         navigationIcon = {

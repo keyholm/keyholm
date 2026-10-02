@@ -23,7 +23,7 @@ internal fun promptContent(
                 add(PromptContentItemBulletedText("User"))
                 add(PromptContentItemPlainText(userLabel))
                 val idRow = "Relying Party ID" to rp.id.value
-                val nameRow = rpDisplayName(rp)?.let { "Relying Party name" to it }
+                val nameRow = rp.name.ifEmpty { null }?.let { "Relying Party name" to it.truncated() }
                 val rpRows = if (preferRpName) listOfNotNull(nameRow, idRow) else listOfNotNull(idRow, nameRow)
                 rpRows.forEach { (label, value) ->
                     add(PromptContentItemBulletedText(label))
