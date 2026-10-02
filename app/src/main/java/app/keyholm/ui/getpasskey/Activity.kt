@@ -67,6 +67,8 @@ internal data class SignInContext(
 private sealed interface SingleTap {
     data object Canceled : SingleTap
 
+    data object Interrupted : SingleTap
+
     sealed interface Proceeding : SingleTap {
         val signature: Signature?
 
@@ -144,6 +146,11 @@ class Activity internal constructor(
                     return
                 }
 
+                SingleTap.Interrupted -> {
+                    failGetCredential(GetCredentialInterruptedException())
+                    return
+                }
+
                 is SingleTap.Proceeding -> {
                     tap
                 }
@@ -201,6 +208,10 @@ class Activity internal constructor(
                     cancelGetCredential()
                 }
 
+                PromptResult.Interrupted -> {
+                    failGetCredential(GetCredentialInterruptedException())
+                }
+
                 PromptResult.Failed -> {
                     failGetCredential(GetCredentialUnknownException())
                 }
@@ -222,6 +233,10 @@ class Activity internal constructor(
 
             result.authenticationError?.errorCode?.let { it in CANCELLATION_ERRORS } == true -> {
                 SingleTap.Canceled
+            }
+
+            result.authenticationError?.errorCode == BiometricPrompt.ERROR_CANCELED -> {
+                SingleTap.Interrupted
             }
 
             else -> {

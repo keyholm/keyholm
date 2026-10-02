@@ -419,6 +419,11 @@ class Activity internal constructor(
                 null
             }
 
+            PromptResult.Interrupted -> {
+                failCreateCredential(CreateCredentialInterruptedException())
+                null
+            }
+
             PromptResult.Failed, PromptResult.NoCryptoObject -> {
                 failCreateCredential(CreateCredentialUnknownException())
                 null

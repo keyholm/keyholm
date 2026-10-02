@@ -18,7 +18,6 @@ internal val CANCELLATION_ERRORS =
     setOf(
         BiometricPrompt.ERROR_USER_CANCELED,
         BiometricPrompt.ERROR_NEGATIVE_BUTTON,
-        BiometricPrompt.ERROR_CANCELED,
     )
 
 sealed interface PromptResult {
@@ -27,6 +26,8 @@ sealed interface PromptResult {
     ) : PromptResult
 
     data object Canceled : PromptResult
+
+    data object Interrupted : PromptResult
 
     data object Failed : PromptResult
 
@@ -65,8 +66,16 @@ class CryptoPrompt internal constructor(
                 result.crypto?.let(PromptResult::Success) ?: PromptResult.NoCryptoObject
             }
 
+            result is AuthenticationResult.CustomFallbackSelected -> {
+                PromptResult.Canceled
+            }
+
             result is AuthenticationResult.Error && result.errorCode in CANCELLATION_ERRORS -> {
                 PromptResult.Canceled
+            }
+
+            result is AuthenticationResult.Error && result.errorCode == BiometricPrompt.ERROR_CANCELED -> {
+                PromptResult.Interrupted
             }
 
             else -> {
