@@ -1,4 +1,7 @@
 pluginManagement {
+    includeBuild("plugins/publicsuffixlist") {
+        name = "publicsuffixlist-plugin"
+    }
     repositories {
         google()
         mavenCentral()
@@ -13,10 +16,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven("https://maven.mozilla.org/maven2") {
-            content { includeGroup("org.mozilla.components") }
-        }
     }
 }
 rootProject.name = "Keyholm"
 include(":app")
+include(":publicsuffixlist")

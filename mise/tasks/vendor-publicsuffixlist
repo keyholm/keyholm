@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#MISE description="Replace the vendored Mozilla public suffix list library and its plugin with the Firefox release in publicsuffixlist/version.txt"
+set -euo pipefail
+tag=$(<publicsuffixlist/version.txt)
+ac=mobile/android/android-components
+
+firefox=$(mktemp -d)
+trap 'rm -rf "$firefox"' EXIT
+git -c advice.detachedHead=false clone --quiet --depth 1 --filter=blob:none --sparse --branch "$tag" \
+  https://github.com/mozilla-firefox/firefox.git "$firefox"
+git -C "$firefox" sparse-checkout set --no-cone \
+  "/$ac/components/lib/publicsuffixlist/src/main" \
+  "/$ac/plugins/publicsuffixlist/src" \
+  /netwerk/dns/effective_tld_names.dat
+
+rm -rf publicsuffixlist/src plugins/publicsuffixlist/src
+mkdir -p publicsuffixlist/src
+cp -r "$firefox/$ac/components/lib/publicsuffixlist/src/main" publicsuffixlist/src/main
+cp -r "$firefox/$ac/plugins/publicsuffixlist/src" plugins/publicsuffixlist/src
+cp "$firefox/netwerk/dns/effective_tld_names.dat" publicsuffixlist/effective_tld_names.dat
+
+echo "Vendored $tag."

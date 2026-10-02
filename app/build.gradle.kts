@@ -103,6 +103,7 @@ android {
             initWith(getByName("release"))
             signingConfig = signingConfigs.getByName("debug")
             applicationIdSuffix = ".debug"
+            matchingFallbacks += "release"
         }
     }
 
@@ -206,7 +207,7 @@ dependencies {
     implementation("androidx.biometric:biometric-compose:1.4.0-alpha07")
     implementation("com.upokecenter:cbor:4.5.6")
     implementation("com.caverock:androidsvg-aar:1.4")
-    implementation("org.mozilla.components:lib-publicsuffixlist:157.0")
+    implementation(project(":publicsuffixlist"))
 
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.ui:ui")

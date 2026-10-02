@@ -1,5 +1,21 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", "helpers:pinGitHubActionDigests", "schedule:weekly"],
-  "enabledManagers": ["gradle", "github-actions", "mise"],
+  "enabledManagers": ["gradle", "gradle-wrapper", "github-actions", "mise", "custom.regex"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^publicsuffixlist/version\\.txt$/"],
+      "matchStrings": ["^(?<currentValue>\\S+)"],
+      "depNameTemplate": "mozilla-firefox/firefox",
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "regex:^FIREFOX_(?<major>\\d+)_(?<minor>\\d+)(_(?<patch>\\d+))?_RELEASE$",
+    },
+  ],
+  "packageRules": [
+    {
+      "matchDepNames": ["gradle"],
+      "groupName": "gradle",
+    },
+  ],
 }
