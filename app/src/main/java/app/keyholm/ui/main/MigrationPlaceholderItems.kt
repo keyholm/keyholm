@@ -61,33 +61,33 @@ internal fun MigrationPlaceholderItem(
     actions: PlaceholderRowActions,
     modifier: Modifier = Modifier,
 ) {
-    val lifecycle = placeholder.lifecycle
-    if (lifecycle is RecordLifecycle.PendingDelete) {
-        PendingDeleteItem(
-            pendingDeleteAt = lifecycle.at,
-            baseColor = Color.Transparent,
-            overlay = { PlaceholderRpIcon(placeholder, display) },
-            modifier = modifier.placeholderBorder(MaterialTheme.colorScheme.tertiary),
-        ) { contentColor ->
-            MigrationPlaceholderListItem(placeholder, display, { actions.onCancelDelete(placeholder) }, contentColor)
+    PendingDeleteSwitch(placeholder.lifecycle, modifier) { lifecycle ->
+        if (lifecycle is RecordLifecycle.PendingDelete) {
+            PendingDeleteItem(
+                pendingDeleteAt = lifecycle.at,
+                baseColor = Color.Transparent,
+                overlay = { PlaceholderRpIcon(placeholder, display) },
+                modifier = Modifier.placeholderBorder(MaterialTheme.colorScheme.tertiary),
+            ) { contentColor ->
+                MigrationPlaceholderListItem(placeholder, display, { actions.onCancelDelete(placeholder) }, contentColor)
+            }
+            return@PendingDeleteSwitch
         }
-        return
-    }
 
-    SwipeToDeleteBox(
-        onDelete = { actions.onDelete(placeholder) },
-        modifier = modifier,
-    ) {
-        val borderColor = MaterialTheme.colorScheme.tertiary
-        Card(
-            onClick = { actions.onClick(placeholder) },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .placeholderBorder(borderColor),
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        SwipeToDeleteBox(
+            onDelete = { actions.onDelete(placeholder) },
         ) {
-            MigrationPlaceholderCardBody(placeholder, display)
+            val borderColor = MaterialTheme.colorScheme.tertiary
+            Card(
+                onClick = { actions.onClick(placeholder) },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .placeholderBorder(borderColor),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            ) {
+                MigrationPlaceholderCardBody(placeholder, display)
+            }
         }
     }
 }

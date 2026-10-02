@@ -1,11 +1,17 @@
 package app.keyholm.ui.main
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -49,6 +55,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import app.keyholm.store.RecordLifecycle
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
@@ -68,6 +75,7 @@ internal fun SwipeToDeleteBox(
     content: @Composable RowScope.() -> Unit,
 ) {
     val minSwipePx = with(LocalDensity.current) { MIN_DELETE_SWIPE.toPx() }
+    // Plain remember, rememberSaveable would restore the swiped state after undo and delete again
     val dismissState = remember { SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled) { minSwipePx } }
     val scope = rememberCoroutineScope()
     val reset: () -> Unit = { scope.launch { dismissState.reset() } }
@@ -192,6 +200,25 @@ private fun Modifier.tintSweptContent(
             blendMode = BlendMode.SrcAtop,
         )
     }
+
+// Fades only on undo, a swiped row is already off screen
+@Composable
+internal fun PendingDeleteSwitch(
+    lifecycle: RecordLifecycle,
+    modifier: Modifier = Modifier,
+    content: @Composable (RecordLifecycle) -> Unit,
+) {
+    AnimatedContent(
+        targetState = lifecycle,
+        modifier = modifier,
+        transitionSpec = {
+            val undo = initialState is RecordLifecycle.PendingDelete && targetState is RecordLifecycle.Active
+            (if (undo) fadeIn() togetherWith fadeOut() else EnterTransition.None togetherWith ExitTransition.None)
+                .using(null)
+        },
+        contentKey = { it is RecordLifecycle.PendingDelete },
+    ) { content(it) }
+}
 
 @Composable
 internal fun PendingDeleteItem(

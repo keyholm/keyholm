@@ -23,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -42,8 +41,6 @@ import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.rememberAppIcon
 import app.keyholm.ui.theme.titleColor
-import app.keyholm.webauthn.CredentialId
-import app.keyholm.webauthn.RpId
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
@@ -75,12 +72,11 @@ private fun MainTopBar(onOpenSettings: () -> Unit) {
 private fun LazyListScope.passkeyItems(
     passkeys: List<PasskeyRecord>,
     display: PasskeyRowDisplay,
-    rowGeneration: Map<CredentialId, Int>,
     actions: PasskeyRowActions,
 ) {
     items(
         passkeys,
-        key = { "${it.credentialId.b64}:${rowGeneration[it.credentialId] ?: 0}" },
+        key = { it.credentialId.b64 },
     ) { record ->
         PasskeyItem(
             record = record,
@@ -101,12 +97,11 @@ private data class PasskeyListActions(
 private fun LazyListScope.migrationPlaceholderItems(
     placeholders: List<MigrationPlaceholder>,
     display: PlaceholderRowDisplay,
-    rowGeneration: Map<Pair<RpId, String>, Int>,
     actions: PlaceholderRowActions,
 ) {
     items(
         placeholders,
-        key = { "${it.rp.id.value}:${it.userName}:${rowGeneration[it.rp.id to it.userName] ?: 0}" },
+        key = { "${it.rp.id.value}:${it.userName}" },
     ) { placeholder ->
         MigrationPlaceholderItem(
             placeholder = placeholder,
@@ -122,7 +117,6 @@ private fun PasskeyListContent(
     uiState: MainUiState.Ready,
     iconPack: IconPack?,
     innerPadding: PaddingValues,
-    rowGenerations: RowGenerations,
     actions: PasskeyListActions,
 ) {
     LazyColumn(
@@ -168,13 +162,11 @@ private fun PasskeyListContent(
         migrationPlaceholderItems(
             placeholders.value,
             PlaceholderRowDisplay(uiState.settings.preferRpName, iconPack),
-            rowGenerations.placeholders,
             actions.placeholderRows,
         )
         passkeyItems(
             passkeys.value,
             PasskeyRowDisplay(uiState.settings.compactView, uiState.settings.preferRpName, iconPack),
-            rowGenerations.passkeys,
             actions.rows,
         )
     }
@@ -193,11 +185,10 @@ fun MainScreen(
     val uiState = state as? MainUiState.Ready ?: return
     val iconPack by viewModel.iconPacks.pack.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val rowGenerations = remember { RowGenerations(mutableStateMapOf(), mutableStateMapOf()) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
-    PendingDeleteUndo(uiState.pendingDeleteBatches, snackbarHostState, rowGenerations, uiState.settings.preferRpName) {
+    PendingDeleteUndo(uiState.pendingDeleteBatches, snackbarHostState, uiState.settings.preferRpName) {
         viewModel.pendingDeletes.undoAll()
         viewModel.placeholderDeletes.undoAll()
     }
@@ -240,7 +231,7 @@ fun MainScreen(
     )
 
     Scaffold(topBar = { MainTopBar(onOpenSettings) }) { innerPadding ->
-        PasskeyListContent(uiState, iconPack, innerPadding, rowGenerations, listActions)
+        PasskeyListContent(uiState, iconPack, innerPadding, listActions)
     }
 }
 

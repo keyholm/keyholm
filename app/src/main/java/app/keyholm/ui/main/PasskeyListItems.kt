@@ -199,43 +199,42 @@ internal fun PasskeyItem(
     actions: PasskeyRowActions,
     modifier: Modifier = Modifier,
 ) {
-    val lifecycle = record.lifecycle
-    if (lifecycle is RecordLifecycle.PendingDelete) {
-        PendingPasskeyItem(
-            record = record,
-            pendingDeleteAt = lifecycle.at,
-            display = display,
-            onCancelDelete = { actions.onCancelDelete(record) },
-            modifier = modifier,
-        )
-        return
-    }
+    PendingDeleteSwitch(record.lifecycle, modifier) { lifecycle ->
+        if (lifecycle is RecordLifecycle.PendingDelete) {
+            PendingPasskeyItem(
+                record = record,
+                pendingDeleteAt = lifecycle.at,
+                display = display,
+                onCancelDelete = { actions.onCancelDelete(record) },
+            )
+            return@PendingDeleteSwitch
+        }
 
-    SwipeToDeleteBox(
-        onDelete = { reset -> actions.requestDeleteConfirmation(record, { actions.onDelete(record) }, reset) },
-        modifier = modifier,
-    ) {
-        Card(
-            onClick = { actions.onOpenDetails(record) },
-            modifier = Modifier.fillMaxWidth(),
-            colors =
-                CardDefaults.cardColors(
-                    containerColor =
-                        if (record.likelyInvalid) {
-                            MaterialTheme.colorScheme.errorContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceContainerHigh
-                        },
-                ),
+        SwipeToDeleteBox(
+            onDelete = { reset -> actions.requestDeleteConfirmation(record, { actions.onDelete(record) }, reset) },
         ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                PasskeyListItemContent(record = record, display = display)
-                RpIcon(
-                    display.iconPack,
-                    record.rp,
-                    display.preferRpName,
-                    Modifier.align(Alignment.CenterStart).padding(start = RP_ICON_START),
-                )
+            Card(
+                onClick = { actions.onOpenDetails(record) },
+                modifier = Modifier.fillMaxWidth(),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor =
+                            if (record.likelyInvalid) {
+                                MaterialTheme.colorScheme.errorContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceContainerHigh
+                            },
+                    ),
+            ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    PasskeyListItemContent(record = record, display = display)
+                    RpIcon(
+                        display.iconPack,
+                        record.rp,
+                        display.preferRpName,
+                        Modifier.align(Alignment.CenterStart).padding(start = RP_ICON_START),
+                    )
+                }
             }
         }
     }

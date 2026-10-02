@@ -8,18 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.rpLabel
-import app.keyholm.webauthn.CredentialId
-import app.keyholm.webauthn.RpId
 import kotlinx.coroutines.channels.Channel
-
-internal class RowGenerations(
-    val passkeys: MutableMap<CredentialId, Int>,
-    val placeholders: MutableMap<Pair<RpId, String>, Int>,
-)
-
-private fun <K> MutableMap<K, Int>.bump(key: K) {
-    this[key] = (this[key] ?: 0) + 1
-}
 
 private fun pendingDeleteMessage(
     batches: PendingDeleteBatches,
@@ -43,7 +32,6 @@ private fun pendingDeleteMessage(
 internal fun PendingDeleteUndo(
     batches: PendingDeleteBatches,
     snackbarHostState: SnackbarHostState,
-    rowGenerations: RowGenerations,
     preferRpName: Boolean,
     onUndo: () -> Unit,
 ) {
@@ -55,14 +43,7 @@ internal fun PendingDeleteUndo(
                 actionLabel = "Undo",
                 duration = SnackbarDuration.Long,
             )
-        if (result == SnackbarResult.ActionPerformed) {
-            // Force a fresh SwipeToDismissBoxState for every row in the batch: without this,
-            // LazyColumn restores each row's old (fully-swiped) saved state under the same key
-            // and immediately re-fires onDismiss, looping the delete right back on.
-            batches.passkeys.forEach { rowGenerations.passkeys.bump(it.credentialId) }
-            batches.placeholders.forEach { rowGenerations.placeholders.bump(it.rp.id to it.userName) }
-            onUndo()
-        }
+        if (result == SnackbarResult.ActionPerformed) onUndo()
     }
 }
 
