@@ -158,63 +158,68 @@ class Activity internal constructor(
 
         // We've already potentially shown the quick tap prompt
         // but we don't know if it's authorized signatures with our key or not.
-        lifecycleScope.launch {
-            val policy =
-                TrustPolicy(
-                    intent.nativeAppTrust(applicationContext, dispatcher),
-                    deniedAppsRepo.accepted.first(),
-                )
-            // We reuse the single tap pending signature if possible, even though we may need to
-            // reprompt.
-            val signIn =
-                when (val result = requestResolver.prepareSignIn(providerRequest, singleTap.signature, policy)) {
-                    is SignInResult.Ready -> result.context
-                    is SignInResult.Failed -> return@launch failGetCredential(result.toException(), result.toastMessage)
+        lifecycleScope.launch { runSignIn(providerRequest, singleTap) }
+    }
+
+    private suspend fun runSignIn(
+        providerRequest: ProviderGetCredentialRequest?,
+        singleTap: SingleTap.Proceeding,
+    ) {
+        val policy =
+            TrustPolicy(
+                intent.nativeAppTrust(applicationContext, dispatcher),
+                deniedAppsRepo.accepted.first(),
+            )
+        // We reuse the single tap pending signature if possible, even though we may need to
+        // reprompt.
+        val signIn =
+            when (val result = requestResolver.prepareSignIn(providerRequest, singleTap.signature, policy)) {
+                is SignInResult.Ready -> result.context
+                is SignInResult.Failed -> return failGetCredential(result.toException(), result.toastMessage)
+            }
+
+        val promptResult =
+            when (singleTap) {
+                // Reuse the single tap signature if we have it was successful
+                is SingleTap.Proceeding.Authorized -> {
+                    PromptResult.Success(BiometricPrompt.CryptoObject(singleTap.signature))
                 }
 
-            val promptResult =
-                when (singleTap) {
-                    // Reuse the single tap signature if we have it was successful
-                    is SingleTap.Proceeding.Authorized -> {
-                        PromptResult.Success(BiometricPrompt.CryptoObject(singleTap.signature))
-                    }
-
-                    // Reprompt if there was no single tap or we otherwise need to
-                    is SingleTap.Proceeding.NeedsPrompt -> {
-                        cryptoPrompt.authenticate(
-                            title = "Sign in",
-                            cryptoObject = BiometricPrompt.CryptoObject(signIn.signature),
-                            allowedAuthenticators = signIn.allowedAuthenticators,
-                            content =
-                                promptContent(
-                                    description = "${appLabel(signIn.callingPackage)} wants to use a passkey:",
-                                    record = signIn.record,
-                                    preferRpName = intent.preferRpName(),
-                                ),
-                        )
-                    }
+                // Reprompt if there was no single tap or we otherwise need to
+                is SingleTap.Proceeding.NeedsPrompt -> {
+                    cryptoPrompt.authenticate(
+                        title = "Sign in",
+                        cryptoObject = BiometricPrompt.CryptoObject(signIn.signature),
+                        allowedAuthenticators = signIn.allowedAuthenticators,
+                        content =
+                            promptContent(
+                                description = "${appLabel(signIn.callingPackage)} wants to use a passkey:",
+                                record = signIn.record,
+                                preferRpName = intent.preferRpName(),
+                            ),
+                    )
                 }
+            }
 
-            when (promptResult) {
-                is PromptResult.Success -> {
-                    finishSignIn(signIn, promptResult.crypto)
-                }
+        when (promptResult) {
+            is PromptResult.Success -> {
+                finishSignIn(signIn, promptResult.crypto)
+            }
 
-                PromptResult.NoCryptoObject -> {
-                    failGetCredential(GetCredentialUnknownException(), ErrorMessages.GET_NO_SIGNATURE)
-                }
+            PromptResult.NoCryptoObject -> {
+                failGetCredential(GetCredentialUnknownException(), ErrorMessages.GET_NO_SIGNATURE)
+            }
 
-                PromptResult.Canceled -> {
-                    cancelGetCredential()
-                }
+            PromptResult.Canceled -> {
+                cancelGetCredential()
+            }
 
-                PromptResult.Interrupted -> {
-                    failGetCredential(GetCredentialInterruptedException())
-                }
+            PromptResult.Interrupted -> {
+                failGetCredential(GetCredentialInterruptedException())
+            }
 
-                PromptResult.Failed -> {
-                    failGetCredential(GetCredentialUnknownException())
-                }
+            PromptResult.Failed -> {
+                failGetCredential(GetCredentialUnknownException())
             }
         }
     }
