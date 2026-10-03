@@ -21,8 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.withResumed
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.ui.common.AuthenticatorsResolution
 import app.keyholm.ui.common.CryptoPrompt
@@ -66,11 +64,7 @@ internal fun LockScreen(
         }
     }
 
-    // The activity has to be resumed before the prompt will be accepted, and the lock screen
-    // appears while it is still going to the background.
-    val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(Unit) {
-        lifecycleOwner.lifecycle.withResumed {}
         unlock()
     }
 

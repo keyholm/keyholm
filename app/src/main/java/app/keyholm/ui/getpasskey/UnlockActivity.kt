@@ -9,7 +9,6 @@ import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.withResumed
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.provider.GetCredentialEntries
 import app.keyholm.ui.common.AuthenticatorsResolution
@@ -47,8 +46,6 @@ class UnlockActivity internal constructor(
             }
         }
         lifecycleScope.launch {
-            // We have to be foreground otherwise the prompt never shows
-            lifecycle.withResumed {}
             val authenticators = withContext(dispatcher) { resolveCreateAuthenticators(this@UnlockActivity, AuthenticatorPolicy.Either) }
             val unlocked =
                 when (authenticators) {
