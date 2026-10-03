@@ -32,6 +32,7 @@ import app.keyholm.ui.common.PRF_PROMPT_TITLE
 import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.appLabel
 import app.keyholm.ui.common.promptContent
+import app.keyholm.ui.common.userLabel
 import app.keyholm.util.logger
 import app.keyholm.webauthn.AssertionResponse
 import app.keyholm.webauthn.AuthenticatorData
@@ -318,8 +319,10 @@ class Activity internal constructor(
                                         description =
                                             "${appLabel(signIn.callingPackage)} wants access to the secret for this passkey. " +
                                                 "Cancel to decline and sign in anyway.",
-                                        record = record,
+                                        lastUsedAt = null,
+                                        rp = record.rp,
                                         preferRpName = intent.preferRpName(),
+                                        userLabel = userLabel(record.user.name, record.user.displayName),
                                     ),
                             ) as? PromptResult.Success
                         val prfResults =
