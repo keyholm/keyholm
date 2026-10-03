@@ -1,5 +1,7 @@
 package app.keyholm.ui.common
 
+import android.view.View
+import android.view.ViewTreeObserver
 import androidx.biometric.AuthenticationRequest
 import androidx.biometric.AuthenticationResult
 import androidx.biometric.AuthenticationResultLauncher
@@ -8,6 +10,7 @@ import androidx.biometric.compose.rememberAuthenticationLauncher
 import androidx.biometric.registerForAuthenticationResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalView
 import androidx.fragment.app.FragmentActivity
 import app.keyholm.keystore.AuthenticatorPolicy
 import kotlinx.coroutines.CancellableContinuation
@@ -53,6 +56,7 @@ internal class ResultSlot {
 class CryptoPrompt internal constructor(
     private val launcher: AuthenticationResultLauncher,
     private val slot: ResultSlot,
+    private val view: () -> View,
 ) {
     suspend fun authenticate(
         title: String,
@@ -109,6 +113,8 @@ class CryptoPrompt internal constructor(
                 .setContent(content)
                 .setMinStrength(AuthenticationRequest.Biometric.Strength.Class3(cryptoObject))
                 .build()
+        // The system cancels a prompt opened before our window has focus
+        view().awaitWindowFocus()
         return slot.awaitResult { launcher.launch(request) }
     }
 
@@ -116,8 +122,24 @@ class CryptoPrompt internal constructor(
         operator fun invoke(activity: FragmentActivity): CryptoPrompt {
             val slot = ResultSlot()
             val launcher = activity.registerForAuthenticationResult { slot.deliver(it) }
-            return CryptoPrompt(launcher, slot)
+            return CryptoPrompt(launcher, slot) { activity.window.decorView }
         }
+    }
+}
+
+private suspend fun View.awaitWindowFocus() {
+    if (hasWindowFocus()) return
+    suspendCancellableCoroutine { cont ->
+        val listener =
+            object : ViewTreeObserver.OnWindowFocusChangeListener {
+                override fun onWindowFocusChanged(hasFocus: Boolean) {
+                    if (!hasFocus) return
+                    viewTreeObserver.removeOnWindowFocusChangeListener(this)
+                    cont.resume(Unit)
+                }
+            }
+        viewTreeObserver.addOnWindowFocusChangeListener(listener)
+        cont.invokeOnCancellation { viewTreeObserver.removeOnWindowFocusChangeListener(listener) }
     }
 }
 
@@ -127,5 +149,6 @@ class CryptoPrompt internal constructor(
 fun rememberCryptoPrompt(): CryptoPrompt {
     val slot = remember { ResultSlot() }
     val launcher = rememberAuthenticationLauncher { slot.deliver(it) }
-    return remember(launcher) { CryptoPrompt(launcher, slot) }
+    val view = LocalView.current
+    return remember(launcher, view) { CryptoPrompt(launcher, slot) { view } }
 }
