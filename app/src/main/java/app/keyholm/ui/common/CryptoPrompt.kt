@@ -101,22 +101,40 @@ class CryptoPrompt internal constructor(
         allowedAuthenticators: AuthenticatorPolicy,
         content: AuthenticationRequest.BodyContent,
     ): AuthenticationResult {
-        val fallback =
-            if (allowedAuthenticators != AuthenticatorPolicy.Biometric) {
-                AuthenticationRequest.Biometric.Fallback.DeviceCredential
-            } else {
-                AuthenticationRequest.Biometric.Fallback.CustomOption("Cancel")
-            }
         val request =
-            AuthenticationRequest.Biometric
-                .Builder(title, fallback)
-                .setContent(content)
-                .setMinStrength(AuthenticationRequest.Biometric.Strength.Class3(cryptoObject))
-                .build()
+            when (allowedAuthenticators) {
+                AuthenticatorPolicy.DeviceCredential -> {
+                    AuthenticationRequest.Credential
+                        .Builder(title)
+                        .setContent(content)
+                        .setCryptoObject(cryptoObject)
+                        .build()
+                }
+
+                AuthenticatorPolicy.Either -> {
+                    biometricRequest(title, AuthenticationRequest.Biometric.Fallback.DeviceCredential, cryptoObject, content)
+                }
+
+                AuthenticatorPolicy.Biometric -> {
+                    biometricRequest(title, AuthenticationRequest.Biometric.Fallback.CustomOption("Cancel"), cryptoObject, content)
+                }
+            }
         // The system cancels a prompt opened before our window has focus
         view().awaitWindowFocus()
         return slot.awaitResult { launcher.launch(request) }
     }
+
+    private fun biometricRequest(
+        title: String,
+        fallback: AuthenticationRequest.Biometric.Fallback,
+        cryptoObject: BiometricPrompt.CryptoObject?,
+        content: AuthenticationRequest.BodyContent,
+    ): AuthenticationRequest =
+        AuthenticationRequest.Biometric
+            .Builder(title, fallback)
+            .setContent(content)
+            .setMinStrength(AuthenticationRequest.Biometric.Strength.Class3(cryptoObject))
+            .build()
 
     companion object {
         operator fun invoke(activity: FragmentActivity): CryptoPrompt {
