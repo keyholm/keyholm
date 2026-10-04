@@ -27,6 +27,8 @@ import app.keyholm.store.StoredRecordException
 import app.keyholm.store.isStoreUnrecoverable
 import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
+import app.keyholm.ui.pxp.isPxpActivityEnabled
+import app.keyholm.ui.pxp.setPxpActivityEnabled
 import app.keyholm.util.logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -78,6 +80,7 @@ data class DeviceStatus(
     val teeMlDsa: Boolean,
     val providerEnabled: Boolean,
     val biometricsEnrolled: Boolean,
+    val pxpEnabled: Boolean,
 )
 
 enum class NativeAppExceptionAction { APPROVE, DISMISS, REVOKE }
@@ -115,7 +118,7 @@ private data class StoresState(
 
 class MainViewModel internal constructor(
     application: Application,
-    dispatcher: CoroutineDispatcher,
+    private val dispatcher: CoroutineDispatcher,
     renderDispatcher: CoroutineDispatcher,
 ) : AndroidViewModel(application) {
     constructor(application: Application) : this(application, Dispatchers.IO, Dispatchers.Default)
@@ -153,6 +156,7 @@ class MainViewModel internal constructor(
                     biometricsEnrolled =
                         BiometricManager.from(context).canAuthenticate(AuthenticatorPolicy.Biometric.promptMask) ==
                             BiometricManager.BIOMETRIC_SUCCESS,
+                    pxpEnabled = isPxpActivityEnabled(context),
                 )
             }
         }
@@ -245,6 +249,13 @@ class MainViewModel internal constructor(
     val imports = ImportReviewController(migrationRepo, passkeyRepo, viewModelScope)
 
     val iconPacks = IconPackController(iconPackStorage, viewModelScope, reportError).also(::addCloseable)
+
+    fun setPxpEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            withContext(dispatcher) { setPxpActivityEnabled(getApplication(), enabled) }
+            refresh()
+        }
+    }
 
     fun refresh() {
         refreshTicks.update { it + 1 }
