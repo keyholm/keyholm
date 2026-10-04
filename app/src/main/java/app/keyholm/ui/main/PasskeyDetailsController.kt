@@ -58,7 +58,7 @@ class PasskeyDetailsController(
         scope.launch {
             val pem =
                 withContext(dispatcher) {
-                    runCatching { SecureKeyManager().certificateChainPem(record.keyAlias) }
+                    runCatching { SecureKeyManager().certificateChainPem(record.credentialId) }
                 }
             val attestation: Loadable<AttestationInfo> =
                 pem.fold(
@@ -76,9 +76,9 @@ class PasskeyDetailsController(
                     runCatching {
                         val keyManager = SecureKeyManager()
                         val mainKey =
-                            keyManager.allowedAuthenticatorsFor(record.keyAlias, record.keystore.coseAlgorithm)
+                            keyManager.allowedAuthenticatorsFor(record.credentialId, record.keystore.coseAlgorithm)
                         if (record.hasPrf) {
-                            KeyAuthenticators.WithPrf(mainKey, HmacKeyManager().allowedAuthenticatorsForHmac(record.hmacKeyAlias))
+                            KeyAuthenticators.WithPrf(mainKey, HmacKeyManager().allowedAuthenticatorsForHmac(record.credentialId))
                         } else {
                             KeyAuthenticators.SigningOnly(mainKey)
                         }

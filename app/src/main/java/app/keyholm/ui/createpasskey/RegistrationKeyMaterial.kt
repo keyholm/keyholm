@@ -18,7 +18,6 @@ import app.keyholm.ui.common.resolveCreateAuthenticators
 import app.keyholm.util.logger
 import app.keyholm.webauthn.ClientDataHash
 import app.keyholm.webauthn.CredentialId
-import app.keyholm.webauthn.KeyAlias
 import app.keyholm.webauthn.SigningInput
 import app.keyholm.webauthn.WebAuthn
 import app.keyholm.webauthn.WebAuthnAlgorithm
@@ -40,7 +39,9 @@ internal class RegistrationKeyMaterial(
     private val hmacKeyManager by lazy { HmacKeyManager() }
     private val log = logger()
 
-    suspend fun deleteKey(alias: KeyAlias) = withContext(dispatcher) { keyManager.deleteKey(alias) }
+    suspend fun deleteKey(credentialId: CredentialId) = withContext(dispatcher) { keyManager.deleteKey(credentialId) }
+
+    suspend fun deletePrfKey(credentialId: CredentialId) = withContext(dispatcher) { hmacKeyManager.deleteKey(credentialId) }
 
     suspend fun resolveAuthenticators(policy: AuthenticatorPolicy): Registration<AuthenticatorPolicy> =
         when (val r = withContext(dispatcher) { resolveCreateAuthenticators(context, policy) }) {
@@ -62,7 +63,7 @@ internal class RegistrationKeyMaterial(
             }
         val request =
             SecureKeyManager.CredentialKeyRequest(
-                alias = credentialId.signingKeyAlias,
+                credentialId = credentialId,
                 attestationChallenge = clientDataHash,
                 algorithm = registration.algorithm,
                 authenticators = authenticators,
@@ -82,8 +83,8 @@ internal class RegistrationKeyMaterial(
                 } finally {
                     if (material !is Registration.Ready) {
                         withContext(NonCancellable) {
-                            deleteKey(request.alias)
-                            deleteKey(credentialId.hmacKeyAlias)
+                            deleteKey(credentialId)
+                            deletePrfKey(credentialId)
                         }
                     }
                 }
@@ -108,7 +109,7 @@ internal class RegistrationKeyMaterial(
             WebAuthn.registrationAuthData(registration.info.rp.id, credentialId, generated.publicKey, aaguid, request.algorithm)
         val toSign = SigningInput(authData.bytes + clientDataHash.bytes)
         val signature =
-            when (val r = signFor(request.alias, request.algorithm)) {
+            when (val r = signFor(request.credentialId, request.algorithm)) {
                 is Outcome.Failure -> return Registration.Internal(r.toastMessage)
                 is Outcome.Success -> r.value
             }
@@ -154,9 +155,9 @@ internal class RegistrationKeyMaterial(
             },
         )
 
-    suspend fun macFor(alias: KeyAlias): Outcome<Mac> =
+    suspend fun macFor(credentialId: CredentialId): Outcome<Mac> =
         try {
-            Outcome.Success(withContext(dispatcher) { hmacKeyManager.macFor(alias) })
+            Outcome.Success(withContext(dispatcher) { hmacKeyManager.macFor(credentialId) })
         } catch (e: KeyPermanentlyInvalidatedException) {
             log.e(e) { "macFor failed" }
             Outcome.Failure(ErrorMessages.KEY_INVALIDATED)
@@ -165,9 +166,9 @@ internal class RegistrationKeyMaterial(
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
         }
 
-    suspend fun hmacAuthenticatorsFor(alias: KeyAlias): Outcome<AuthenticatorPolicy> =
+    suspend fun hmacAuthenticatorsFor(credentialId: CredentialId): Outcome<AuthenticatorPolicy> =
         try {
-            Outcome.Success(withContext(dispatcher) { hmacKeyManager.allowedAuthenticatorsForHmac(alias) })
+            Outcome.Success(withContext(dispatcher) { hmacKeyManager.allowedAuthenticatorsForHmac(credentialId) })
         } catch (e: GeneralSecurityException) {
             log.e(e) { "hmacAuthenticatorsFor failed" }
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
@@ -198,7 +199,7 @@ internal class RegistrationKeyMaterial(
                 withContext(dispatcher) {
                     hmacKeyManager
                         .generateHmacKey(
-                            credentialId.hmacKeyAlias,
+                            credentialId,
                             keystoreAuthenticators,
                             invalidateOnBiometricEnrollment,
                         ).securityLevel
@@ -216,11 +217,11 @@ internal class RegistrationKeyMaterial(
     }
 
     private suspend fun signFor(
-        alias: KeyAlias,
+        credentialId: CredentialId,
         algorithm: WebAuthnAlgorithm,
     ): Outcome<Signature> =
         try {
-            Outcome.Success(withContext(dispatcher) { keyManager.signatureFor(alias, algorithm) })
+            Outcome.Success(withContext(dispatcher) { keyManager.signatureFor(credentialId, algorithm) })
         } catch (e: KeyPermanentlyInvalidatedException) {
             log.e(e) { "failed to sign" }
             Outcome.Failure(ErrorMessages.KEY_INVALIDATED)

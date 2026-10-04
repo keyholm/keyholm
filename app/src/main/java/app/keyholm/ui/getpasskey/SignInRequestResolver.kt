@@ -184,7 +184,7 @@ internal class SignInRequestResolver(
 
             is Outcome.Success -> {
                 when (
-                    val authenticators = keyMaterial.authenticatorsFor(record.keyAlias, algorithm)
+                    val authenticators = keyMaterial.authenticatorsFor(record.credentialId, algorithm)
                 ) {
                     is Outcome.Failure -> {
                         authenticators

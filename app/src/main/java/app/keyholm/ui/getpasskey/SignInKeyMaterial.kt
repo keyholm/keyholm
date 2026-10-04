@@ -10,7 +10,7 @@ import app.keyholm.store.PasskeyRepository
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.Outcome
 import app.keyholm.util.logger
-import app.keyholm.webauthn.KeyAlias
+import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.WebAuthnAlgorithm
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -30,7 +30,7 @@ internal class SignInKeyMaterial(
         algorithm: WebAuthnAlgorithm,
     ): Outcome<Signature> =
         try {
-            Outcome.Success(withContext(dispatcher) { SecureKeyManager().signatureFor(record.keyAlias, algorithm) })
+            Outcome.Success(withContext(dispatcher) { SecureKeyManager().signatureFor(record.credentialId, algorithm) })
         } catch (e: KeyPermanentlyInvalidatedException) {
             log.e(e) { "signatureFor failed" }
             markLikelyInvalid(record)
@@ -42,7 +42,7 @@ internal class SignInKeyMaterial(
 
     suspend fun macFor(record: PasskeyRecord): Outcome<Mac> =
         try {
-            Outcome.Success(withContext(dispatcher) { HmacKeyManager().macFor(record.hmacKeyAlias) })
+            Outcome.Success(withContext(dispatcher) { HmacKeyManager().macFor(record.credentialId) })
         } catch (e: KeyPermanentlyInvalidatedException) {
             log.e(e) { "macFor failed" }
             markLikelyInvalid(record)
@@ -56,8 +56,8 @@ internal class SignInKeyMaterial(
         val generated =
             try {
                 withContext(dispatcher) {
-                    val credentialKey = SecureKeyManager().credentialKeyInfo(record.keyAlias, record.keystore.coseAlgorithm)
-                    HmacKeyManager().generateHmacKeyFor(credentialKey, record.hmacKeyAlias)
+                    val credentialKey = SecureKeyManager().credentialKeyInfo(record.credentialId, record.keystore.coseAlgorithm)
+                    HmacKeyManager().generateHmacKeyFor(credentialKey, record.credentialId)
                 }
             } catch (e: SecureElementUnavailableException) {
                 log.e(e) { "failed to generate prf key" }
@@ -76,20 +76,20 @@ internal class SignInKeyMaterial(
         }
     }
 
-    suspend fun hmacAuthenticatorsFor(alias: KeyAlias): Outcome<AuthenticatorPolicy> =
+    suspend fun hmacAuthenticatorsFor(credentialId: CredentialId): Outcome<AuthenticatorPolicy> =
         try {
-            Outcome.Success(withContext(dispatcher) { HmacKeyManager().allowedAuthenticatorsForHmac(alias) })
+            Outcome.Success(withContext(dispatcher) { HmacKeyManager().allowedAuthenticatorsForHmac(credentialId) })
         } catch (e: GeneralSecurityException) {
             log.e(e) { "hmacAuthenticatorsFor failed" }
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_GET)
         }
 
     suspend fun authenticatorsFor(
-        alias: KeyAlias,
+        credentialId: CredentialId,
         algorithm: WebAuthnAlgorithm,
     ): Outcome<AuthenticatorPolicy> =
         try {
-            Outcome.Success(withContext(dispatcher) { SecureKeyManager().allowedAuthenticatorsFor(alias, algorithm) })
+            Outcome.Success(withContext(dispatcher) { SecureKeyManager().allowedAuthenticatorsFor(credentialId, algorithm) })
         } catch (e: GeneralSecurityException) {
             log.e(e) { "authenticatorsFor failed" }
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_GET)

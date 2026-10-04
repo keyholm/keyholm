@@ -4,7 +4,6 @@ import androidx.compose.runtime.Immutable
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.CredentialUser
-import app.keyholm.webauthn.KeyAlias
 import app.keyholm.webauthn.PackageName
 import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.WebAuthnAlgorithm
@@ -38,7 +37,5 @@ data class PasskeyRecord(
         val prfSecurityLevel: KeySecurityLevel?,
     )
 
-    val keyAlias: KeyAlias get() = credentialId.signingKeyAlias
-    val hmacKeyAlias: KeyAlias get() = credentialId.hmacKeyAlias
     val hasPrf: Boolean get() = keystore.prfSecurityLevel != null
 }

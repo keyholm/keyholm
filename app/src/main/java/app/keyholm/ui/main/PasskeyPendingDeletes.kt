@@ -1,6 +1,7 @@
 package app.keyholm.ui.main
 
 import androidx.biometric.BiometricPrompt
+import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
@@ -38,29 +39,29 @@ class PasskeyPendingDeletes(
         val keyManager = SecureKeyManager()
         val allowedAuthenticators =
             try {
-                keyManager.allowedAuthenticatorsFor(record.keyAlias, algorithm)
+                keyManager.allowedAuthenticatorsFor(record.credentialId, algorithm)
             } catch (e: UnrecoverableKeyException) {
-                log.e(e) { "no key material for ${record.keyAlias.value}, treating as orphaned" }
+                log.e(e) { "no key material for ${record.credentialId.b64}, treating as orphaned" }
                 return DeletePlan.Orphaned
             } catch (e: GeneralSecurityException) {
-                log.e(e) { "couldn't read authenticators for ${record.keyAlias.value}" }
+                log.e(e) { "couldn't read authenticators for ${record.credentialId.b64}" }
                 return DeletePlan.Failed(ErrorMessages.DELETE_KEY_UNAVAILABLE)
             } catch (e: ProviderException) {
-                log.e(e) { "couldn't read authenticators for ${record.keyAlias.value}" }
+                log.e(e) { "couldn't read authenticators for ${record.credentialId.b64}" }
                 return DeletePlan.Failed(ErrorMessages.DELETE_KEY_UNAVAILABLE)
             }
         val cryptoObject =
             try {
-                BiometricPrompt.CryptoObject(keyManager.signatureFor(record.keyAlias, algorithm))
+                BiometricPrompt.CryptoObject(keyManager.signatureFor(record.credentialId, algorithm))
             } catch (e: GeneralSecurityException) {
-                log.e(e) { "couldn't create a signature for ${record.keyAlias.value}" }
+                log.e(e) { "couldn't create a signature for ${record.credentialId.b64}" }
                 null
             }
         return DeletePlan.Confirm(cryptoObject, allowedAuthenticators)
     }
 
     override fun deleteKeyMaterial(record: PasskeyRecord) {
-        SecureKeyManager().deleteKey(record.keyAlias)
-        if (record.hasPrf) SecureKeyManager().deleteKey(record.hmacKeyAlias)
+        SecureKeyManager().deleteKey(record.credentialId)
+        if (record.hasPrf) HmacKeyManager().deleteKey(record.credentialId)
     }
 }

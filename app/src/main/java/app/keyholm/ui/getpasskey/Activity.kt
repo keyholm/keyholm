@@ -322,7 +322,7 @@ class Activity internal constructor(
 
             is Outcome.Success -> {
                 when (
-                    val hmac = keyMaterial.hmacAuthenticatorsFor(record.hmacKeyAlias)
+                    val hmac = keyMaterial.hmacAuthenticatorsFor(record.credentialId)
                 ) {
                     is Outcome.Failure -> {
                         failGetCredential(GetCredentialUnknownException(), hmac.toastMessage)

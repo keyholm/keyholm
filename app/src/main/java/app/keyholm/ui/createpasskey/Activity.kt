@@ -57,7 +57,6 @@ import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.CredentialResponseJson
 import app.keyholm.webauthn.CredentialUser
 import app.keyholm.webauthn.DerSignature
-import app.keyholm.webauthn.KeyAlias
 import app.keyholm.webauthn.PackageName
 import app.keyholm.webauthn.PrfExtension
 import app.keyholm.webauthn.RegistrationPrf
@@ -199,7 +198,6 @@ internal data class RegistrationContext(
 )
 
 private data class PendingRegistration(
-    val alias: KeyAlias,
     val credentialId: CredentialId,
     val info: RegistrantInfo,
     val clientDataJSON: ClientDataJson,
@@ -271,10 +269,8 @@ private fun buildPendingRegistration(
     material: KeyMaterial,
     clientDataJSON: ClientDataJson,
     credentialId: CredentialId,
-    alias: KeyAlias,
 ): PendingRegistration =
     PendingRegistration(
-        alias = alias,
         credentialId = credentialId,
         info = registration.info,
         clientDataJSON = clientDataJSON,
@@ -373,7 +369,6 @@ class Activity internal constructor(
         cd: WebAuthn.ClientData,
         credentialId: CredentialId,
     ) {
-        val alias = credentialId.signingKeyAlias
         working.value = true
         val generated =
             try {
@@ -388,7 +383,7 @@ class Activity internal constructor(
                 KeyCreation.DevicePropertiesUnavailable -> return retryWithoutDeviceProperties(offer, registration, cd, credentialId)
             }
 
-        val pending = buildPendingRegistration(registration, material, cd.json, credentialId, alias)
+        val pending = buildPendingRegistration(registration, material, cd.json, credentialId)
 
         var attestationObject: AttestationObject? = null
         try {
@@ -396,8 +391,8 @@ class Activity internal constructor(
         } finally {
             if (attestationObject == null) {
                 withContext(NonCancellable) {
-                    keyMaterial.deleteKey(alias)
-                    if (material.prfSecurityLevel != null) keyMaterial.deleteKey(credentialId.hmacKeyAlias)
+                    keyMaterial.deleteKey(credentialId)
+                    if (material.prfSecurityLevel != null) keyMaterial.deletePrfKey(credentialId)
                 }
             }
         }
@@ -533,10 +528,9 @@ class Activity internal constructor(
             respondToRegistration(pending, attestationObject, RegistrationPrf.Requested)
             return
         }
-        val prfAlias = pending.credentialId.hmacKeyAlias
 
         val mac =
-            when (val r = keyMaterial.macFor(prfAlias)) {
+            when (val r = keyMaterial.macFor(pending.credentialId)) {
                 is Outcome.Success -> {
                     r.value
                 }
@@ -547,7 +541,7 @@ class Activity internal constructor(
                 }
             }
         val hmacAuthenticators =
-            when (val r = keyMaterial.hmacAuthenticatorsFor(prfAlias)) {
+            when (val r = keyMaterial.hmacAuthenticatorsFor(pending.credentialId)) {
                 is Outcome.Success -> {
                     r.value
                 }

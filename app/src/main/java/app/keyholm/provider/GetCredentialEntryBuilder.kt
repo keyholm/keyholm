@@ -99,21 +99,21 @@ internal class GetCredentialEntryBuilder(
     private suspend fun singleTapSignature(record: PasskeyRecord): SingleTapSignature? =
         try {
             val algorithm = record.keystore.coseAlgorithm
-            val allowedAuthenticators = keyManager.allowedAuthenticatorsFor(record.keyAlias, algorithm)
-            SingleTapSignature(keyManager.signatureFor(record.keyAlias, algorithm), allowedAuthenticators)
+            val allowedAuthenticators = keyManager.allowedAuthenticatorsFor(record.credentialId, algorithm)
+            SingleTapSignature(keyManager.signatureFor(record.credentialId, algorithm), allowedAuthenticators)
         } catch (e: KeyPermanentlyInvalidatedException) {
-            log.e(e) { "key invalidated for ${record.keyAlias.value}" }
+            log.e(e) { "key invalidated for ${record.credentialId.b64}" }
             markLikelyInvalid(record)
             null
         } catch (e: GeneralSecurityException) {
-            log.e(e) { "couldn't prepare signature for ${record.keyAlias.value}" }
+            log.e(e) { "couldn't prepare signature for ${record.credentialId.b64}" }
             null
         }
 
     private suspend fun markLikelyInvalid(record: PasskeyRecord) {
         if (record.likelyInvalid) return
         passkeyRepo.update(record.copy(likelyInvalid = true)).onFailure {
-            log.e(it) { "markLikelyInvalid failed for ${record.keyAlias.value}" }
+            log.e(it) { "markLikelyInvalid failed for ${record.credentialId.b64}" }
         }
     }
 }

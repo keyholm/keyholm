@@ -7,7 +7,7 @@ import android.security.keystore.StrongBoxUnavailableException
 import app.keyholm.keystore.SecureKeyManager.Companion.ANDROID_KEYSTORE
 import app.keyholm.keystore.SecureKeyManager.Companion.policyFromKeyInfo
 import app.keyholm.util.logger
-import app.keyholm.webauthn.KeyAlias
+import app.keyholm.webauthn.CredentialId
 import java.security.KeyStore
 import java.security.UnrecoverableKeyException
 import javax.crypto.KeyGenerator
@@ -25,14 +25,16 @@ class HmacKeyManager {
     private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
 
     fun generateHmacKey(
-        alias: KeyAlias,
+        credentialId: CredentialId,
         authenticatorTypes: AuthenticatorPolicy,
         invalidateOnBiometricEnrollment: Boolean,
     ): GeneratedHmacKey {
+        val alias = alias(credentialId)
+
         fun generate(strongBox: Boolean): SecretKey {
             val spec =
                 KeyGenParameterSpec
-                    .Builder(alias.value, KeyProperties.PURPOSE_SIGN)
+                    .Builder(alias, KeyProperties.PURPOSE_SIGN)
                     .setUnlockedDeviceRequired(true)
                     .setUserAuthenticationRequired(true)
                     .setUserAuthenticationParameters(0, authenticatorTypes.keystoreMask)
@@ -48,12 +50,12 @@ class HmacKeyManager {
                 generate(strongBox = true)
             } catch (e: StrongBoxUnavailableException) {
                 log.w(e) { "StrongBox unavailable for the PRF key, falling back to the TEE" }
-                deleteKey(alias)
+                deleteKey(credentialId)
                 generate(strongBox = false)
             }
         val securityLevel = KeySecurityLevel.ofKeyInfo(hmacKeyInfo(key))
         if (securityLevel == null) {
-            deleteKey(alias)
+            deleteKey(credentialId)
             throw SecureElementUnavailableException(PRF_NO_SECURE_HARDWARE)
         }
         return GeneratedHmacKey(key, securityLevel)
@@ -61,28 +63,33 @@ class HmacKeyManager {
 
     fun generateHmacKeyFor(
         credentialKey: KeyInfo,
-        alias: KeyAlias,
-    ): GeneratedHmacKey = generateHmacKey(alias, policyFromKeyInfo(credentialKey), credentialKey.isInvalidatedByBiometricEnrollment)
+        credentialId: CredentialId,
+    ): GeneratedHmacKey = generateHmacKey(credentialId, policyFromKeyInfo(credentialKey), credentialKey.isInvalidatedByBiometricEnrollment)
 
-    fun macFor(alias: KeyAlias): Mac = Mac.getInstance(MAC_ALGORITHM_HMAC_SHA256).apply { init(keyFor(alias)) }
+    fun macFor(credentialId: CredentialId): Mac = Mac.getInstance(MAC_ALGORITHM_HMAC_SHA256).apply { init(keyFor(alias(credentialId))) }
 
-    fun allowedAuthenticatorsForHmac(alias: KeyAlias): AuthenticatorPolicy = policyFromKeyInfo(hmacKeyInfo(keyFor(alias)))
+    fun allowedAuthenticatorsForHmac(credentialId: CredentialId): AuthenticatorPolicy =
+        policyFromKeyInfo(hmacKeyInfo(keyFor(alias(credentialId))))
 
-    private fun keyFor(alias: KeyAlias): SecretKey =
-        keyStore.getKey(alias.value, null) as? SecretKey
-            ?: throw UnrecoverableKeyException("No key found for alias: ${alias.value}")
+    private fun alias(credentialId: CredentialId): String = ALIAS_PREFIX + credentialId.b64
+
+    private fun keyFor(alias: String): SecretKey =
+        keyStore.getKey(alias, null) as? SecretKey
+            ?: throw UnrecoverableKeyException("No key found for alias: $alias")
 
     private fun hmacKeyInfo(key: SecretKey): KeyInfo =
         SecretKeyFactory
             .getInstance(KeyProperties.KEY_ALGORITHM_HMAC_SHA256, ANDROID_KEYSTORE)
             .getKeySpec(key, KeyInfo::class.java) as KeyInfo
 
-    private fun deleteKey(alias: KeyAlias) {
-        if (keyStore.containsAlias(alias.value)) keyStore.deleteEntry(alias.value)
+    fun deleteKey(credentialId: CredentialId) {
+        val alias = alias(credentialId)
+        if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
     }
 
     companion object {
         private const val MAC_ALGORITHM_HMAC_SHA256 = "HmacSHA256"
+        private const val ALIAS_PREFIX = "hmac_"
         private const val PRF_NO_SECURE_HARDWARE = "This device doesn't support PRF keys with secure hardware."
     }
 }

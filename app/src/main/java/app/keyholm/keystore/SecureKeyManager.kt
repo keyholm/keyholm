@@ -10,7 +10,7 @@ import android.security.keystore.StrongBoxUnavailableException
 import android.util.Base64
 import app.keyholm.util.logger
 import app.keyholm.webauthn.ClientDataHash
-import app.keyholm.webauthn.KeyAlias
+import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.WebAuthnAlgorithm
 import java.security.InvalidAlgorithmParameterException
 import java.security.Key
@@ -46,7 +46,7 @@ class SecureKeyManager {
     }
 
     data class CredentialKeyRequest(
-        val alias: KeyAlias,
+        val credentialId: CredentialId,
         val attestationChallenge: ClientDataHash,
         val algorithm: WebAuthnAlgorithm,
         val authenticators: AuthenticatorPolicy,
@@ -58,7 +58,7 @@ class SecureKeyManager {
     private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
 
     fun generateCredentialKey(request: CredentialKeyRequest): CredentialKeyGeneration {
-        val alias = request.alias
+        val alias = alias(request.credentialId)
         val algorithm = request.algorithm
         val keyAlgorithm = keyAlgorithmFor(algorithm)
 
@@ -83,7 +83,7 @@ class SecureKeyManager {
 
         fun fallbackFromStrongBox(e: Exception): CredentialKeyGeneration {
             log.w(e) { "StrongBox can't generate ${algorithm.displayName} keys, falling back to the TEE" }
-            deleteKey(alias)
+            deleteKey(request.credentialId)
             return generate(strongBox = false)
         }
 
@@ -99,12 +99,12 @@ class SecureKeyManager {
         }
     }
 
-    private inline fun <reified T : Key> keyFor(alias: KeyAlias): T =
-        keyStore.getKey(alias.value, null) as? T
-            ?: throw UnrecoverableKeyException("No key found for alias: ${alias.value}")
+    private inline fun <reified T : Key> keyFor(alias: String): T =
+        keyStore.getKey(alias, null) as? T
+            ?: throw UnrecoverableKeyException("No key found for alias: $alias")
 
     fun signatureFor(
-        alias: KeyAlias,
+        credentialId: CredentialId,
         algorithm: WebAuthnAlgorithm,
     ): Signature {
         val jcaAlgorithm =
@@ -113,33 +113,34 @@ class SecureKeyManager {
                 WebAuthnAlgorithm.ED25519 -> KEY_ALGORITHM_ED25519
                 WebAuthnAlgorithm.ML_DSA_65, WebAuthnAlgorithm.ML_DSA_87 -> keyAlgorithmFor(algorithm)
             }
-        return Signature.getInstance(jcaAlgorithm).apply { initSign(keyFor<PrivateKey>(alias)) }
+        return Signature.getInstance(jcaAlgorithm).apply { initSign(keyFor<PrivateKey>(alias(credentialId))) }
     }
 
     fun allowedAuthenticatorsFor(
-        alias: KeyAlias,
+        credentialId: CredentialId,
         algorithm: WebAuthnAlgorithm,
-    ): AuthenticatorPolicy = policyFromKeyInfo(credentialKeyInfo(alias, algorithm))
+    ): AuthenticatorPolicy = policyFromKeyInfo(credentialKeyInfo(credentialId, algorithm))
 
     fun credentialKeyInfo(
-        alias: KeyAlias,
+        credentialId: CredentialId,
         algorithm: WebAuthnAlgorithm,
     ): KeyInfo =
         KeyFactory
             .getInstance(keyAlgorithmFor(algorithm), ANDROID_KEYSTORE)
-            .getKeySpec(keyFor<PrivateKey>(alias), KeyInfo::class.java)
+            .getKeySpec(keyFor<PrivateKey>(alias(credentialId)), KeyInfo::class.java)
 
-    fun deleteKey(alias: KeyAlias) {
-        if (keyStore.containsAlias(alias.value)) keyStore.deleteEntry(alias.value)
+    fun deleteKey(credentialId: CredentialId) {
+        val alias = alias(credentialId)
+        if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
     }
 
     fun deleteAllKeys() {
         keyStore.aliases().toList().forEach { keyStore.deleteEntry(it) }
     }
 
-    fun certificateChainPem(alias: KeyAlias): List<String> =
+    fun certificateChainPem(credentialId: CredentialId): List<String> =
         keyStore
-            .getCertificateChain(alias.value)
+            .getCertificateChain(alias(credentialId))
             ?.map { cert ->
                 val body = Base64.encodeToString(cert.encoded, Base64.NO_WRAP).chunked(64).joinToString("\n")
                 "-----BEGIN CERTIFICATE-----\n$body\n-----END CERTIFICATE-----"
@@ -147,10 +148,13 @@ class SecureKeyManager {
 
     companion object {
         internal const val ANDROID_KEYSTORE = "AndroidKeyStore"
+        private const val ALIAS_PREFIX = "key_"
         private const val KEY_ALGORITHM_ED25519 = "Ed25519"
         private const val KEY_ALGORITHM_ML_DSA_65 = "ML-DSA-65"
         private const val KEY_ALGORITHM_ML_DSA_87 = "ML-DSA-87"
         private const val KEYSTORE_VERSION_ML_DSA = 500
+
+        private fun alias(credentialId: CredentialId): String = ALIAS_PREFIX + credentialId.b64
 
         private fun keyAlgorithmFor(algorithm: WebAuthnAlgorithm): String =
             when (algorithm) {
@@ -166,7 +170,7 @@ class SecureKeyManager {
         ): KeyGenParameterSpec {
             val builder =
                 KeyGenParameterSpec
-                    .Builder(request.alias.value, KeyProperties.PURPOSE_SIGN)
+                    .Builder(alias(request.credentialId), KeyProperties.PURPOSE_SIGN)
                     .setUnlockedDeviceRequired(true)
                     .setUserAuthenticationRequired(true)
                     .setUserAuthenticationParameters(0, request.authenticators.keystoreMask)
@@ -197,7 +201,7 @@ class SecureKeyManager {
         private fun generateAndValidate(
             keyStore: KeyStore,
             keyAlgorithm: String,
-            alias: KeyAlias,
+            alias: String,
             algorithm: WebAuthnAlgorithm,
             spec: KeyGenParameterSpec,
         ): GeneratedCredential {
@@ -211,14 +215,14 @@ class SecureKeyManager {
                     .getKeySpec(keyPair.private, KeyInfo::class.java)
             val securityLevel = KeySecurityLevel.ofKeyInfo(keyInfo)
             if (securityLevel == null) {
-                if (keyStore.containsAlias(alias.value)) keyStore.deleteEntry(alias.value)
+                if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
                 throw SecureElementUnavailableException(
                     "This device can't back ${algorithm.displayName} keys with secure hardware.",
                 )
             }
 
-            val chain = keyStore.getCertificateChain(alias.value)?.map { it.encoded }.orEmpty()
-            val publicKey = keyStore.getCertificate(alias.value)?.publicKey ?: keyPair.public
+            val chain = keyStore.getCertificateChain(alias)?.map { it.encoded }.orEmpty()
+            val publicKey = keyStore.getCertificate(alias)?.publicKey ?: keyPair.public
             return GeneratedCredential(publicKey, chain, algorithm, securityLevel)
         }
 
