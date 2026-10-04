@@ -27,6 +27,10 @@ description = "Refresh gradle lockfiles and verification metadata"
 depends = ["reset-gradle-verification-metadata"]
 run = "gradle --refresh-dependencies --write-locks --write-verification-metadata sha256 check assembleDebug assembleRelease"
 
+[tasks.spotlessAndCheck]
+description = "Run spotless and check"
+run = "gradle spotlessApply && gradle check"
+
 [tasks.generate-keystore]
 description = "Generate the release signing keystore, storing its password in the Secret Service keyring, if it doesn't already exist"
 usage = '''
