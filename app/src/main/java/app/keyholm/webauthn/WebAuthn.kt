@@ -8,11 +8,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.math.BigInteger
-import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.security.interfaces.ECPublicKey
-import java.util.UUID
 import javax.crypto.Mac
+import kotlin.uuid.Uuid
 
 private const val BYTE_MASK = 0xff
 private const val BITS_PER_BYTE = 8
@@ -21,7 +20,6 @@ private const val THREE_BYTES_SHIFT = 24
 private const val ED25519_RAW_KEY_BYTES = 32
 private const val ML_DSA_65_RAW_KEY_BYTES = 1952
 private const val ML_DSA_87_RAW_KEY_BYTES = 2592
-private const val AAGUID_BYTES = 16
 private const val COSE_CRV_ED25519 = 6
 private const val COSE_KTY_AKP = 7
 private const val FIELD_SIZE_BYTES = 32
@@ -100,13 +98,13 @@ private fun akpCoseKey(
         .let(::CoseKey)
 
 private fun attestedCredentialData(
-    aaguid: Aaguid,
+    aaguid: Uuid,
     credentialId: CredentialId,
     cose: CoseKey,
 ): ByteArray {
     val credentialIdBytes = credentialId.bytes()
     val out = ByteArrayOutputStream()
-    out.write(aaguid.bytes)
+    out.write(aaguid.toByteArray())
     out.write((credentialIdBytes.size ushr BITS_PER_BYTE) and BYTE_MASK)
     out.write(credentialIdBytes.size and BYTE_MASK)
     out.write(credentialIdBytes)
@@ -206,18 +204,9 @@ object WebAuthn {
         return attachment.isNullOrEmpty() || attachment == PLATFORM_ATTACHMENT
     }
 
-    val KEYHOLM_AAGUID: Aaguid =
-        run {
-            val uuid = UUID.fromString("69840def-9dcf-4632-bf87-6ac2e451b4f5")
-            ByteBuffer
-                .allocate(AAGUID_BYTES)
-                .putLong(uuid.mostSignificantBits)
-                .putLong(uuid.leastSignificantBits)
-                .array()
-                .let(::Aaguid)
-        }
+    val KEYHOLM_AAGUID: Uuid = Uuid.parse("69840def-9dcf-4632-bf87-6ac2e451b4f5")
 
-    val ZERO_AAGUID: Aaguid = Aaguid(ByteArray(AAGUID_BYTES))
+    val ZERO_AAGUID: Uuid = Uuid.NIL
 
     fun assertionAuthData(
         rpId: RpId,
@@ -245,7 +234,7 @@ object WebAuthn {
         rpId: RpId,
         credentialId: CredentialId,
         pub: PublicKey,
-        aaguid: Aaguid,
+        aaguid: Uuid,
         algorithm: WebAuthnAlgorithm,
     ): AuthenticatorData {
         val acd = attestedCredentialData(aaguid, credentialId, coseKey(pub, algorithm))

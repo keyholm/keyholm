@@ -44,11 +44,6 @@ value class DerSignature(
 )
 
 @JvmInline
-value class Aaguid(
-    val bytes: ByteArray,
-)
-
-@JvmInline
 value class PrfSalt(
     val bytes: ByteArray,
 )
