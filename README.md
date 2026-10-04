@@ -41,7 +41,7 @@ Think of Keyholm as a way to activate the built-in security key on your phone.
 
 - target devices: phones with secure hardware (including Pixels)
 - no INTERNET permission
-  no Google Play Services ever
+- no Google Play Services ever
 - takes advantage of latest Android version/APIs
 - allows extensive control over particulars of what credentials it creates and how.
   - supports ES256: it's the only EC, StrongBox-backed algorithm
