@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
 import androidx.datastore.dataStoreFile
+import app.keyholm.keystore.HmacKeyManager
+import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.store.proto.PasskeyRecordProto
 import app.keyholm.store.proto.PasskeyRecordsProto
 import app.keyholm.webauthn.CredentialId
 import kotlinx.coroutines.CoroutineDispatcher
@@ -12,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.time.Instant
 
@@ -38,11 +42,27 @@ internal fun deletePasskeyStoreFile(context: Context): Boolean {
     return !file.exists() || file.delete()
 }
 
+internal fun deletePasskeyKeys(
+    record: PasskeyRecord,
+    keyManager: SecureKeyManager,
+    hmacKeyManager: HmacKeyManager,
+) {
+    keyManager.deleteKey(record.credentialId)
+    if (record.hasPrf) hmacKeyManager.deleteKey(record.credentialId)
+}
+
 class PasskeyRepository internal constructor(
     private val dataStore: DataStore<PasskeyRecordsProto>,
+    private val deleteKeyMaterial: (PasskeyRecord) -> Unit,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
-    constructor(context: Context) : this(context.applicationContext.passkeyDataStore)
+    constructor(context: Context) : this(context, SecureKeyManager(), HmacKeyManager())
+
+    private constructor(
+        context: Context,
+        keyManager: SecureKeyManager,
+        hmacKeyManager: HmacKeyManager,
+    ) : this(context.applicationContext.passkeyDataStore, { deletePasskeyKeys(it, keyManager, hmacKeyManager) })
 
     val passkeys: Flow<List<PasskeyRecord>> =
         dataStore.data
@@ -51,7 +71,24 @@ class PasskeyRepository internal constructor(
 
     suspend fun summary(): PasskeySummary = summarize(passkeys.first())
 
-    suspend fun add(record: PasskeyRecord): Result<Unit> = write { it.toBuilder().addRecords(record.toProto()).build() }
+    suspend fun put(record: PasskeyRecord): Result<Unit> {
+        var replaced = emptyList<PasskeyRecordProto>()
+        return write { current ->
+            val (sameAccount, others) =
+                current.recordsList.partition {
+                    it.rp.id == record.rp.id.value && it.user.handle == record.user.handle.b64
+                }
+            replaced = sameAccount
+            current
+                .toBuilder()
+                .clearRecords()
+                .addAllRecords(others)
+                .addRecords(record.toProto())
+                .build()
+        }.mapCatching {
+            withContext(dispatcher) { replaced.forEach { deleteKeyMaterial(it.toDomain()) } }
+        }
+    }
 
     suspend fun update(record: PasskeyRecord): Result<Unit> =
         edit(record.credentialId) { current, idx ->

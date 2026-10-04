@@ -6,6 +6,7 @@ import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.RecordLifecycle
+import app.keyholm.store.deletePasskeyKeys
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
 import app.keyholm.webauthn.CredentialId
@@ -18,6 +19,8 @@ class PasskeyPendingDeletes(
     private val repo: PasskeyRepository,
 ) : PendingDeleteStore<CredentialId, PasskeyRecord> {
     private val log = logger()
+    private val keyManager = SecureKeyManager()
+    private val hmacKeyManager = HmacKeyManager()
 
     override val records: Flow<List<PasskeyRecord>> = repo.passkeys
 
@@ -36,7 +39,6 @@ class PasskeyPendingDeletes(
 
     override fun planDelete(record: PasskeyRecord): DeletePlan {
         val algorithm = record.keystore.coseAlgorithm
-        val keyManager = SecureKeyManager()
         val allowedAuthenticators =
             try {
                 keyManager.allowedAuthenticatorsFor(record.credentialId, algorithm)
@@ -60,8 +62,5 @@ class PasskeyPendingDeletes(
         return DeletePlan.Confirm(cryptoObject, allowedAuthenticators)
     }
 
-    override fun deleteKeyMaterial(record: PasskeyRecord) {
-        SecureKeyManager().deleteKey(record.credentialId)
-        if (record.hasPrf) HmacKeyManager().deleteKey(record.credentialId)
-    }
+    override fun deleteKeyMaterial(record: PasskeyRecord) = deletePasskeyKeys(record, keyManager, hmacKeyManager)
 }

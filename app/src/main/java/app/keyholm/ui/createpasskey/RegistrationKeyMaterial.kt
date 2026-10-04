@@ -141,7 +141,7 @@ internal class RegistrationKeyMaterial(
     }
 
     suspend fun persist(record: PasskeyRecord): Registration<Unit> =
-        passkeyRepo.add(record).fold(
+        passkeyRepo.put(record).fold(
             onSuccess = {
                 migrationRepo.delete(record.rp.id, record.user.name).onFailure { error ->
                     log.e(error) { "placeholder cleanup failed" }

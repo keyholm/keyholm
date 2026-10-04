@@ -33,6 +33,7 @@ import java.time.Instant
 class PasskeyRepositoryTest {
     private val context: Application = RuntimeEnvironment.getApplication()
     private val scopes = mutableListOf<CoroutineScope>()
+    private val deletedKeys = mutableListOf<PasskeyRecord>()
 
     @After
     fun tearDown() =
@@ -58,6 +59,7 @@ class PasskeyRepositoryTest {
     private fun record(
         credentialId: CredentialId = CredentialId("cred-1"),
         rpId: RpId = RpId("example.com"),
+        userHandle: UserHandle = UserHandle("user-${credentialId.b64}"),
         coseAlgorithm: WebAuthnAlgorithm = WebAuthnAlgorithm.ES256,
         createdAt: Instant = Instant.ofEpochMilli(1_000),
         lastUsedAt: Instant = createdAt,
@@ -65,7 +67,7 @@ class PasskeyRepositoryTest {
     ) = PasskeyRecord(
         credentialId = credentialId,
         rp = RelyingParty(id = rpId, name = rpId.value),
-        user = CredentialUser(handle = UserHandle("user-1"), name = "alice", displayName = "Alice"),
+        user = CredentialUser(handle = userHandle, name = "alice", displayName = "Alice"),
         signCount = 0,
         callingPackage = PackageName("com.example.app"),
         createdAt = createdAt,
@@ -83,13 +85,27 @@ class PasskeyRepositoryTest {
     )
 
     @Test
-    fun `add makes a record retrievable`() =
+    fun `put makes a record retrievable`() =
         runBlocking<Unit> {
-            val repo = PasskeyRepository(dataStore())
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
 
-            repo.add(record())
+            repo.put(record())
 
             assertThat(repo.passkeys.first().map { it.credentialId.b64 }).containsExactly("cred-1")
+        }
+
+    @Test
+    fun `put replaces a record for the same RP and user handle and deletes its keys`() =
+        runBlocking<Unit> {
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            val account = UserHandle("user-1")
+            repo.put(record(credentialId = CredentialId("cred-1"), userHandle = account))
+            repo.put(record(credentialId = CredentialId("cred-2"), rpId = RpId("other.example"), userHandle = account))
+
+            repo.put(record(credentialId = CredentialId("cred-3"), userHandle = account))
+
+            assertThat(deletedKeys.map { it.credentialId.b64 }).containsExactly("cred-1")
+            assertThat(repo.passkeys.first().map { it.credentialId.b64 }).containsExactly("cred-2", "cred-3")
         }
 
     @Test
@@ -98,11 +114,12 @@ class PasskeyRepositoryTest {
             val file = freshFile()
 
             val firstScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-            PasskeyRepository(dataStore(file, firstScope)).add(record(credentialId = CredentialId("cred-1")))
+            PasskeyRepository(dataStore(file, firstScope), deletedKeys::add)
+                .put(record(credentialId = CredentialId("cred-1")))
             firstScope.cancel()
             firstScope.coroutineContext.job.join()
 
-            val reloaded = PasskeyRepository(dataStore(file))
+            val reloaded = PasskeyRepository(dataStore(file), deletedKeys::add)
 
             assertThat(reloaded.passkeys.first().map { it.credentialId.b64 }).containsExactly("cred-1")
         }
@@ -110,8 +127,8 @@ class PasskeyRepositoryTest {
     @Test
     fun `update replaces the record with a matching credential id`() =
         runBlocking<Unit> {
-            val repo = PasskeyRepository(dataStore())
-            repo.add(record(credentialId = CredentialId("cred-1")))
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            repo.put(record(credentialId = CredentialId("cred-1")))
 
             val result = repo.update(record(credentialId = CredentialId("cred-1"), rpId = RpId("changed.example")))
 
@@ -127,8 +144,8 @@ class PasskeyRepositoryTest {
     @Test
     fun `update fails when the credential id is not found`() =
         runBlocking<Unit> {
-            val repo = PasskeyRepository(dataStore())
-            repo.add(record(credentialId = CredentialId("cred-1")))
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            repo.put(record(credentialId = CredentialId("cred-1")))
 
             val result = repo.update(record(credentialId = CredentialId("missing")))
 
@@ -140,8 +157,8 @@ class PasskeyRepositoryTest {
     @Test
     fun `delete fails when the credential id is not found`() =
         runBlocking<Unit> {
-            val repo = PasskeyRepository(dataStore())
-            repo.add(record(credentialId = CredentialId("cred-1")))
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            repo.put(record(credentialId = CredentialId("cred-1")))
 
             val result = repo.delete(CredentialId("missing"))
 
@@ -152,9 +169,9 @@ class PasskeyRepositoryTest {
     @Test
     fun `delete removes only the matching record`() =
         runBlocking<Unit> {
-            val repo = PasskeyRepository(dataStore())
-            repo.add(record(credentialId = CredentialId("cred-1")))
-            repo.add(record(credentialId = CredentialId("cred-2")))
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            repo.put(record(credentialId = CredentialId("cred-1")))
+            repo.put(record(credentialId = CredentialId("cred-2")))
 
             val result = repo.delete(CredentialId("cred-1"))
 
@@ -165,8 +182,8 @@ class PasskeyRepositoryTest {
     @Test
     fun `saveAll replaces the whole set`() =
         runBlocking<Unit> {
-            val repo = PasskeyRepository(dataStore())
-            repo.add(record(credentialId = CredentialId("cred-1")))
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            repo.put(record(credentialId = CredentialId("cred-1")))
 
             repo.saveAll(
                 listOf(record(credentialId = CredentialId("cred-2")), record(credentialId = CredentialId("cred-3"))),
@@ -178,10 +195,10 @@ class PasskeyRepositoryTest {
     @Test
     fun `summary counts records and reports the latest last-used time`() =
         runBlocking<Unit> {
-            val repo = PasskeyRepository(dataStore())
-            repo.add(record(credentialId = CredentialId("cred-1"), lastUsedAt = Instant.ofEpochMilli(1_000)))
-            repo.add(record(credentialId = CredentialId("cred-2"), lastUsedAt = Instant.ofEpochMilli(3_000)))
-            repo.add(record(credentialId = CredentialId("cred-3"), lastUsedAt = Instant.ofEpochMilli(2_000)))
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            repo.put(record(credentialId = CredentialId("cred-1"), lastUsedAt = Instant.ofEpochMilli(1_000)))
+            repo.put(record(credentialId = CredentialId("cred-2"), lastUsedAt = Instant.ofEpochMilli(3_000)))
+            repo.put(record(credentialId = CredentialId("cred-3"), lastUsedAt = Instant.ofEpochMilli(2_000)))
 
             val summary = repo.summary()
 
