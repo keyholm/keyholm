@@ -54,6 +54,7 @@
 
         <activity
             android:name=".ui.pxp.Activity"
+            android:enabled="false"
             android:exported="true"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"

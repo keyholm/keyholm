@@ -324,6 +324,7 @@ fun SettingsScreen(
             KeyCreationSection(uiState, viewModel)
             AlgorithmSection(uiState, viewModel)
             AccountMigrationSection(uiState, viewModel, context)
+            ExperimentalSection(uiState, viewModel)
             ResetSection(viewModel, onRequestResetConfirm = { showResetConfirm = true })
         }
     }

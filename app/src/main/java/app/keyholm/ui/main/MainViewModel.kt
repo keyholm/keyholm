@@ -25,6 +25,8 @@ import app.keyholm.store.deleteMigrationStoreFile
 import app.keyholm.store.deletePasskeyStoreFile
 import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
+import app.keyholm.ui.pxp.isPxpActivityEnabled
+import app.keyholm.ui.pxp.setPxpActivityEnabled
 import app.keyholm.util.logger
 import app.keyholm.webauthn.WebAuthnAlgorithm
 import kotlinx.coroutines.CoroutineDispatcher
@@ -68,6 +70,7 @@ data class DeviceStatus(
     val tee: Boolean,
     val teeMlDsa: Boolean,
     val providerEnabled: Boolean,
+    val pxpEnabled: Boolean,
 )
 
 enum class NativeAppExceptionAction { APPROVE, DISMISS, REVOKE }
@@ -140,6 +143,7 @@ class MainViewModel internal constructor(
                     tee = tee,
                     teeMlDsa = SecureKeyManager.isAlgorithmAvailable(context, WebAuthnAlgorithm.ML_DSA_87),
                     providerEnabled = isCredentialProviderEnabled(context),
+                    pxpEnabled = isPxpActivityEnabled(context),
                 )
             }
         }
@@ -222,6 +226,13 @@ class MainViewModel internal constructor(
     init {
         pendingDeletes.resume()
         placeholderDeletes.resume()
+    }
+
+    fun setPxpEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            withContext(dispatcher) { setPxpActivityEnabled(getApplication(), enabled) }
+            refresh()
+        }
     }
 
     fun refresh() {
