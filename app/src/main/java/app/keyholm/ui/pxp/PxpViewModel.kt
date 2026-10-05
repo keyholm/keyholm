@@ -15,9 +15,6 @@ import app.keyholm.pxp.qr.PxpQrPayload
 import app.keyholm.settings.SettingsRepository
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.ui.common.PromptRelay
-import app.keyholm.ui.common.Relay
-import app.keyholm.ui.createpasskey.CreationChoice
-import app.keyholm.ui.createpasskey.CreationOptionsPrompt
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -38,13 +35,13 @@ class PxpViewModel internal constructor(
     private val settingsRepo = SettingsRepository(application)
     private val passkeyRepo = PasskeyRepository(application)
     val prompts = PromptRelay()
+    internal val choices = ChoiceRelay()
     private var running: Job? = null
     var intentHandled = false
     private val _status = MutableStateFlow<PxpStatus?>(null)
     val status: StateFlow<PxpStatus?> = _status.asStateFlow()
     private val _confirmationCode = MutableStateFlow<String?>(null)
     val confirmationCode: StateFlow<String?> = _confirmationCode.asStateFlow()
-    internal val creationOptions = Relay<CreationOptionsPrompt, CreationChoice?>()
 
     @RequiresPermission(
         allOf = [Manifest.permission.BLUETOOTH_ADVERTISE, Manifest.permission.BLUETOOTH_CONNECT],
@@ -60,7 +57,7 @@ class PxpViewModel internal constructor(
                         settingsRepo.settings.first(),
                         passkeyRepo,
                         prompts,
-                        creationOptions::ask,
+                        choices,
                         dispatcher,
                     )
                 val pxp = PxpCeremony(app, payload, authenticator, PxpNoise)

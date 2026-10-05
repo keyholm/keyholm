@@ -20,6 +20,8 @@ import app.keyholm.store.writeStore
 import app.keyholm.ui.common.PromptRelay
 import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.promptContent
+import app.keyholm.ui.pxp.AccountChoicePrompt
+import app.keyholm.ui.pxp.AccountChooser
 import app.keyholm.util.logger
 import com.upokecenter.cbor.CBORObject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -31,11 +33,13 @@ private const val GA_RESPONSE_CREDENTIAL = 1
 private const val GA_RESPONSE_AUTH_DATA = 2
 private const val GA_RESPONSE_SIGNATURE = 3
 private const val GA_RESPONSE_USER = 4
+private const val GA_RESPONSE_USER_SELECTED = 6
 
 internal class GetAssertionHandler(
     private val settings: Settings,
     private val passkeyRepo: PasskeyRepository,
     private val prompt: PromptRelay,
+    private val chooseAccount: AccountChooser,
     private val dispatcher: CoroutineDispatcher,
 ) {
     private val log = logger()
@@ -51,9 +55,23 @@ internal class GetAssertionHandler(
         val stored = readStore { passkeyRepo.activePasskeys.first() }
         val matching = stored?.let { matchingRecords(it, request.rpId, request.allowIds) }
         return when {
-            stored == null -> Ctap2Response(Ctap2Status.OTHER)
-            matching.isNullOrEmpty() -> Ctap2Response(Ctap2Status.NO_CREDENTIALS)
-            else -> sign(matching.first(), request)
+            stored == null -> {
+                Ctap2Response(Ctap2Status.OTHER)
+            }
+
+            matching.isNullOrEmpty() -> {
+                Ctap2Response(Ctap2Status.NO_CREDENTIALS)
+            }
+
+            matching.size == 1 -> {
+                sign(matching.single(), request, userSelected = false)
+            }
+
+            else -> {
+                chooseAccount(AccountChoicePrompt(matching.first().rp, matching, settings.preferRpName))
+                    ?.let { sign(it, request, userSelected = true) }
+                    ?: Ctap2Response(Ctap2Status.OPERATION_DENIED)
+            }
         }
     }
 
@@ -70,6 +88,7 @@ internal class GetAssertionHandler(
     private suspend fun sign(
         record: PasskeyRecord,
         request: GetAssertionRequest,
+        userSelected: Boolean,
     ): Ctap2Response {
         val signature =
             when (val r = keys.signatureFor(record)) {
@@ -115,13 +134,14 @@ internal class GetAssertionHandler(
         val updated = record.copy(signCount = record.signCount + 1, lastUsedAt = Instant.now())
         if (!writeStore { passkeyRepo.update(updated) }) return Ctap2Response(Ctap2Status.OTHER)
 
-        return Ctap2Response(assertionObject(updated, authData, derSignature))
+        return Ctap2Response(assertionObject(updated, authData, derSignature, userSelected))
     }
 
     private fun assertionObject(
         record: PasskeyRecord,
         authData: AuthenticatorData,
         signature: ByteArray,
+        userSelected: Boolean,
     ): CBORObject {
         val credential =
             CBORObject
@@ -140,5 +160,6 @@ internal class GetAssertionHandler(
             .Add(GA_RESPONSE_AUTH_DATA, authData.bytes)
             .Add(GA_RESPONSE_SIGNATURE, signature)
             .Add(GA_RESPONSE_USER, user)
+            .apply { if (userSelected) Add(GA_RESPONSE_USER_SELECTED, true) }
     }
 }

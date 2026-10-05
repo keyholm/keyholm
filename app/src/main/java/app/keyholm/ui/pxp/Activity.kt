@@ -57,9 +57,17 @@ class Activity : FragmentActivity() {
                     }
                     PxpStatusSheet(current, confirmationCode, cryptoPrompt, viewModel.prompts, onClose = ::finish)
                 }
-                val creationOptions by viewModel.creationOptions.pending.collectAsStateWithLifecycle()
+                val creationOptions by viewModel.choices.creationOptions.pending.collectAsStateWithLifecycle()
                 creationOptions?.let { pending ->
                     CreationOptionsSheet(
+                        pending.request,
+                        onChoice = { pending.response.complete(it) },
+                        onDismiss = { pending.response.complete(null) },
+                    )
+                }
+                val accountChoice by viewModel.choices.accountChoice.pending.collectAsStateWithLifecycle()
+                accountChoice?.let { pending ->
+                    AccountPickerSheet(
                         pending.request,
                         onChoice = { pending.response.complete(it) },
                         onDismiss = { pending.response.complete(null) },

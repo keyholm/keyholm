@@ -8,20 +8,21 @@ import app.keyholm.pxp.ctap.PxpAuthenticator
 import app.keyholm.settings.Settings
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.ui.common.PromptRelay
-import app.keyholm.ui.createpasskey.CreationOptionsChooser
+import app.keyholm.ui.pxp.ChoiceRelay
 import kotlinx.coroutines.CoroutineDispatcher
 
+@Suppress("LongParameterList")
 internal class CtapAuthenticator(
     private val context: Context,
     private val settings: Settings,
     passkeyRepo: PasskeyRepository,
     prompt: PromptRelay,
-    chooseCreationOptions: CreationOptionsChooser,
+    choices: ChoiceRelay,
     dispatcher: CoroutineDispatcher,
 ) : PxpAuthenticator {
     private val makeCredential =
-        MakeCredentialHandler(context, settings, passkeyRepo, prompt, chooseCreationOptions, dispatcher)
-    private val getAssertion = GetAssertionHandler(settings, passkeyRepo, prompt, dispatcher)
+        MakeCredentialHandler(context, settings, passkeyRepo, prompt, choices.creationOptions::ask, dispatcher)
+    private val getAssertion = GetAssertionHandler(settings, passkeyRepo, prompt, choices.accountChoice::ask, dispatcher)
 
     override suspend fun getInfo(): ByteArray = authenticatorInfo(context, settings)
 
