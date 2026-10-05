@@ -14,6 +14,7 @@ import com.upokecenter.cbor.CBORType
 private const val GA_RP_ID = 1
 private const val GA_CLIENT_DATA_HASH = 2
 private const val GA_ALLOW_LIST = 3
+private const val GA_EXTENSIONS = 4
 private const val GA_OPTIONS = 5
 private const val GA_PIN_UV_AUTH_PARAM = 6
 private const val GA_PIN_UV_AUTH_PROTOCOL = 7
@@ -22,6 +23,7 @@ internal data class GetAssertionRequest(
     val rpId: RpId,
     val clientDataHash: ClientDataHash,
     val allowIds: Set<CredentialId>?,
+    val prf: AssertionPrf?,
 )
 
 internal fun parseGetAssertion(body: ByteArray): Ctap2Result<GetAssertionRequest> {
@@ -36,9 +38,16 @@ internal fun parseGetAssertion(body: ByteArray): Ctap2Result<GetAssertionRequest
             if (options.rk != null) {
                 Ctap2Result.Rejected(Ctap2Status.UNSUPPORTED_OPTION)
             } else {
-                Ctap2Result.Ok(
-                    GetAssertionRequest(RpId(rpId), ClientDataHash(clientDataHash), allowIds(map.GetOrDefault(GA_ALLOW_LIST, null))),
-                )
+                parseAssertionPrf(map.GetOrDefault(GA_EXTENSIONS, null)).then { prf ->
+                    Ctap2Result.Ok(
+                        GetAssertionRequest(
+                            RpId(rpId),
+                            ClientDataHash(clientDataHash),
+                            allowIds(map.GetOrDefault(GA_ALLOW_LIST, null)),
+                            prf,
+                        ),
+                    )
+                }
             }
         }
 }

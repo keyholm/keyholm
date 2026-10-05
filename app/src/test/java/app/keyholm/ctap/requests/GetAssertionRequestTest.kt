@@ -1,6 +1,5 @@
 package app.keyholm.ctap.requests
 
-import app.keyholm.ctap.CANONICAL_CBOR
 import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.Ctap2Result
 import app.keyholm.ctap.Ctap2Status
@@ -20,7 +19,7 @@ private fun request(build: CBORObject.() -> Unit = {}): ByteArray =
             Add(1, "example.org")
             Add(2, ByteArray(CLIENT_DATA_HASH_BYTES) { it.toByte() })
             build()
-        }.EncodeToBytes(CANONICAL_CBOR)
+        }.EncodeToBytes()
 
 private fun parsed(bytes: ByteArray): GetAssertionRequest =
     when (val result = parseGetAssertion(bytes)) {
@@ -85,6 +84,24 @@ class GetAssertionRequestTest {
     fun `rejects a pinUvAuthParam because no protocol is supported`() {
         assertThat(rejection(request { Add(6, byteArrayOf(1)).Add(7, 2) }))
             .isEqualTo(Ctap2Status.INVALID_PARAMETER)
+    }
+
+    @Test
+    fun `picks the prf inputs for the credential, falling back to eval`() {
+        val credentialId = byteArrayOf(9, 9)
+        val eval = CBORObject.NewMap().Add("first", ByteArray(32) { 1 })
+        val byCredential = CBORObject.NewMap().Add(credentialId, CBORObject.NewMap().Add("first", ByteArray(32) { 2 }))
+        val prf = CBORObject.NewMap().Add("eval", eval).Add("evalByCredential", byCredential)
+        val request = parsed(request { Add(4, CBORObject.NewMap().Add("prf", prf)) })
+
+        assertThat(request.prf?.saltsFor(CredentialId.of(credentialId))?.first).isEqualTo(ByteArray(32) { 2 })
+        assertThat(request.prf?.saltsFor(CredentialId.of(byteArrayOf(1)))?.first).isEqualTo(ByteArray(32) { 1 })
+    }
+
+    @Test
+    fun `rejects a prf extension that is not a map`() {
+        assertThat(rejection(request { Add(4, CBORObject.NewMap().Add("prf", true)) }))
+            .isEqualTo(Ctap2Status.CBOR_UNEXPECTED_TYPE)
     }
 
     @Test

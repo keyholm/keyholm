@@ -3,6 +3,7 @@ package app.keyholm.ctap.handlers
 import android.content.Context
 import androidx.biometric.BiometricPrompt
 import app.keyholm.authenticator.AlgorithmNegotiation
+import app.keyholm.authenticator.AssertionKeyMaterial
 import app.keyholm.authenticator.CredentialKeyCreation
 import app.keyholm.authenticator.CredentialKeyMaterial
 import app.keyholm.authenticator.CredentialKeys
@@ -58,14 +59,19 @@ internal const val ATTESTATION_ANDROID_KEY = "android-key"
 private const val MC_RESPONSE_FMT = 1
 private const val MC_RESPONSE_AUTH_DATA = 2
 private const val MC_RESPONSE_ATT_STMT = 3
+private const val MC_RESPONSE_UNSIGNED_EXTENSION_OUTPUTS = 6
 
 private class PendingCredential(
     val credentialId: CredentialId,
     val choice: CreationChoice,
-    val generated: PasskeyKeyManager.GeneratedCredential,
+    val keys: CredentialKeys,
     val authData: AuthenticatorData,
-    val signature: Signature,
     val authenticators: AuthenticatorPolicy,
+)
+
+private class SavedCredential(
+    val record: PasskeyRecord,
+    val attestation: ByteArray,
 )
 
 internal class MakeCredentialHandler(
@@ -78,6 +84,7 @@ internal class MakeCredentialHandler(
 ) {
     private val log = logger()
     private val keys = CredentialKeyMaterial(dispatcher)
+    private val prf = PrfEvaluator(prompt, AssertionKeyMaterial(passkeyRepo, dispatcher), settings.preferRpName, dispatcher)
 
     suspend fun handle(body: ByteArray): Ctap2Response =
         when (val parsed = parseMakeCredential(body)) {
@@ -146,14 +153,17 @@ internal class MakeCredentialHandler(
         request: MakeCredentialRequest,
         pending: PendingCredential,
     ): Ctap2Response {
-        var response: Ctap2Response? = null
+        var saved: Ctap2Result<SavedCredential>? = null
         try {
-            response = authorize(request, pending)
-            return response
+            saved = authorize(request, pending)
         } finally {
-            if (response?.status != Ctap2Status.OK) {
+            if (saved !is Ctap2Result.Ok) {
                 withContext(NonCancellable) { keys.discard(pending.credentialId) }
             }
+        }
+        return when (saved) {
+            is Ctap2Result.Rejected -> Ctap2Response(saved.status)
+            is Ctap2Result.Ok -> respond(request, pending, saved.value)
         }
     }
 
@@ -174,7 +184,7 @@ internal class MakeCredentialHandler(
                     invalidateOnBiometricEnrollment = settings.invalidateOnBiometricEnrollment,
                     includeDeviceProperties = choice.includeDeviceProperties,
                 ),
-                prfRequested = false,
+                prfRequested = request.info.prfRequested,
             )
         return when (created) {
             is CredentialKeyCreation.Created -> {
@@ -209,20 +219,20 @@ internal class MakeCredentialHandler(
     private suspend fun authorize(
         request: MakeCredentialRequest,
         pending: PendingCredential,
-    ): Ctap2Response {
+    ): Ctap2Result<SavedCredential> {
         val result =
             prompt.authenticate(
                 title = "Create passkey",
-                cryptoObject = BiometricPrompt.CryptoObject(pending.signature),
+                cryptoObject = BiometricPrompt.CryptoObject(pending.keys.signature),
                 allowedAuthenticators = pending.authenticators,
                 content = registrationContent(request, pending.choice),
             )
         val signature = (result as? PromptResult.Success)?.crypto?.signature
         return if (signature == null) {
             log.w { "the credential was not authorised" }
-            Ctap2Response(Ctap2Status.OPERATION_DENIED)
+            Ctap2Result.Rejected(Ctap2Status.OPERATION_DENIED)
         } else {
-            respond(request, pending, signature)
+            save(request, pending, signature)
         }
     }
 
@@ -242,11 +252,11 @@ internal class MakeCredentialHandler(
         userLabel = userLabel(request.info.user.name, request.info.user.displayName),
     )
 
-    private suspend fun respond(
+    private suspend fun save(
         request: MakeCredentialRequest,
         pending: PendingCredential,
         signature: Signature,
-    ): Ctap2Response {
+    ): Ctap2Result<SavedCredential> {
         val attestation =
             runCatching {
                 withContext(dispatcher) {
@@ -255,15 +265,31 @@ internal class MakeCredentialHandler(
                 }
             }.getOrElse {
                 log.e(it) { "signing failed" }
-                return Ctap2Response(Ctap2Status.OTHER)
+                return Ctap2Result.Rejected(Ctap2Status.OTHER)
             }
-        return passkeyRepo.put(record(request, pending)).fold(
-            onSuccess = { Ctap2Response(attestationObject(pending, attestation)) },
+        val record = record(request, pending)
+        return passkeyRepo.put(record).fold(
+            onSuccess = { Ctap2Result.Ok(SavedCredential(record, attestation)) },
             onFailure = {
                 log.e(it) { "saving the passkey failed" }
-                Ctap2Response(Ctap2Status.OTHER)
+                Ctap2Result.Rejected(Ctap2Status.OTHER)
             },
         )
+    }
+
+    private suspend fun respond(
+        request: MakeCredentialRequest,
+        pending: PendingCredential,
+        saved: SavedCredential,
+    ): Ctap2Response {
+        val extensions =
+            if (request.info.prfRequested) {
+                val results = request.prfEval?.let { salts -> prf.evaluate(saved.record, salts) }
+                prfOutput(enabled = true, results = results)
+            } else {
+                null
+            }
+        return Ctap2Response(attestationObject(pending, saved.attestation, extensions))
     }
 
     private fun offeredAlgorithms(requested: List<WebAuthnAlgorithm>): List<WebAuthnAlgorithm> {
@@ -289,19 +315,25 @@ internal class MakeCredentialHandler(
 private fun attestationObject(
     pending: PendingCredential,
     signature: ByteArray,
+    unsignedExtensions: CBORObject?,
 ): CBORObject {
-    val withChain = pending.choice.includeAttestation && pending.generated.attestationChain.isNotEmpty()
+    val withChain =
+        pending.choice.includeAttestation &&
+            pending.keys.generated.attestationChain
+                .isNotEmpty()
     val attStmt = CBORObject.NewMap()
     if (withChain) {
         val x5c = CBORObject.NewArray()
-        pending.generated.attestationChain.forEach { x5c.Add(it) }
-        attStmt.Add("alg", pending.generated.coseAlgorithm.coseAlg).Add("sig", signature).Add("x5c", x5c)
+        pending.keys.generated.attestationChain
+            .forEach { x5c.Add(it) }
+        attStmt.Add("alg", pending.keys.generated.coseAlgorithm.coseAlg).Add("sig", signature).Add("x5c", x5c)
     }
     return CBORObject
         .NewMap()
         .Add(MC_RESPONSE_FMT, if (withChain) ATTESTATION_ANDROID_KEY else ATTESTATION_NONE)
         .Add(MC_RESPONSE_AUTH_DATA, pending.authData.bytes)
         .Add(MC_RESPONSE_ATT_STMT, attStmt)
+        .apply { unsignedExtensions?.let { Add(MC_RESPONSE_UNSIGNED_EXTENSION_OUTPUTS, it) } }
 }
 
 private fun record(
@@ -318,10 +350,10 @@ private fun record(
         createdAt = now,
         keystore =
             PasskeyRecord.Keystore(
-                coseAlgorithm = pending.generated.coseAlgorithm,
-                securityLevel = pending.generated.securityLevel,
-                publicKeySpki = ByteString.copyFrom(pending.generated.publicKey.encoded),
-                prfSecurityLevel = null,
+                coseAlgorithm = pending.keys.generated.coseAlgorithm,
+                securityLevel = pending.keys.generated.securityLevel,
+                publicKeySpki = ByteString.copyFrom(pending.keys.generated.publicKey.encoded),
+                prfSecurityLevel = pending.keys.prfSecurityLevel,
             ),
         lifecycle = RecordLifecycle.Active,
         lastUsedAt = now,
@@ -348,9 +380,8 @@ private fun pendingCredential(
     return PendingCredential(
         credentialId = credentialId,
         choice = choice,
-        generated = keys.generated,
+        keys = keys,
         authData = authData,
-        signature = keys.signature,
         authenticators = authenticators,
     )
 }

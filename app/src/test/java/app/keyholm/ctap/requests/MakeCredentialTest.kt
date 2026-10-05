@@ -226,6 +226,39 @@ class MakeCredentialTest {
     }
 
     @Test
+    fun `no prf extension leaves prf unrequested`() {
+        val request = parsed(request())
+
+        assertThat(request.info.prfRequested).isFalse()
+        assertThat(request.prfEval).isNull()
+    }
+
+    @Test
+    fun `reads the prf extension and its eval salts`() {
+        val eval = CBORObject.NewMap().Add("first", ByteArray(32) { 1 }).Add("second", ByteArray(32) { 2 })
+        val request = parsed(request { Add(6, CBORObject.NewMap().Add("prf", CBORObject.NewMap().Add("eval", eval))) })
+
+        assertThat(request.info.prfRequested).isTrue()
+        assertThat(request.prfEval?.first).isEqualTo(ByteArray(32) { 1 })
+        assertThat(request.prfEval?.second).isEqualTo(ByteArray(32) { 2 })
+    }
+
+    @Test
+    fun `reads a prf extension without eval`() {
+        val request = parsed(request { Add(6, CBORObject.NewMap().Add("prf", CBORObject.NewMap())) })
+
+        assertThat(request.info.prfRequested).isTrue()
+        assertThat(request.prfEval).isNull()
+    }
+
+    @Test
+    fun `rejects a prf salt that is not 32 bytes`() {
+        val eval = CBORObject.NewMap().Add("first", ByteArray(16))
+        assertThat(rejection(request { Add(6, CBORObject.NewMap().Add("prf", CBORObject.NewMap().Add("eval", eval))) }))
+            .isEqualTo(Ctap2Status.INVALID_PARAMETER)
+    }
+
+    @Test
     fun `a response is the status byte followed by the body`() {
         val body = CBORObject.NewMap().Add(1, "none")
 

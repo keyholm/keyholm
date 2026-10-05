@@ -8,11 +8,13 @@ import app.keyholm.ctap.CANONICAL_CBOR
 import app.keyholm.ctap.KEYHOLM_AAGUID
 import app.keyholm.ctap.PUBLIC_KEY_TYPE
 import app.keyholm.ctap.ZERO_AAGUID
+import app.keyholm.ctap.requests.EXTENSION_PRF
 import app.keyholm.pxp.ctap.MAX_CTAP_MESSAGE_BYTES
 import app.keyholm.settings.Settings
 import com.upokecenter.cbor.CBORObject
 
 private const val GET_INFO_VERSIONS = 1
+private const val GET_INFO_EXTENSIONS = 2
 private const val GET_INFO_AAGUID = 3
 private const val GET_INFO_OPTIONS = 4
 private const val GET_INFO_MAX_MSG_SIZE = 5
@@ -50,7 +52,8 @@ internal fun authenticatorInfo(
                 .Add("FIDO_2_0")
                 .Add("FIDO_2_1")
                 .Add("FIDO_2_3"),
-        ).Add(GET_INFO_AAGUID, (if (identifyAsKeyholm) KEYHOLM_AAGUID else ZERO_AAGUID).toByteArray())
+        ).Add(GET_INFO_EXTENSIONS, CBORObject.NewArray().Add(EXTENSION_PRF))
+        .Add(GET_INFO_AAGUID, (if (identifyAsKeyholm) KEYHOLM_AAGUID else ZERO_AAGUID).toByteArray())
         .apply {
             if (identifyAsKeyholm) {
                 Add(GET_INFO_FIRMWARE_VERSION, context.packageManager.getPackageInfo(context.packageName, 0).longVersionCode)

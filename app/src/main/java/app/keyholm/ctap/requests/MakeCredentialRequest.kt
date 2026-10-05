@@ -6,6 +6,7 @@ import app.keyholm.ctap.CredentialUser
 import app.keyholm.ctap.Ctap2Result
 import app.keyholm.ctap.Ctap2Status
 import app.keyholm.ctap.PUBLIC_KEY_TYPE
+import app.keyholm.ctap.PrfSalts
 import app.keyholm.ctap.RelyingParty
 import app.keyholm.ctap.RpId
 import app.keyholm.ctap.UserHandle
@@ -24,6 +25,7 @@ private const val MC_RP = 2
 private const val MC_USER = 3
 private const val MC_PUB_KEY_CRED_PARAMS = 4
 private const val MC_EXCLUDE_LIST = 5
+private const val MC_EXTENSIONS = 6
 private const val MC_OPTIONS = 7
 private const val MC_PIN_UV_AUTH_PARAM = 8
 private const val MC_PIN_UV_AUTH_PROTOCOL = 9
@@ -37,6 +39,7 @@ internal data class MakeCredentialRequest(
     val algorithms: List<WebAuthnAlgorithm>,
     val excludeIds: Set<CredentialId>,
     val attestation: AttestationOffer,
+    val prfEval: PrfSalts?,
 )
 
 internal fun parseMakeCredential(body: ByteArray): Ctap2Result<MakeCredentialRequest> {
@@ -59,7 +62,8 @@ private fun fromMap(map: CBORObject): Ctap2Result<MakeCredentialRequest> {
     }
     return checkPinUvAuth(map.GetOrDefault(MC_PIN_UV_AUTH_PARAM, null), map.GetOrDefault(MC_PIN_UV_AUTH_PROTOCOL, null))
         .then { algorithms(params) }
-        .then { algorithms ->
+        .then { algorithms -> parseCreationPrf(map.GetOrDefault(MC_EXTENSIONS, null)).then { prf -> Ctap2Result.Ok(algorithms to prf) } }
+        .then { (algorithms, prf) ->
             optionFlags(map.GetOrDefault(MC_OPTIONS, null)).then { options ->
                 if (options.up == false) {
                     Ctap2Result.Rejected(Ctap2Status.INVALID_OPTION)
@@ -78,7 +82,7 @@ private fun fromMap(map: CBORObject): Ctap2Result<MakeCredentialRequest> {
                                         ),
                                     callingPackage = PackageName(""),
                                     credPropsRequested = false,
-                                    prfRequested = false,
+                                    prfRequested = prf != null,
                                     discoverable = options.rk == true,
                                 ),
                             algorithms = algorithms,
@@ -89,6 +93,7 @@ private fun fromMap(map: CBORObject): Ctap2Result<MakeCredentialRequest> {
                                 } else {
                                     AttestationOffer.Ask
                                 },
+                            prfEval = prf?.eval,
                         ),
                     )
                 }

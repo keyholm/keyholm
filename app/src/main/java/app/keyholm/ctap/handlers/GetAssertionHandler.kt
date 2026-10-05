@@ -34,6 +34,7 @@ private const val GA_RESPONSE_AUTH_DATA = 2
 private const val GA_RESPONSE_SIGNATURE = 3
 private const val GA_RESPONSE_USER = 4
 private const val GA_RESPONSE_USER_SELECTED = 6
+private const val GA_RESPONSE_UNSIGNED_EXTENSION_OUTPUTS = 8
 
 internal class GetAssertionHandler(
     private val settings: Settings,
@@ -44,6 +45,7 @@ internal class GetAssertionHandler(
 ) {
     private val log = logger()
     private val keys = AssertionKeyMaterial(passkeyRepo, dispatcher)
+    private val prf = PrfEvaluator(prompt, keys, settings.preferRpName, dispatcher)
 
     suspend fun handle(body: ByteArray): Ctap2Response =
         when (val parsed = parseGetAssertion(body)) {
@@ -134,7 +136,24 @@ internal class GetAssertionHandler(
         val updated = record.copy(signCount = record.signCount + 1, lastUsedAt = Instant.now())
         if (!writeStore { passkeyRepo.update(updated) }) return Ctap2Response(Ctap2Status.OTHER)
 
-        return Ctap2Response(assertionObject(updated, authData, derSignature, userSelected))
+        val extensions =
+            request.prf
+                ?.saltsFor(record.credentialId)
+                ?.let { salts ->
+                    val withPrf = if (updated.hasPrf) updated else setUpPrf(updated)
+                    withPrf?.let { prf.evaluate(it, salts) }
+                }?.let { prfOutput(enabled = false, results = it) }
+        return Ctap2Response(assertionObject(updated, authData, derSignature, userSelected, extensions))
+    }
+
+    private suspend fun setUpPrf(record: PasskeyRecord): PasskeyRecord? {
+        val securityLevel =
+            when (val generated = keys.generatePrfKey(record)) {
+                is KeyAccess.Failure -> return null
+                is KeyAccess.Success -> generated.value
+            }
+        val updated = record.copy(keystore = record.keystore.copy(prfSecurityLevel = securityLevel))
+        return if (writeStore { passkeyRepo.update(updated) }) updated else null
     }
 
     private fun assertionObject(
@@ -142,6 +161,7 @@ internal class GetAssertionHandler(
         authData: AuthenticatorData,
         signature: ByteArray,
         userSelected: Boolean,
+        unsignedExtensions: CBORObject?,
     ): CBORObject {
         val credential =
             CBORObject
@@ -161,5 +181,6 @@ internal class GetAssertionHandler(
             .Add(GA_RESPONSE_SIGNATURE, signature)
             .Add(GA_RESPONSE_USER, user)
             .apply { if (userSelected) Add(GA_RESPONSE_USER_SELECTED, true) }
+            .apply { unsignedExtensions?.let { Add(GA_RESPONSE_UNSIGNED_EXTENSION_OUTPUTS, it) } }
     }
 }

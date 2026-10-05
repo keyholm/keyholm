@@ -18,13 +18,13 @@ class ConfirmRequest(
     val content: AuthenticationRequest.BodyContent,
 )
 
-class PromptRelay {
+class PromptRelay : CryptoAuthenticator {
     private val relay = Relay<PromptRequest, PromptResult>()
     val pending: StateFlow<PendingRequest<PromptRequest, PromptResult>?> = relay.pending
     private val confirmRelay = Relay<ConfirmRequest, Boolean>()
     val confirmations: StateFlow<PendingRequest<ConfirmRequest, Boolean>?> = confirmRelay.pending
 
-    suspend fun authenticate(
+    override suspend fun authenticate(
         title: String,
         cryptoObject: BiometricPrompt.CryptoObject,
         allowedAuthenticators: AuthenticatorPolicy,
