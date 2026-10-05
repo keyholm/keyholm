@@ -184,6 +184,7 @@ internal data class RegistrantInfo(
     val callingPackage: PackageName,
     val credPropsRequested: Boolean,
     val prfRequested: Boolean,
+    val discoverable: Boolean,
 )
 
 internal data class RegistrationContext(
@@ -227,6 +228,7 @@ private data class PendingRegistration(
             lifecycle = RecordLifecycle.Active,
             lastUsedAt = now,
             likelyInvalid = false,
+            discoverable = info.discoverable,
         )
     }
 }
@@ -589,6 +591,7 @@ class Activity internal constructor(
                         algorithm = pending.generated.coseAlgorithm,
                     ),
                 credPropsRequested = pending.info.credPropsRequested,
+                discoverable = pending.info.discoverable,
                 prf = prf,
             )
 

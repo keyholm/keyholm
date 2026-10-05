@@ -2,6 +2,7 @@ package app.keyholm.store
 
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.proto.CoseAlgorithmProto
+import app.keyholm.store.proto.DiscoverabilityProto
 import app.keyholm.store.proto.KeySecurityLevelProto
 import app.keyholm.store.proto.KeystoreProto
 import app.keyholm.store.proto.PasskeyRecordProto
@@ -73,6 +74,21 @@ private fun KeySecurityLevel.toProto(): KeySecurityLevelProto =
         }
     }
 
+private fun DiscoverabilityProto.isDiscoverable(): Boolean =
+    when (this) {
+        DiscoverabilityProto.DISCOVERABILITY_PROTO_DISCOVERABLE -> {
+            true
+        }
+
+        DiscoverabilityProto.DISCOVERABILITY_PROTO_NON_DISCOVERABLE -> {
+            false
+        }
+
+        DiscoverabilityProto.UNRECOGNIZED -> {
+            throw StoredRecordException("unrecognized discoverability in stored passkey")
+        }
+    }
+
 internal fun PasskeyRecordProto.toDomain(): PasskeyRecord =
     PasskeyRecord(
         credentialId = CredentialId(credentialId),
@@ -102,6 +118,7 @@ internal fun PasskeyRecordProto.toDomain(): PasskeyRecord =
             },
         lastUsedAt = lastUsedAt.toInstant(),
         likelyInvalid = likelyInvalid,
+        discoverable = discoverability.isDiscoverable(),
     )
 
 internal fun PasskeyRecord.toProto(): PasskeyRecordProto {
@@ -132,6 +149,13 @@ internal fun PasskeyRecord.toProto(): PasskeyRecordProto {
             .setKeystore(keystoreBuilder)
             .setLastUsedAt(lastUsedAt.toTimestamp())
             .setLikelyInvalid(likelyInvalid)
+            .setDiscoverability(
+                if (discoverable) {
+                    DiscoverabilityProto.DISCOVERABILITY_PROTO_DISCOVERABLE
+                } else {
+                    DiscoverabilityProto.DISCOVERABILITY_PROTO_NON_DISCOVERABLE
+                },
+            )
     if (lifecycle is RecordLifecycle.PendingDelete) builder.pendingDeleteAt = lifecycle.at.toTimestamp()
     return builder.build()
 }

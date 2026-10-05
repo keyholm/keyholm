@@ -14,6 +14,11 @@ enum CoseAlgorithmProto {
   COSE_ALGORITHM_PROTO_ML_DSA_65 = 3;
 }
 
+enum DiscoverabilityProto {
+  DISCOVERABILITY_PROTO_DISCOVERABLE = 0;
+  DISCOVERABILITY_PROTO_NON_DISCOVERABLE = 1;
+}
+
 enum KeySecurityLevelProto {
   KEY_SECURITY_LEVEL_PROTO_STRONGBOX = 0;
   KEY_SECURITY_LEVEL_PROTO_TRUSTED_ENVIRONMENT = 1;
@@ -34,6 +39,7 @@ message PasskeyRecordProto {
   google.protobuf.Timestamp pending_delete_at = 8;
   google.protobuf.Timestamp last_used_at = 9;
   bool likely_invalid = 10;
+  DiscoverabilityProto discoverability = 11;
 }
 
 message RelyingPartyProto {

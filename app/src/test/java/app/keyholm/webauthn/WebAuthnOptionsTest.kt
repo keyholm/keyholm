@@ -7,6 +7,30 @@ import org.junit.jupiter.api.assertThrows
 
 class WebAuthnOptionsTest {
     @Test
+    fun `residentKey required and preferred ask for a discoverable credential`() {
+        assertThat(discoverableRequested(AuthenticatorSelection(residentKey = "required"))).isTrue()
+        assertThat(discoverableRequested(AuthenticatorSelection(residentKey = "preferred"))).isTrue()
+    }
+
+    @Test
+    fun `residentKey discouraged wins over requireResidentKey`() {
+        assertThat(discoverableRequested(AuthenticatorSelection(residentKey = "discouraged", requireResidentKey = true))).isFalse()
+    }
+
+    @Test
+    fun `without residentKey requireResidentKey decides`() {
+        assertThat(discoverableRequested(AuthenticatorSelection(requireResidentKey = true))).isTrue()
+        assertThat(discoverableRequested(AuthenticatorSelection())).isFalse()
+        assertThat(discoverableRequested(null)).isFalse()
+    }
+
+    @Test
+    fun `an unknown residentKey is ignored`() {
+        assertThat(discoverableRequested(AuthenticatorSelection(residentKey = "sometimes", requireResidentKey = true))).isTrue()
+        assertThat(discoverableRequested(AuthenticatorSelection(residentKey = "sometimes"))).isFalse()
+    }
+
+    @Test
     fun `parseCreationOptions rejects truncated json`() {
         assertThrows<SerializationException> { parseCreationOptions("""{"rp":{"id":"example.com"}""") }
     }

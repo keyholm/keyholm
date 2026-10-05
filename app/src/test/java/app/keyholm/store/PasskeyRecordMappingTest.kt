@@ -24,6 +24,7 @@ class PasskeyRecordMappingTest {
     private fun record(
         prfSecurityLevel: KeySecurityLevel? = null,
         lifecycle: RecordLifecycle = RecordLifecycle.Active,
+        discoverable: Boolean = true,
     ) = PasskeyRecord(
         credentialId = CredentialId("cred-1"),
         rp = RelyingParty(id = RpId("example.com"), name = "Example"),
@@ -41,6 +42,7 @@ class PasskeyRecordMappingTest {
         lifecycle = lifecycle,
         lastUsedAt = Instant.ofEpochMilli(2_000),
         likelyInvalid = true,
+        discoverable = discoverable,
     )
 
     @Test
@@ -50,6 +52,12 @@ class PasskeyRecordMappingTest {
                 prfSecurityLevel = KeySecurityLevel.TrustedEnvironment,
                 lifecycle = RecordLifecycle.PendingDelete(Instant.ofEpochMilli(9_999)),
             )
+        assertThat(original.toProto().toDomain()).isEqualTo(original)
+    }
+
+    @Test
+    fun `round-trips a non-discoverable record`() {
+        val original = record(discoverable = false)
         assertThat(original.toProto().toDomain()).isEqualTo(original)
     }
 

@@ -36,7 +36,7 @@ internal class GetCredentialEntryBuilder(
     ): List<PasskeyRecord> {
         val forRp = records.filter { it.rp.id == RpId(requestOptions.rpId) }
         val allowedIds = requestOptions.allowCredentials.map { it.id }.toSet()
-        return if (allowedIds.isEmpty()) forRp else forRp.filter { it.credentialId.b64 in allowedIds }
+        return if (allowedIds.isEmpty()) forRp.filter { it.discoverable } else forRp.filter { it.credentialId.b64 in allowedIds }
     }
 
     suspend fun buildEntries(

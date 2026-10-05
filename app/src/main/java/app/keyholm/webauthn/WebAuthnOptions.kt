@@ -54,6 +54,8 @@ data class CredentialDescriptor(
 @Serializable
 data class AuthenticatorSelection(
     val authenticatorAttachment: String? = null,
+    val residentKey: String? = null,
+    val requireResidentKey: Boolean = false,
 )
 
 @Serializable
@@ -78,6 +80,13 @@ data class RequestOptions(
 
 // WebAuthn 5.4.7
 fun attestationRequested(attestationOption: String): Boolean = attestationOption == "direct"
+
+fun discoverableRequested(selection: AuthenticatorSelection?): Boolean =
+    when (selection?.residentKey) {
+        "required", "preferred" -> true
+        "discouraged" -> false
+        else -> selection?.requireResidentKey == true
+    }
 
 class InvalidOptionsException(
     val detail: String,

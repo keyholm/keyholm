@@ -559,6 +559,7 @@ object CredentialResponseJson {
         credentialId: CredentialId,
         response: AttestationResponse,
         credPropsRequested: Boolean = false,
+        discoverable: Boolean,
         prf: RegistrationPrf,
     ): String {
         val id = credentialId.b64
@@ -573,7 +574,7 @@ object CredentialResponseJson {
             )
         val clientExtensionResults =
             RegistrationExtensionResults(
-                credProps = if (credPropsRequested) CredPropsResult(rk = true) else null,
+                credProps = if (credPropsRequested) CredPropsResult(rk = discoverable) else null,
                 prf =
                     when (prf) {
                         RegistrationPrf.NotRequested -> {

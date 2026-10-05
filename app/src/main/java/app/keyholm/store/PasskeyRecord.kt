@@ -29,6 +29,7 @@ data class PasskeyRecord(
     val lifecycle: RecordLifecycle,
     val lastUsedAt: Instant,
     val likelyInvalid: Boolean,
+    val discoverable: Boolean,
 ) {
     data class Keystore(
         val coseAlgorithm: WebAuthnAlgorithm,

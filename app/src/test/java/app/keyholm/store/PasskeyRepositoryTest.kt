@@ -79,6 +79,7 @@ class PasskeyRepositoryTest {
         lifecycle = RecordLifecycle.Active,
         lastUsedAt = lastUsedAt,
         likelyInvalid = likelyInvalid,
+        discoverable = true,
     )
 
     @Test

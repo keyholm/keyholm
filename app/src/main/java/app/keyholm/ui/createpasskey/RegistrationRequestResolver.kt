@@ -28,6 +28,7 @@ import app.keyholm.webauthn.TrustDecision
 import app.keyholm.webauthn.TrustPolicy
 import app.keyholm.webauthn.UserHandle
 import app.keyholm.webauthn.WebAuthn
+import app.keyholm.webauthn.discoverableRequested
 import app.keyholm.webauthn.parseCreationOptions
 import app.keyholm.webauthn.resolveTrustDecision
 import co.touchlab.kermit.Logger
@@ -118,6 +119,7 @@ internal class RegistrationRequestResolver(
                 callingPackage = PackageName(request.providerRequest.callingAppInfo.packageName),
                 credPropsRequested = options.extensions?.credProps == true,
                 prfRequested = PrfExtension.requestedAtCreation(options),
+                discoverable = discoverableRequested(options.authenticatorSelection),
             )
 
         val excludeIds = options.excludeCredentials.mapTo(mutableSetOf()) { CredentialId(it.id) }
