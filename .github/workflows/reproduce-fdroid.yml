@@ -1,0 +1,94 @@
+name: Reproducible F-Droid build
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      unsigned_sha256:
+        description: SHA-256 of the unsigned release APK
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.version.outputs.name }}
+      code: ${{ steps.version.outputs.code }}
+      sha256: ${{ inputs.unsigned_sha256 || steps.build.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Read version from build.gradle.kts
+        id: version
+        run: |
+          {
+            echo "name=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)"
+            echo "code=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)"
+          } >> "$GITHUB_OUTPUT"
+      - if: ${{ !inputs.unsigned_sha256 }}
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          install: true
+          cache: true
+          minimum_release_age: 7d
+      - name: Build unsigned release APK
+        if: ${{ !inputs.unsigned_sha256 }}
+        id: build
+        run: |
+          gradle assembleRelease
+          sum=$(sha256sum app/build/outputs/apk/release/keyholm-unsigned.apk | cut -d' ' -f1)
+          echo "::notice title=Unsigned APK sha256::$sum"
+          echo "sha256=$sum" >> "$GITHUB_OUTPUT"
+
+  fdroid:
+    needs: reference
+    runs-on: ubuntu-latest
+    container: registry.gitlab.com/fdroid/fdroidserver:buildserver
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    steps:
+      - name: Get fdroidserver and fdroiddata
+        run: |
+          git clone --depth 1 https://gitlab.com/fdroid/fdroidserver
+          git clone --depth 1 https://gitlab.com/fdroid/fdroiddata
+      - name: Point the newest build at this commit
+        working-directory: fdroiddata
+        env:
+          SHA: ${{ github.sha }}
+          NAME: ${{ needs.reference.outputs.name }}
+          CODE: ${{ needs.reference.outputs.code }}
+        run: |
+          curl -fsSLo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
+
+          yq -i '
+            .Builds[-1].versionName = strenv(NAME) |
+            .Builds[-1].versionCode = env(CODE) |
+            .Builds[-1].commit = strenv(SHA) |
+            del(.Binaries)
+          ' metadata/app.keyholm.yml
+          yq '.Builds[-1].sudo // [] | .[]' metadata/app.keyholm.yml > sudo.sh
+      - name: Run the recipe's sudo steps
+        working-directory: fdroiddata
+        run: bash -eux sudo.sh
+      - name: Build with fdroid
+        working-directory: fdroiddata
+        run: |
+          export PATH="$GITHUB_WORKSPACE/fdroidserver:$PATH" PYTHONPATH="$GITHUB_WORKSPACE/fdroidserver"
+          fdroid build -v -l app.keyholm
+      - name: Compare with the reference build
+        working-directory: fdroiddata
+        env:
+          CODE: ${{ needs.reference.outputs.code }}
+          EXPECTED: ${{ needs.reference.outputs.sha256 }}
+        run: |
+          actual=$(sha256sum "unsigned/app.keyholm_$CODE.apk" | cut -d' ' -f1)
+          echo "::notice title=F-Droid unsigned APK sha256::$actual"
+          if [ "$actual" != "$EXPECTED" ]; then
+            echo "::error::F-Droid build $actual doesn't match reference build $EXPECTED"
+            exit 1
+          fi
