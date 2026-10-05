@@ -11,6 +11,31 @@ import app.keyholm.ui.common.CryptoPrompt
 
 internal typealias CreationOptionsChooser = suspend (prompt: CreationOptionsPrompt) -> CreationChoice?
 
+internal suspend fun CreationOptionsChooser.chooseIfNeeded(prompt: CreationOptionsPrompt): CreationChoice? {
+    val needsSheet =
+        prompt.algorithms.size > 1 ||
+            prompt.attestation is OptionChoice.Ask ||
+            prompt.identity is OptionChoice.Ask
+    return if (needsSheet) {
+        this(prompt)
+    } else {
+        CreationChoice(prompt.algorithms.single(), prompt.attestation.initial, includeDeviceProperties = false, prompt.identity.initial)
+    }
+}
+
+internal fun AttestationOffer.attestationChoice(): OptionChoice =
+    when (this) {
+        AttestationOffer.NotRequested -> OptionChoice.Fixed(false)
+        AttestationOffer.Ask -> OptionChoice.Ask(initial = false)
+    }
+
+internal fun IdentityPreference.identityChoice(): OptionChoice =
+    when (this) {
+        IdentityPreference.ALWAYS_ASK -> OptionChoice.Ask(initial = true)
+        IdentityPreference.ENABLED -> OptionChoice.Fixed(true)
+        IdentityPreference.DISABLED -> OptionChoice.Fixed(false)
+    }
+
 internal class RegistrationPrompts(
     private val context: Context,
     private val intent: Intent,
@@ -56,39 +81,17 @@ internal class RegistrationPrompts(
     suspend fun resolveCreationChoice(
         request: CreateRequest,
         offer: CreationOffer,
-    ): CreationChoice? {
-        val options = request.options
-        val algorithms = offer.algorithms
-        val attestation =
-            when (offer.attestation) {
-                AttestationOffer.NotRequested -> OptionChoice.Fixed(false)
-                AttestationOffer.Ask -> OptionChoice.Ask(initial = false)
-            }
-        val identity =
-            when (offer.identity) {
-                IdentityPreference.ALWAYS_ASK -> OptionChoice.Ask(initial = true)
-                IdentityPreference.ENABLED -> OptionChoice.Fixed(true)
-                IdentityPreference.DISABLED -> OptionChoice.Fixed(false)
-            }
-        val needsSheet =
-            algorithms.size > 1 ||
-                attestation is OptionChoice.Ask ||
-                identity is OptionChoice.Ask
-        return if (needsSheet) {
-            chooseCreationOptions(
-                CreationOptionsPrompt(
-                    rpId = RpId(options.rp.id),
-                    userName = options.user.name,
-                    algorithms = algorithms,
-                    attestation = attestation,
-                    identity = identity,
-                    devicePropertiesAvailable = true,
-                ),
-            )
-        } else {
-            CreationChoice(algorithms.single(), attestation.initial, includeDeviceProperties = false, identity.initial)
-        }
-    }
+    ): CreationChoice? =
+        chooseCreationOptions.chooseIfNeeded(
+            CreationOptionsPrompt(
+                rpId = RpId(request.options.rp.id),
+                userName = request.options.user.name,
+                algorithms = offer.algorithms,
+                attestation = offer.attestation.attestationChoice(),
+                identity = offer.identity.identityChoice(),
+                devicePropertiesAvailable = true,
+            ),
+        )
 
     suspend fun chooseWithoutDeviceProperties(
         offer: CreationOffer,

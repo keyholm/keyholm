@@ -15,6 +15,9 @@ import app.keyholm.pxp.qr.PxpQrPayload
 import app.keyholm.settings.SettingsRepository
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.ui.common.PromptRelay
+import app.keyholm.ui.common.Relay
+import app.keyholm.ui.createpasskey.CreationChoice
+import app.keyholm.ui.createpasskey.CreationOptionsPrompt
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -41,6 +44,7 @@ class PxpViewModel internal constructor(
     val status: StateFlow<PxpStatus?> = _status.asStateFlow()
     private val _confirmationCode = MutableStateFlow<String?>(null)
     val confirmationCode: StateFlow<String?> = _confirmationCode.asStateFlow()
+    internal val creationOptions = Relay<CreationOptionsPrompt, CreationChoice?>()
 
     @RequiresPermission(
         allOf = [Manifest.permission.BLUETOOTH_ADVERTISE, Manifest.permission.BLUETOOTH_CONNECT],
@@ -50,7 +54,15 @@ class PxpViewModel internal constructor(
         running =
             viewModelScope.launch(dispatcher) {
                 val app = getApplication<Application>()
-                val authenticator = CtapAuthenticator(app, settingsRepo.settings.first(), passkeyRepo, prompts, dispatcher)
+                val authenticator =
+                    CtapAuthenticator(
+                        app,
+                        settingsRepo.settings.first(),
+                        passkeyRepo,
+                        prompts,
+                        creationOptions::ask,
+                        dispatcher,
+                    )
                 val pxp = PxpCeremony(app, payload, authenticator, PxpNoise)
                 _confirmationCode.value = pxp.confirmationCode
                 pxp.status.onEach { _status.value = it }.launchIn(this)

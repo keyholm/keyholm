@@ -19,6 +19,7 @@ import app.keyholm.pxp.PxpStage
 import app.keyholm.pxp.qr.PxpChannel
 import app.keyholm.pxp.qr.PxpQrPayload
 import app.keyholm.ui.common.CryptoPrompt
+import app.keyholm.ui.createpasskey.CreationOptionsSheet
 import app.keyholm.ui.theme.KeyholmTheme
 
 class Activity : FragmentActivity() {
@@ -55,6 +56,14 @@ class Activity : FragmentActivity() {
                         LaunchedEffect(Unit) { finish() }
                     }
                     PxpStatusSheet(current, confirmationCode, cryptoPrompt, viewModel.prompts, onClose = ::finish)
+                }
+                val creationOptions by viewModel.creationOptions.pending.collectAsStateWithLifecycle()
+                creationOptions?.let { pending ->
+                    CreationOptionsSheet(
+                        pending.request,
+                        onChoice = { pending.response.complete(it) },
+                        onDismiss = { pending.response.complete(null) },
+                    )
                 }
             }
         }

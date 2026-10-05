@@ -21,6 +21,7 @@ private const val GET_INFO_MAX_MSG_SIZE = 5
 private const val GET_INFO_MAX_CREDENTIAL_ID_LENGTH = 8
 private const val GET_INFO_TRANSPORTS = 9
 private const val GET_INFO_ALGORITHMS = 0x0A
+private const val GET_INFO_ATTESTATION_FORMATS = 0x16
 
 internal fun authenticatorInfo(
     context: Context,
@@ -55,6 +56,7 @@ internal fun authenticatorInfo(
         .Add(GET_INFO_MAX_CREDENTIAL_ID_LENGTH, CREDENTIAL_ID_BYTES)
         .Add(GET_INFO_TRANSPORTS, CBORObject.NewArray().Add("hybrid"))
         .Add(GET_INFO_ALGORITHMS, algorithms)
+        .Add(GET_INFO_ATTESTATION_FORMATS, CBORObject.NewArray().Add(ATTESTATION_ANDROID_KEY))
         .EncodeToBytes(CANONICAL_CBOR)
 }
 

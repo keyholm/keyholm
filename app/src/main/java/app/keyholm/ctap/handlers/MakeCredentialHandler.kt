@@ -5,6 +5,7 @@ import androidx.biometric.BiometricPrompt
 import app.keyholm.authenticator.AlgorithmNegotiation
 import app.keyholm.authenticator.CredentialKeyCreation
 import app.keyholm.authenticator.CredentialKeyMaterial
+import app.keyholm.authenticator.CredentialKeys
 import app.keyholm.authenticator.availableFamilies
 import app.keyholm.authenticator.availableMlDsaSupport
 import app.keyholm.ctap.AuthenticatorData
@@ -12,7 +13,9 @@ import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.Ctap2Response
 import app.keyholm.ctap.Ctap2Result
 import app.keyholm.ctap.Ctap2Status
+import app.keyholm.ctap.KEYHOLM_AAGUID
 import app.keyholm.ctap.WebAuthnAlgorithm
+import app.keyholm.ctap.ZERO_AAGUID
 import app.keyholm.ctap.requests.MakeCredentialRequest
 import app.keyholm.ctap.requests.parseMakeCredential
 import app.keyholm.keystore.AuthenticatorPolicy
@@ -29,6 +32,13 @@ import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.promptContent
 import app.keyholm.ui.common.resolveCreateAuthenticators
 import app.keyholm.ui.common.userLabel
+import app.keyholm.ui.createpasskey.CreationChoice
+import app.keyholm.ui.createpasskey.CreationOptionsChooser
+import app.keyholm.ui.createpasskey.CreationOptionsPrompt
+import app.keyholm.ui.createpasskey.OptionChoice
+import app.keyholm.ui.createpasskey.attestationChoice
+import app.keyholm.ui.createpasskey.chooseIfNeeded
+import app.keyholm.ui.createpasskey.identityChoice
 import app.keyholm.ui.createpasskey.registrationDescription
 import app.keyholm.util.logger
 import com.google.protobuf.ByteString
@@ -43,8 +53,7 @@ import java.time.Instant
 
 internal const val CREDENTIAL_ID_BYTES = 32
 private const val ATTESTATION_NONE = "none"
-private const val ATTESTATION_ANDROID_KEY = "android-key"
-private const val ATTACH_ATTESTATION = false
+internal const val ATTESTATION_ANDROID_KEY = "android-key"
 
 private const val MC_RESPONSE_FMT = 1
 private const val MC_RESPONSE_AUTH_DATA = 2
@@ -52,7 +61,7 @@ private const val MC_RESPONSE_ATT_STMT = 3
 
 private class PendingCredential(
     val credentialId: CredentialId,
-    val algorithm: WebAuthnAlgorithm,
+    val choice: CreationChoice,
     val generated: PasskeyKeyManager.GeneratedCredential,
     val authData: AuthenticatorData,
     val signature: Signature,
@@ -64,6 +73,7 @@ internal class MakeCredentialHandler(
     private val settings: Settings,
     private val passkeyRepo: PasskeyRepository,
     private val prompt: PromptRelay,
+    private val chooseCreationOptions: CreationOptionsChooser,
     private val dispatcher: CoroutineDispatcher,
 ) {
     private val log = logger()
@@ -87,20 +97,33 @@ internal class MakeCredentialHandler(
                     resolution.value
                 }
             }
-        val algorithm = selectAlgorithm(request.algorithms) ?: return Ctap2Response(Ctap2Status.UNSUPPORTED_ALGORITHM)
+        val algorithms = offeredAlgorithms(request.algorithms)
+        if (algorithms.isEmpty()) return Ctap2Response(Ctap2Status.UNSUPPORTED_ALGORITHM)
+        val options =
+            CreationOptionsPrompt(
+                rpId = request.info.rp.id,
+                userName = request.info.user.name,
+                algorithms = algorithms,
+                attestation = request.attestation.attestationChoice(),
+                identity = settings.identityPreference.identityChoice(),
+                devicePropertiesAvailable = true,
+            )
+        val choice =
+            chooseCreationOptions.chooseIfNeeded(options)
+                ?: return Ctap2Response(Ctap2Status.OPERATION_DENIED)
         return when (excluded(request)) {
             null -> {
                 Ctap2Response(Ctap2Status.OTHER)
             }
 
             true -> {
-                confirmExcluded(request, algorithm, authenticators)
+                confirmExcluded(request, choice, authenticators)
             }
 
             false -> {
-                when (val generated = generate(request, algorithm, authenticators)) {
-                    is Ctap2Result.Rejected -> Ctap2Response(generated.status)
-                    is Ctap2Result.Ok -> authorizeOrDiscard(request, generated.value)
+                when (val created = create(request, options, choice, authenticators)) {
+                    is Ctap2Result.Rejected -> Ctap2Response(created.status)
+                    is Ctap2Result.Ok -> authorizeOrDiscard(request, created.value)
                 }
             }
         }
@@ -108,13 +131,13 @@ internal class MakeCredentialHandler(
 
     private suspend fun confirmExcluded(
         request: MakeCredentialRequest,
-        algorithm: WebAuthnAlgorithm,
+        choice: CreationChoice,
         authenticators: AuthenticatorPolicy,
     ): Ctap2Response {
         prompt.confirm(
             title = "Create passkey",
             allowedAuthenticators = authenticators,
-            content = registrationContent(request, algorithm),
+            content = registrationContent(request, choice),
         )
         return Ctap2Response(Ctap2Status.CREDENTIAL_EXCLUDED)
     }
@@ -134,9 +157,10 @@ internal class MakeCredentialHandler(
         }
     }
 
-    private suspend fun generate(
+    private suspend fun create(
         request: MakeCredentialRequest,
-        algorithm: WebAuthnAlgorithm,
+        options: CreationOptionsPrompt,
+        choice: CreationChoice,
         authenticators: AuthenticatorPolicy,
     ): Ctap2Result<PendingCredential> {
         val credentialId = CredentialId.of(ByteArray(CREDENTIAL_ID_BYTES).also(SecureRandom()::nextBytes))
@@ -145,39 +169,35 @@ internal class MakeCredentialHandler(
                 PasskeyKeyManager.CredentialKeyRequest(
                     credentialId = credentialId,
                     attestationChallenge = request.clientDataHash,
-                    algorithm = algorithm,
+                    algorithm = choice.algorithm,
                     authenticators = authenticators,
                     invalidateOnBiometricEnrollment = settings.invalidateOnBiometricEnrollment,
-                    // TODO comes from creation sheet
-                    includeDeviceProperties = false,
+                    includeDeviceProperties = choice.includeDeviceProperties,
                 ),
                 prfRequested = false,
             )
         return when (created) {
             is CredentialKeyCreation.Created -> {
-                val authData =
-                    AuthenticatorData.forRegistration(
-                        request.info.rp.id,
-                        credentialId,
-                        created.keys.generated.publicKey,
-                        aaguid(settings),
-                        algorithm,
-                    )
-                Ctap2Result.Ok(
-                    PendingCredential(
-                        credentialId = credentialId,
-                        algorithm = algorithm,
-                        generated = created.keys.generated,
-                        authData = authData,
-                        signature = created.keys.signature,
-                        authenticators = authenticators,
-                    ),
-                )
+                Ctap2Result.Ok(pendingCredential(request, credentialId, choice, created.keys, authenticators))
             }
 
             CredentialKeyCreation.DevicePropertiesUnavailable -> {
                 log.w { "device properties attestation is unavailable" }
-                Ctap2Result.Rejected(Ctap2Status.OTHER)
+                val retry =
+                    options.copy(
+                        attestation = OptionChoice.Ask(initial = choice.includeAttestation),
+                        identity =
+                            if (options.identity is OptionChoice.Ask) {
+                                OptionChoice.Ask(initial = choice.identifyAsKeyholm)
+                            } else {
+                                options.identity
+                            },
+                        devicePropertiesAvailable = false,
+                    )
+                val retryChoice =
+                    chooseCreationOptions.chooseIfNeeded(retry)
+                        ?: return Ctap2Result.Rejected(Ctap2Status.OPERATION_DENIED)
+                create(request, retry, retryChoice, authenticators)
             }
 
             is CredentialKeyCreation.Failed -> {
@@ -195,7 +215,7 @@ internal class MakeCredentialHandler(
                 title = "Create passkey",
                 cryptoObject = BiometricPrompt.CryptoObject(pending.signature),
                 allowedAuthenticators = pending.authenticators,
-                content = registrationContent(request, pending.algorithm),
+                content = registrationContent(request, pending.choice),
             )
         val signature = (result as? PromptResult.Success)?.crypto?.signature
         return if (signature == null) {
@@ -208,13 +228,13 @@ internal class MakeCredentialHandler(
 
     private fun registrationContent(
         request: MakeCredentialRequest,
-        algorithm: WebAuthnAlgorithm,
+        choice: CreationChoice,
     ) = promptContent(
         description =
             registrationDescription(
                 "The device whose QR code you scanned",
-                algorithm,
-                ATTACH_ATTESTATION,
+                choice.algorithm,
+                choice.includeAttestation,
             ),
         lastUsedAt = null,
         rp = request.info.rp,
@@ -246,7 +266,7 @@ internal class MakeCredentialHandler(
         )
     }
 
-    private fun selectAlgorithm(requested: List<WebAuthnAlgorithm>): WebAuthnAlgorithm? {
+    private fun offeredAlgorithms(requested: List<WebAuthnAlgorithm>): List<WebAuthnAlgorithm> {
         val enabled = availableFamilies(context, settings.enabledFamilies)
         val mlDsa = availableMlDsaSupport(context, settings.mlDsaSupport)
         return AlgorithmNegotiation
@@ -256,7 +276,7 @@ internal class MakeCredentialHandler(
                 settings.preferredAlgorithm,
                 settings.fallbackAlgorithm,
                 mlDsa,
-            ).firstOrNull()
+            )
     }
 
     private suspend fun excluded(request: MakeCredentialRequest): Boolean? {
@@ -270,7 +290,7 @@ private fun attestationObject(
     pending: PendingCredential,
     signature: ByteArray,
 ): CBORObject {
-    val withChain = ATTACH_ATTESTATION && pending.generated.attestationChain.isNotEmpty()
+    val withChain = pending.choice.includeAttestation && pending.generated.attestationChain.isNotEmpty()
     val attStmt = CBORObject.NewMap()
     if (withChain) {
         val x5c = CBORObject.NewArray()
@@ -307,5 +327,30 @@ private fun record(
         lastUsedAt = now,
         likelyInvalid = false,
         discoverable = request.info.discoverable,
+    )
+}
+
+private fun pendingCredential(
+    request: MakeCredentialRequest,
+    credentialId: CredentialId,
+    choice: CreationChoice,
+    keys: CredentialKeys,
+    authenticators: AuthenticatorPolicy,
+): PendingCredential {
+    val authData =
+        AuthenticatorData.forRegistration(
+            request.info.rp.id,
+            credentialId,
+            keys.generated.publicKey,
+            if (choice.identifyAsKeyholm) KEYHOLM_AAGUID else ZERO_AAGUID,
+            choice.algorithm,
+        )
+    return PendingCredential(
+        credentialId = credentialId,
+        choice = choice,
+        generated = keys.generated,
+        authData = authData,
+        signature = keys.signature,
+        authenticators = authenticators,
     )
 }
