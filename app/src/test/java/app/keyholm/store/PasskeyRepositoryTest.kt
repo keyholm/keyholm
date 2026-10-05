@@ -64,6 +64,7 @@ class PasskeyRepositoryTest {
         createdAt: Instant = Instant.ofEpochMilli(1_000),
         lastUsedAt: Instant = createdAt,
         likelyInvalid: Boolean = false,
+        discoverable: Boolean = true,
     ) = PasskeyRecord(
         credentialId = credentialId,
         rp = RelyingParty(id = rpId, name = rpId.value),
@@ -81,7 +82,7 @@ class PasskeyRepositoryTest {
         lifecycle = RecordLifecycle.Active,
         lastUsedAt = lastUsedAt,
         likelyInvalid = likelyInvalid,
-        discoverable = true,
+        discoverable = discoverable,
     )
 
     @Test
@@ -106,6 +107,20 @@ class PasskeyRepositoryTest {
 
             assertThat(deletedKeys.map { it.credentialId.b64 }).containsExactly("cred-1")
             assertThat(repo.passkeys.first().map { it.credentialId.b64 }).containsExactly("cred-2", "cred-3")
+        }
+
+    @Test
+    fun `put keeps non-discoverable records for the same account`() =
+        runBlocking<Unit> {
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            val account = UserHandle("user-1")
+            repo.put(record(credentialId = CredentialId("cred-1"), userHandle = account, discoverable = false))
+            repo.put(record(credentialId = CredentialId("cred-2"), userHandle = account))
+
+            repo.put(record(credentialId = CredentialId("cred-3"), userHandle = account, discoverable = false))
+
+            assertThat(deletedKeys).isEmpty()
+            assertThat(repo.passkeys.first().map { it.credentialId.b64 }).containsExactly("cred-1", "cred-2", "cred-3")
         }
 
     @Test

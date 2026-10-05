@@ -6,6 +6,7 @@ import androidx.datastore.dataStore
 import androidx.datastore.dataStoreFile
 import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.store.proto.DiscoverabilityProto
 import app.keyholm.store.proto.PasskeyRecordProto
 import app.keyholm.store.proto.PasskeyRecordsProto
 import app.keyholm.webauthn.CredentialId
@@ -76,7 +77,10 @@ class PasskeyRepository internal constructor(
         return write { current ->
             val (sameAccount, others) =
                 current.recordsList.partition {
-                    it.rp.id == record.rp.id.value && it.user.handle == record.user.handle.b64
+                    record.discoverable &&
+                        it.discoverability == DiscoverabilityProto.DISCOVERABILITY_PROTO_DISCOVERABLE &&
+                        it.rp.id == record.rp.id.value &&
+                        it.user.handle == record.user.handle.b64
                 }
             replaced = sameAccount
             current
