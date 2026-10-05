@@ -170,7 +170,7 @@ class Service internal constructor(
         settings: Settings,
     ): List<WebAuthnAlgorithm> =
         AlgorithmNegotiation.offeredAlgorithms(
-            creationOptions = options,
+            requested = AlgorithmNegotiation.requestedAlgorithms(options),
             enabled = settings.enabledFamilies.filterTo(mutableSetOf(), ::isFamilyAvailable),
             preferred = settings.preferredAlgorithm,
             fallback = settings.fallbackAlgorithm,

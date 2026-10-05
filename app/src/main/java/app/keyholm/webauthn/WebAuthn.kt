@@ -324,7 +324,7 @@ object PrfExtension {
 }
 
 object AlgorithmNegotiation {
-    private fun requestedAlgorithms(creationOptions: CreationOptions): List<WebAuthnAlgorithm>? {
+    fun requestedAlgorithms(creationOptions: CreationOptions): List<WebAuthnAlgorithm>? {
         if (creationOptions.pubKeyCredParams.isEmpty()) return null
         return creationOptions.pubKeyCredParams.mapNotNull { WebAuthnAlgorithm.fromCoseAlg(it.alg) }
     }
@@ -362,11 +362,10 @@ object AlgorithmNegotiation {
     ): List<WebAuthnAlgorithm> = candidates(requested = null, enabled = enabled, mlDsa = mlDsa)
 
     private fun matchingAlgorithms(
-        creationOptions: CreationOptions,
+        requested: List<WebAuthnAlgorithm>?,
         enabled: Set<AlgorithmFamily>,
         mlDsa: MlDsaSupport,
     ): List<WebAuthnAlgorithm> {
-        val requested = requestedAlgorithms(creationOptions)
         val candidates = candidates(requested, enabled, mlDsa)
         val matching = if (requested == null) candidates else candidates.filter { it in requested }
         // The ML-DSA setting already picked the parameter set, so a family is never offered twice.
@@ -374,13 +373,13 @@ object AlgorithmNegotiation {
     }
 
     fun offeredAlgorithms(
-        creationOptions: CreationOptions,
+        requested: List<WebAuthnAlgorithm>?,
         enabled: Set<AlgorithmFamily>,
         preferred: AlgorithmPreference,
         fallback: AlgorithmPreference,
         mlDsa: MlDsaSupport,
     ): List<WebAuthnAlgorithm> {
-        val matching = matchingAlgorithms(creationOptions, enabled, mlDsa)
+        val matching = matchingAlgorithms(requested, enabled, mlDsa)
         return when (preferred) {
             AlgorithmPreference.AlwaysAsk -> {
                 matching

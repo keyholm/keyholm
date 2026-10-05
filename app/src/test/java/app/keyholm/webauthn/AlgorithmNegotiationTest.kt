@@ -9,11 +9,13 @@ private val ML_DSA_65 = WebAuthnAlgorithm.ML_DSA_65
 private val ML_DSA_87 = WebAuthnAlgorithm.ML_DSA_87
 
 private fun options(vararg requested: WebAuthnAlgorithm) =
-    CreationOptions(
-        rp = RpEntity("keyholm.app", "Keyholm"),
-        user = UserEntity("AA", "alice", "Alice"),
-        challenge = "AA",
-        pubKeyCredParams = requested.map { CredentialParameters(alg = it.coseAlg) },
+    AlgorithmNegotiation.requestedAlgorithms(
+        CreationOptions(
+            rp = RpEntity("keyholm.app", "Keyholm"),
+            user = UserEntity("AA", "alice", "Alice"),
+            challenge = "AA",
+            pubKeyCredParams = requested.map { CredentialParameters(alg = it.coseAlg) },
+        ),
     )
 
 class AlgorithmNegotiationTest {
