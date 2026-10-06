@@ -1,0 +1,30 @@
+name: Vendor public suffix list
+
+on:
+  push:
+    branches: ["renovate/mozilla-firefox-firefox-*"]
+
+permissions:
+  contents: read
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          # pushes over SSH so the vendor commit triggers CI
+          ssh-key: ${{ secrets.GRADLE_REFRESH_SSH_KEY }}
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          install: false
+      - run: mise run vendor-publicsuffixlist
+        env:
+          MISE_TASK_RUN_AUTO_INSTALL: "false"
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all publicsuffixlist plugins/publicsuffixlist
+          git commit -m "chore: vendor public suffix list" || echo "no changes"
+          git push
