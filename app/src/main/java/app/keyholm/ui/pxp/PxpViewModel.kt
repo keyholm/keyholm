@@ -52,14 +52,7 @@ class PxpViewModel internal constructor(
             viewModelScope.launch(dispatcher) {
                 val app = getApplication<Application>()
                 val authenticator =
-                    CtapAuthenticator(
-                        app,
-                        settingsRepo.settings.first(),
-                        passkeyRepo,
-                        prompts,
-                        choices,
-                        dispatcher,
-                    )
+                    CtapAuthenticator(app, settingsRepo.settings.first(), passkeyRepo, prompts, choices, dispatcher)
                 val pxp = PxpCeremony(app, payload, authenticator, PxpNoise)
                 _confirmationCode.value = pxp.confirmationCode
                 pxp.status.onEach { _status.value = it }.launchIn(this)

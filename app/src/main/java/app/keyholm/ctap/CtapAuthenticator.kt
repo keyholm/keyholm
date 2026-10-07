@@ -1,6 +1,7 @@
 package app.keyholm.ctap
 
 import android.content.Context
+import app.keyholm.authenticator.IdentityPreference
 import app.keyholm.ctap.handlers.GetAssertionHandler
 import app.keyholm.ctap.handlers.MakeCredentialHandler
 import app.keyholm.ctap.handlers.authenticatorInfo
@@ -11,7 +12,6 @@ import app.keyholm.ui.common.PromptRelay
 import app.keyholm.ui.pxp.ChoiceRelay
 import kotlinx.coroutines.CoroutineDispatcher
 
-@Suppress("LongParameterList")
 internal class CtapAuthenticator(
     private val context: Context,
     private val settings: Settings,
@@ -24,7 +24,9 @@ internal class CtapAuthenticator(
         MakeCredentialHandler(context, settings, passkeyRepo, prompt, choices.creationOptions::ask, dispatcher)
     private val getAssertion = GetAssertionHandler(settings, passkeyRepo, prompt, choices.accountChoice::ask, dispatcher)
 
-    override suspend fun getInfo(): ByteArray = authenticatorInfo(context, settings)
+    // Clients time getInfo out quickly, so it can't wait for the user.
+    override suspend fun getInfo(): ByteArray =
+        authenticatorInfo(context, settings, identifyAsKeyholm = settings.identityPreference == IdentityPreference.ENABLED)
 
     override suspend fun handle(request: ByteArray): ByteArray {
         val body = request.copyOfRange(1, request.size)

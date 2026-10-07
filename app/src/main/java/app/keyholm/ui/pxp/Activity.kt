@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
@@ -57,22 +58,7 @@ class Activity : FragmentActivity() {
                     }
                     PxpStatusSheet(current, confirmationCode, cryptoPrompt, viewModel.prompts, onClose = ::finish)
                 }
-                val creationOptions by viewModel.choices.creationOptions.pending.collectAsStateWithLifecycle()
-                creationOptions?.let { pending ->
-                    CreationOptionsSheet(
-                        pending.request,
-                        onChoice = { pending.response.complete(it) },
-                        onDismiss = { pending.response.complete(null) },
-                    )
-                }
-                val accountChoice by viewModel.choices.accountChoice.pending.collectAsStateWithLifecycle()
-                accountChoice?.let { pending ->
-                    AccountPickerSheet(
-                        pending.request,
-                        onChoice = { pending.response.complete(it) },
-                        onDismiss = { pending.response.complete(null) },
-                    )
-                }
+                ChoiceSheets(viewModel.choices)
             }
         }
         when {
@@ -120,5 +106,25 @@ class Activity : FragmentActivity() {
                 viewModel.start(payload)
             }
         }
+    }
+}
+
+@Composable
+private fun ChoiceSheets(choices: ChoiceRelay) {
+    val creationOptions by choices.creationOptions.pending.collectAsStateWithLifecycle()
+    creationOptions?.let { pending ->
+        CreationOptionsSheet(
+            pending.request,
+            onChoice = { pending.response.complete(it) },
+            onDismiss = { pending.response.complete(null) },
+        )
+    }
+    val accountChoice by choices.accountChoice.pending.collectAsStateWithLifecycle()
+    accountChoice?.let { pending ->
+        AccountPickerSheet(
+            pending.request,
+            onChoice = { pending.response.complete(it) },
+            onDismiss = { pending.response.complete(null) },
+        )
     }
 }
