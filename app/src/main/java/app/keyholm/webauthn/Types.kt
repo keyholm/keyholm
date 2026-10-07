@@ -44,7 +44,7 @@ value class DerSignature(
 )
 
 @JvmInline
-value class PrfSalt(
+value class PrfInput(
     val bytes: ByteArray,
 )
 

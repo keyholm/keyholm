@@ -139,9 +139,9 @@ internal class RegistrationRequestResolver(
         val options = request.options
         val choice = prompts.resolveCreationChoice(request, offer) ?: return Registration.Canceled()
 
-        val prfEvalSalts =
+        val prfEvalInputs =
             try {
-                PrfExtension.saltsForCreation(options)
+                PrfExtension.inputsForCreation(options)
             } catch (e: IllegalArgumentException) {
                 log.e(e) { "couldn't decode PRF salt" }
                 return Registration.MalformedRequest(EncodingError(), "prf salt is not valid base64url")
@@ -156,7 +156,7 @@ internal class RegistrationRequestResolver(
                 includeAttestation = choice.includeAttestation,
                 includeDeviceProperties = choice.includeDeviceProperties,
                 identifyAsKeyholm = choice.identifyAsKeyholm,
-                prfEvalSalts = prfEvalSalts,
+                prfEvalInputs = prfEvalInputs,
             ),
         )
     }

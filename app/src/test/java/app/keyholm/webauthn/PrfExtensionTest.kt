@@ -23,42 +23,42 @@ class PrfExtensionTest {
         )
 
     @Test
-    fun `saltsForCreation is null without a prf extension`() {
-        assertThat(PrfExtension.saltsForCreation(creation(null))).isNull()
+    fun `inputsForCreation is null without a prf extension`() {
+        assertThat(PrfExtension.inputsForCreation(creation(null))).isNull()
     }
 
     @Test
-    fun `saltsForCreation decodes a valid base64url first salt`() {
-        val salts = PrfExtension.saltsForCreation(creation(PrfInputs(eval = PrfEval(first = "AQID"))))
+    fun `inputsForCreation decodes a valid base64url first input`() {
+        val inputs = PrfExtension.inputsForCreation(creation(PrfInputs(eval = PrfEval(first = "AQID"))))
 
-        assertThat(salts!!.first.bytes).isEqualTo(byteArrayOf(1, 2, 3))
-        assertThat(salts.second).isNull()
+        assertThat(inputs!!.first.bytes).isEqualTo(byteArrayOf(1, 2, 3))
+        assertThat(inputs.second).isNull()
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `saltsForCreation throws on a malformed first salt`() {
-        PrfExtension.saltsForCreation(creation(PrfInputs(eval = PrfEval(first = "A"))))
+    fun `inputsForCreation throws on a malformed first input`() {
+        PrfExtension.inputsForCreation(creation(PrfInputs(eval = PrfEval(first = "A"))))
     }
 
     @Test
-    fun `saltsForAssertion is null without a prf extension`() {
-        assertThat(PrfExtension.saltsForAssertion(request(null), CredentialId("cred-1"))).isNull()
+    fun `inputsForAssertion is null without a prf extension`() {
+        assertThat(PrfExtension.inputsForAssertion(request(null), CredentialId("cred-1"))).isNull()
     }
 
     @Test
-    fun `saltsForAssertion prefers evalByCredential over eval`() {
+    fun `inputsForAssertion prefers evalByCredential over eval`() {
         val prf =
             PrfInputs(
                 eval = PrfEval(first = "AAAA"),
                 evalByCredential = mapOf("cred-1" to PrfEval(first = "AQID")),
             )
 
-        assertThat(PrfExtension.saltsForAssertion(request(prf), CredentialId("cred-1"))!!.first.bytes)
+        assertThat(PrfExtension.inputsForAssertion(request(prf), CredentialId("cred-1"))!!.first.bytes)
             .isEqualTo(byteArrayOf(1, 2, 3))
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `saltsForAssertion throws on a malformed salt`() {
-        PrfExtension.saltsForAssertion(request(PrfInputs(eval = PrfEval(first = "A"))), CredentialId("cred-1"))
+    fun `inputsForAssertion throws on a malformed input`() {
+        PrfExtension.inputsForAssertion(request(PrfInputs(eval = PrfEval(first = "A"))), CredentialId("cred-1"))
     }
 }

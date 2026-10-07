@@ -98,8 +98,8 @@ internal class SignInRequestResolver(
         caller: Caller.Trusted,
         existingSignature: Signature?,
     ): SignInResult {
-        val prfSalts =
-            prfSaltsOrLog(record, request).getOrElse {
+        val prfInputs =
+            prfInputsOrLog(record, request).getOrElse {
                 return SignInResult.MalformedRequest("prf salt is not valid base64url")
             }
 
@@ -117,7 +117,7 @@ internal class SignInRequestResolver(
                     PackageName(providerRequest.callingAppInfo.packageName),
                     clientData,
                     existingSignature,
-                    prfSalts,
+                    prfInputs,
                 )
         ) {
             is Outcome.Success -> SignInResult.Ready(ctx.value)
@@ -145,12 +145,12 @@ internal class SignInRequestResolver(
         }
     }
 
-    private fun prfSaltsOrLog(
+    private fun prfInputsOrLog(
         record: PasskeyRecord,
         request: RequestOptions,
-    ): Result<PrfExtension.Salts?> =
+    ): Result<PrfExtension.Inputs?> =
         try {
-            Result.success(PrfExtension.saltsForAssertion(request, record.credentialId))
+            Result.success(PrfExtension.inputsForAssertion(request, record.credentialId))
         } catch (e: IllegalArgumentException) {
             log.e(e) { "couldn't decode PRF salt" }
             Result.failure(e)
@@ -169,7 +169,7 @@ internal class SignInRequestResolver(
         callingPackage: PackageName,
         clientData: WebAuthn.ClientData,
         existingSignature: Signature?,
-        prfSalts: PrfExtension.Salts?,
+        prfInputs: PrfExtension.Inputs?,
     ): Outcome<SignInContext> {
         val newSignCount = record.signCount + 1
         val authData = WebAuthn.assertionAuthData(record.rp.id, newSignCount)
@@ -201,7 +201,7 @@ internal class SignInRequestResolver(
                                 toSign = toSign,
                                 signature = signature.value,
                                 allowedAuthenticators = authenticators.value,
-                                prfSalts = prfSalts,
+                                prfInputs = prfInputs,
                             ),
                         )
                     }

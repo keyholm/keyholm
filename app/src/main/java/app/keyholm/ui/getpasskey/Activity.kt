@@ -28,7 +28,7 @@ import app.keyholm.ui.common.CANCELLATION_ERRORS
 import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.Outcome
-import app.keyholm.ui.common.PRF_PROMPT_TITLE
+import app.keyholm.ui.common.PrfPrompt
 import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.appLabel
 import app.keyholm.ui.common.promptContent
@@ -61,7 +61,7 @@ internal data class SignInContext(
     val toSign: SigningInput,
     val signature: Signature,
     val allowedAuthenticators: AuthenticatorPolicy,
-    val prfSalts: PrfExtension.Salts?,
+    val prfInputs: PrfExtension.Inputs?,
 )
 
 private sealed interface SingleTap {
@@ -126,6 +126,7 @@ class Activity internal constructor(
     private val passkeyRepo by lazy { PasskeyRepository(applicationContext) }
     private val keyMaterial by lazy { SignInKeyMaterial(passkeyRepo, dispatcher) }
     private val cryptoPrompt = CryptoPrompt(this)
+    private val prfPrompt by lazy { PrfPrompt(cryptoPrompt, dispatcher) }
     private val deniedAppsRepo by lazy { DeniedNativeAppRepository(applicationContext) }
     private val requestResolver by lazy {
         SignInRequestResolver(applicationContext, intent, passkeyRepo, deniedAppsRepo, keyMaterial, dispatcher)
@@ -292,8 +293,8 @@ class Activity internal constructor(
         signIn: SignInContext,
         derSignature: DerSignature,
     ) {
-        val prfSalts = signIn.prfSalts
-        if (prfSalts == null) {
+        val prfInputs = signIn.prfInputs
+        if (prfInputs == null) {
             respond(signIn, derSignature, prfResults = null)
             return
         }
@@ -329,11 +330,12 @@ class Activity internal constructor(
                     }
 
                     is Outcome.Success -> {
-                        val authorized =
-                            cryptoPrompt.authenticate(
-                                title = PRF_PROMPT_TITLE,
-                                cryptoObject = BiometricPrompt.CryptoObject(mac.value),
-                                allowedAuthenticators = hmac.value,
+                        val prfResults =
+                            prfPrompt.evaluate(
+                                mac = mac.value,
+                                nextMac = { keyMaterial.macFor(record) },
+                                salts = PrfExtension.salts(prfInputs),
+                                authenticators = hmac.value,
                                 content =
                                     promptContent(
                                         description =
@@ -344,9 +346,7 @@ class Activity internal constructor(
                                         preferRpName = intent.preferRpName(),
                                         userLabel = userLabel(record.user.name, record.user.displayName),
                                     ),
-                            ) as? PromptResult.Success
-                        val prfResults =
-                            authorized?.crypto?.mac?.let { withContext(dispatcher) { PrfExtension.evaluate(it, prfSalts) } }
+                            )
                         respond(signIn, derSignature, prfResults)
                     }
                 }

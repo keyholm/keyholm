@@ -37,7 +37,7 @@ import app.keyholm.store.RecordLifecycle
 import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.Outcome
-import app.keyholm.ui.common.PRF_PROMPT_TITLE
+import app.keyholm.ui.common.PrfPrompt
 import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.WorkingIndicator
 import app.keyholm.ui.common.appLabel
@@ -195,7 +195,7 @@ internal data class RegistrationContext(
     val includeAttestation: Boolean,
     val includeDeviceProperties: Boolean,
     val identifyAsKeyholm: Boolean,
-    val prfEvalSalts: PrfExtension.Salts?,
+    val prfEvalInputs: PrfExtension.Inputs?,
 )
 
 private data class PendingRegistration(
@@ -207,7 +207,7 @@ private data class PendingRegistration(
     val generated: SecureKeyManager.GeneratedCredential,
     val includeAttestation: Boolean,
     val prfSecurityLevel: KeySecurityLevel?,
-    val prfEvalSalts: PrfExtension.Salts?,
+    val prfEvalInputs: PrfExtension.Inputs?,
 ) {
     fun toPasskeyRecord(): PasskeyRecord {
         val now = Instant.now()
@@ -281,7 +281,7 @@ private fun buildPendingRegistration(
         generated = material.generated,
         includeAttestation = registration.includeAttestation,
         prfSecurityLevel = material.prfSecurityLevel,
-        prfEvalSalts = registration.prfEvalSalts,
+        prfEvalInputs = registration.prfEvalInputs,
     )
 
 class Activity internal constructor(
@@ -291,6 +291,7 @@ class Activity internal constructor(
 
     private val log = logger()
     private val cryptoPrompt = CryptoPrompt(this)
+    private val prfPrompt by lazy { PrfPrompt(cryptoPrompt, dispatcher) }
     private val passkeyRepo by lazy { PasskeyRepository(applicationContext) }
     private val keyMaterial by lazy {
         RegistrationKeyMaterial(applicationContext, passkeyRepo, MigrationRepository(applicationContext), dispatcher)
@@ -525,8 +526,8 @@ class Activity internal constructor(
             respondToRegistration(pending, attestationObject, RegistrationPrf.NotRequested)
             return
         }
-        val salts = pending.prfEvalSalts
-        if (salts == null) {
+        val inputs = pending.prfEvalInputs
+        if (inputs == null) {
             respondToRegistration(pending, attestationObject, RegistrationPrf.Requested)
             return
         }
@@ -553,11 +554,12 @@ class Activity internal constructor(
                     return respondToRegistration(pending, attestationObject, RegistrationPrf.Requested)
                 }
             }
-        val authorized =
-            cryptoPrompt.authenticate(
-                title = PRF_PROMPT_TITLE,
-                cryptoObject = BiometricPrompt.CryptoObject(mac),
-                allowedAuthenticators = hmacAuthenticators,
+        val results =
+            prfPrompt.evaluate(
+                mac = mac,
+                nextMac = { keyMaterial.macFor(pending.credentialId) },
+                salts = PrfExtension.salts(inputs),
+                authenticators = hmacAuthenticators,
                 content =
                     promptContent(
                         description =
@@ -568,8 +570,7 @@ class Activity internal constructor(
                         preferRpName = intent.preferRpName(),
                         userLabel = userLabel(pending.info.user.name, pending.info.user.displayName),
                     ),
-            ) as? PromptResult.Success
-        val results = authorized?.crypto?.mac?.let { withContext(dispatcher) { PrfExtension.evaluate(it, salts) } }
+            )
         val outcome = results?.let(RegistrationPrf::Evaluated) ?: RegistrationPrf.Requested
         respondToRegistration(pending, attestationObject, outcome)
     }

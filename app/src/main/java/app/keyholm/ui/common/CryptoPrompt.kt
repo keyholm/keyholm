@@ -53,12 +53,21 @@ internal class ResultSlot {
         }
 }
 
+interface CryptoAuthenticator {
+    suspend fun authenticate(
+        title: String,
+        cryptoObject: BiometricPrompt.CryptoObject,
+        allowedAuthenticators: AuthenticatorPolicy,
+        content: AuthenticationRequest.BodyContent,
+    ): PromptResult
+}
+
 class CryptoPrompt internal constructor(
     private val launcher: AuthenticationResultLauncher,
     private val slot: ResultSlot,
     private val view: () -> View,
-) {
-    suspend fun authenticate(
+) : CryptoAuthenticator {
+    override suspend fun authenticate(
         title: String,
         cryptoObject: BiometricPrompt.CryptoObject,
         allowedAuthenticators: AuthenticatorPolicy,

@@ -10,7 +10,6 @@ import java.io.ByteArrayOutputStream
 import java.math.BigInteger
 import java.security.PublicKey
 import java.security.interfaces.ECPublicKey
-import javax.crypto.Mac
 import kotlin.uuid.Uuid
 
 private const val BYTE_MASK = 0xff
@@ -279,9 +278,14 @@ sealed interface RegistrationPrf {
 object PrfExtension {
     private const val SALT_PREFIX = "WebAuthn PRF"
 
-    data class Salts(
-        val first: PrfSalt,
-        val second: PrfSalt?,
+    data class Inputs(
+        val first: PrfInput,
+        val second: PrfInput?,
+    )
+
+    class Salts(
+        val first: ByteArray,
+        val second: ByteArray?,
     )
 
     data class Results(
@@ -291,36 +295,29 @@ object PrfExtension {
 
     fun requestedAtCreation(creationOptions: CreationOptions): Boolean = creationOptions.extensions?.prf != null
 
-    fun saltsForAssertion(
+    fun inputsForAssertion(
         requestOptions: RequestOptions,
         credentialId: CredentialId,
-    ): Salts? {
+    ): Inputs? {
         val prf = requestOptions.extensions?.prf ?: return null
         val eval = prf.evalByCredential?.get(credentialId.b64) ?: prf.eval ?: return null
         return parseEval(eval)
     }
 
-    fun saltsForCreation(creationOptions: CreationOptions): Salts? {
+    fun inputsForCreation(creationOptions: CreationOptions): Inputs? {
         val eval = creationOptions.extensions?.prf?.eval ?: return null
         return parseEval(eval)
     }
 
-    private fun parseEval(eval: PrfEval): Salts? {
+    private fun parseEval(eval: PrfEval): Inputs? {
         val first = eval.first?.takeIf { it.isNotEmpty() } ?: return null
         val second = eval.second?.takeIf { it.isNotEmpty() }
-        return Salts(PrfSalt(B64.dec(first)), second?.let { PrfSalt(B64.dec(it)) })
+        return Inputs(PrfInput(B64.dec(first)), second?.let { PrfInput(B64.dec(it)) })
     }
 
-    private fun saltedInput(salt: PrfSalt): ByteArray = sha256(SALT_PREFIX.toByteArray(Charsets.UTF_8) + byteArrayOf(0) + salt.bytes)
+    private fun salt(input: PrfInput): ByteArray = sha256(SALT_PREFIX.toByteArray(Charsets.UTF_8) + byteArrayOf(0) + input.bytes)
 
-    fun evaluate(
-        mac: Mac,
-        salts: Salts,
-    ): Results =
-        Results(
-            first = PrfOutput(mac.doFinal(saltedInput(salts.first))),
-            second = salts.second?.let { PrfOutput(mac.doFinal(saltedInput(it))) },
-        )
+    fun salts(inputs: Inputs): Salts = Salts(salt(inputs.first), inputs.second?.let(::salt))
 }
 
 object AlgorithmNegotiation {
