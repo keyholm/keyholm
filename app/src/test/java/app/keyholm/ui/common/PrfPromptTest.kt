@@ -52,7 +52,7 @@ class PrfPromptTest {
                 nextMac = { Outcome.Success(mac().also { nextMacs += it }) },
                 salts = salts,
                 authenticators = AuthenticatorPolicy.Biometric,
-                content = content,
+                content = { content },
             )
         }
 

@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import javax.crypto.Mac
 
 internal const val PRF_PROMPT_TITLE = "Unlock shared secret"
+private const val TWO_SALTS_NOTE = "This is the first of two secrets. A second prompt will appear."
 
 internal class PrfPrompt(
     private val prompt: CryptoAuthenticator,
@@ -20,13 +21,17 @@ internal class PrfPrompt(
         nextMac: suspend () -> Outcome<Mac>,
         salts: PrfExtension.Salts,
         authenticators: AuthenticatorPolicy,
-        content: AuthenticationRequest.BodyContent,
+        content: (note: String?) -> AuthenticationRequest.BodyContent,
     ): PrfExtension.Results? {
-        val first = output(mac, salts.first, authenticators, content) ?: return null
-        val secondSalt = salts.second ?: return PrfExtension.Results(first, null)
+        val secondSalt = salts.second
+        val firstTitle = if (secondSalt == null) PRF_PROMPT_TITLE else "$PRF_PROMPT_TITLE (1 of 2)"
+        val first =
+            output(mac, salts.first, firstTitle, authenticators, content(secondSalt?.let { TWO_SALTS_NOTE }))
+                ?: return null
+        if (secondSalt == null) return PrfExtension.Results(first, null)
         val second =
             when (val next = nextMac()) {
-                is Outcome.Success -> output(next.value, secondSalt, authenticators, content)
+                is Outcome.Success -> output(next.value, secondSalt, "$PRF_PROMPT_TITLE (2 of 2)", authenticators, content(null))
                 is Outcome.Failure -> null
             }
         return second?.let { PrfExtension.Results(first, it) }
@@ -35,12 +40,13 @@ internal class PrfPrompt(
     private suspend fun output(
         mac: Mac,
         salt: ByteArray,
+        title: String,
         authenticators: AuthenticatorPolicy,
         content: AuthenticationRequest.BodyContent,
     ): PrfOutput? {
         val authorized =
             prompt.authenticate(
-                title = PRF_PROMPT_TITLE,
+                title = title,
                 cryptoObject = BiometricPrompt.CryptoObject(mac),
                 allowedAuthenticators = authenticators,
                 content = content,

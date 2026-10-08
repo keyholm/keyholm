@@ -336,16 +336,18 @@ class Activity internal constructor(
                                 nextMac = { keyMaterial.macFor(record) },
                                 salts = PrfExtension.salts(prfInputs),
                                 authenticators = hmac.value,
-                                content =
+                                content = { note ->
                                     promptContent(
                                         description =
-                                            "${appLabel(signIn.callingPackage)} wants access to the secret for this passkey. " +
-                                                "Cancel to decline and sign in anyway.",
+                                            "${appLabel(signIn.callingPackage)} wants access to the secret for this passkey.\n" +
+                                                "Cancel to decline and sign in anyway." +
+                                                note?.let { "\n$it" }.orEmpty(),
                                         lastUsedAt = null,
                                         rp = record.rp,
                                         preferRpName = intent.preferRpName(),
                                         userLabel = userLabel(record.user.name, record.user.displayName),
-                                    ),
+                                    )
+                                },
                             )
                         respond(signIn, derSignature, prfResults)
                     }

@@ -560,16 +560,18 @@ class Activity internal constructor(
                 nextMac = { keyMaterial.macFor(pending.credentialId) },
                 salts = PrfExtension.salts(inputs),
                 authenticators = hmacAuthenticators,
-                content =
+                content = { note ->
                     promptContent(
                         description =
-                            "${appLabel(pending.info.callingPackage)} wants access to the secret for this passkey. " +
-                                "Cancel to decline and create the passkey anyway.",
+                            "${appLabel(pending.info.callingPackage)} wants access to the secret for this passkey.\n" +
+                                "Cancel to decline and create the passkey anyway." +
+                                note?.let { "\n$it" }.orEmpty(),
                         lastUsedAt = null,
                         rp = pending.info.rp,
                         preferRpName = intent.preferRpName(),
                         userLabel = userLabel(pending.info.user.name, pending.info.user.displayName),
-                    ),
+                    )
+                },
             )
         val outcome = results?.let(RegistrationPrf::Evaluated) ?: RegistrationPrf.Requested
         respondToRegistration(pending, attestationObject, outcome)
