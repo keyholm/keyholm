@@ -260,6 +260,17 @@ class MainViewModel internal constructor(
             deleteSettingsStoreFile(context),
         ).all { it }
 
+    fun setRpName(
+        record: PasskeyRecord,
+        name: String,
+    ) {
+        viewModelScope.launch {
+            if (!writeStore { passkeyRepo.setRpName(record.credentialId, name) }) {
+                reportError(ErrorMessages.UPDATE_FAILED)
+            }
+        }
+    }
+
     fun applyNativeAppException(
         key: DeniedNativeAppKey,
         action: NativeAppExceptionAction,

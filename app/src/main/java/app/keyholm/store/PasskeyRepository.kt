@@ -99,6 +99,15 @@ class PasskeyRepository internal constructor(
             current.toBuilder().setRecords(idx, record.toProto()).build()
         }
 
+    suspend fun setRpName(
+        credentialId: CredentialId,
+        name: String,
+    ): Result<Unit> =
+        edit(credentialId) { current, idx ->
+            val record = current.getRecords(idx)
+            current.toBuilder().setRecords(idx, record.toBuilder().setRp(record.rp.toBuilder().setName(name))).build()
+        }
+
     suspend fun delete(credentialId: CredentialId): Result<Unit> =
         edit(credentialId) { current, idx -> current.toBuilder().removeRecords(idx).build() }
 

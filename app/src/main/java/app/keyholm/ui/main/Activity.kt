@@ -163,6 +163,7 @@ private fun mainEntryProvider(
         PasskeyDetailsScreen(
             credentialId = route.credentialId,
             viewModel = viewModel,
+            snackbarHostState = snackbarHostState,
             onBack = { backStack.removeLastOrNull() },
         )
     }

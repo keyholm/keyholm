@@ -67,7 +67,7 @@ class PasskeyRepositoryTest {
         discoverable: Boolean = true,
     ) = PasskeyRecord(
         credentialId = credentialId,
-        rp = RelyingParty(id = rpId, name = rpId.value),
+        rp = RelyingParty(id = rpId, name = "Example"),
         user = CredentialUser(handle = userHandle, name = "alice", displayName = "Alice"),
         signCount = 0,
         callingPackage = PackageName("com.example.app"),
@@ -145,15 +145,63 @@ class PasskeyRepositoryTest {
             val repo = PasskeyRepository(dataStore(), deletedKeys::add)
             repo.put(record(credentialId = CredentialId("cred-1")))
 
-            val result = repo.update(record(credentialId = CredentialId("cred-1"), rpId = RpId("changed.example")))
+            val result = repo.update(record(credentialId = CredentialId("cred-1"), likelyInvalid = true))
 
             assertThat(result.isSuccess).isTrue()
             assertThat(
                 repo.passkeys
                     .first()
                     .single()
-                    .rp.id,
-            ).isEqualTo(RpId("changed.example"))
+                    .likelyInvalid,
+            ).isTrue()
+        }
+
+    @Test
+    fun `setting the rp name replaces it`() =
+        runBlocking<Unit> {
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            repo.put(record(credentialId = CredentialId("cred-1")))
+
+            repo.setRpName(CredentialId("cred-1"), "Acme")
+
+            assertThat(
+                repo.passkeys
+                    .first()
+                    .single()
+                    .rp.name,
+            ).isEqualTo("Acme")
+        }
+
+    @Test
+    fun `an empty rp name unsets it`() =
+        runBlocking<Unit> {
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            repo.put(record(credentialId = CredentialId("cred-1")))
+
+            repo.setRpName(CredentialId("cred-1"), "")
+
+            assertThat(
+                repo.passkeys
+                    .first()
+                    .single()
+                    .rp.name,
+            ).isEmpty()
+        }
+
+    @Test
+    fun `an rp name equal to the rp id is not shown`() =
+        runBlocking<Unit> {
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            repo.put(record(credentialId = CredentialId("cred-1")))
+
+            repo.setRpName(CredentialId("cred-1"), "example.com")
+
+            assertThat(
+                repo.passkeys
+                    .first()
+                    .single()
+                    .rp.name,
+            ).isEmpty()
         }
 
     @Test

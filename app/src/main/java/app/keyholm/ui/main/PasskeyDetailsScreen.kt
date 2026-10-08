@@ -26,6 +26,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -46,9 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.BackButton
-import app.keyholm.ui.common.RpIcon
 import app.keyholm.ui.common.Section
-import app.keyholm.ui.common.rpLabel
 import app.keyholm.ui.common.truncated
 import app.keyholm.ui.common.userLabel
 import app.keyholm.util.sha256
@@ -60,7 +59,7 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 
-private fun copyToClipboard(
+internal fun copyToClipboard(
     context: Context,
     label: String,
     value: String,
@@ -281,6 +280,7 @@ private fun PasskeyDetailsContent(
 internal fun PasskeyDetailsScreen(
     credentialId: CredentialId,
     viewModel: MainViewModel,
+    snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -321,12 +321,9 @@ internal fun PasskeyDetailsScreen(
             rows =
                 PasskeyDetailsRows(
                     relyingParty = { shape ->
-                        DetailRow(
-                            "Relying party",
-                            rpLabel(record.rp, preferRpName),
-                            shape,
-                            leadingContent = { RpIcon(iconPack, record.rp, preferRpName) },
-                        )
+                        RelyingPartyRow(record, preferRpName, iconPack, shape) {
+                            renameRpWithUndo(scope, snackbarHostState, viewModel, record, it)
+                        }
                     },
                     user = { shape -> DetailRow("User", userLabel(record.user.name, record.user.displayName), shape) },
                 ),
