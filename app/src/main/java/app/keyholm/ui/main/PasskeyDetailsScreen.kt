@@ -7,6 +7,7 @@ import android.content.Context
 import android.os.PersistableBundle
 import android.security.keystore.KeyProperties
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -42,7 +43,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.keyholm.iconpack.IconPack
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.BackButton
@@ -154,27 +154,24 @@ private fun credentialKeyFingerprint(spki: ByteString): String =
         "%02X".format(Locale.ROOT, it)
     }
 
+private class PasskeyDetailsRows(
+    val relyingParty: @Composable (Shape) -> Unit,
+    val user: @Composable (Shape) -> Unit,
+)
+
 @Composable
 private fun DetailsSection(
     record: PasskeyRecord,
     authenticators: Loadable<KeyAuthenticators>,
-    preferRpName: Boolean,
-    iconPack: IconPack?,
+    rows: PasskeyDetailsRows,
     onViewAttestation: () -> Unit,
 ) {
     val df = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
     val algorithmName = record.keystore.coseAlgorithm.displayName
     val locationLabel = record.keystore.securityLevel.label
     Section(title = "Details") {
-        item { shape ->
-            DetailRow(
-                "Relying party",
-                rpLabel(record.rp, preferRpName),
-                shape,
-                leadingContent = { RpIcon(iconPack, record.rp, preferRpName) },
-            )
-        }
-        item { shape -> DetailRow("User", userLabel(record.user.name, record.user.displayName), shape) }
+        item { shape -> rows.relyingParty(shape) }
+        item { shape -> rows.user(shape) }
         item { shape -> DetailRow("Algorithm", algorithmName, shape) }
         item { shape -> DetailRow("Location", locationLabel, shape) }
         when (authenticators) {
@@ -248,6 +245,37 @@ private fun PasskeyDetailsTopBar(
     )
 }
 
+@Composable
+private fun PasskeyDetailsContent(
+    record: PasskeyRecord,
+    authenticators: Loadable<KeyAuthenticators>,
+    innerPadding: PaddingValues,
+    rows: PasskeyDetailsRows,
+    onViewAttestation: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(innerPadding),
+    ) {
+        if (!record.discoverable) {
+            NonDiscoverableNotice()
+        }
+        if (record.likelyInvalid) {
+            LikelyInvalidWarning()
+        }
+        DetailsSection(
+            record,
+            authenticators = authenticators,
+            rows = rows,
+            onViewAttestation = onViewAttestation,
+        )
+        record.keystore.prfSecurityLevel?.let { PrfSection(it, authenticators) }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PasskeyDetailsScreen(
@@ -286,28 +314,24 @@ internal fun PasskeyDetailsScreen(
     val scope = rememberCoroutineScope()
     val onOpen: () -> Unit = { scope.launch { context.startActivity(viewModel.details.openPasskeyCallerIntent(record)) } }
     Scaffold(topBar = { PasskeyDetailsTopBar(record.rp, preferRpName, onBack, onOpen) }) { innerPadding ->
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(innerPadding),
-        ) {
-            if (!record.discoverable) {
-                NonDiscoverableNotice()
-            }
-            if (record.likelyInvalid) {
-                LikelyInvalidWarning()
-            }
-            DetailsSection(
-                record,
-                authenticators = authenticators,
-                preferRpName = preferRpName,
-                iconPack = iconPack,
-                onViewAttestation = { showAttestationDialog = true },
-            )
-            record.keystore.prfSecurityLevel?.let { PrfSection(it, authenticators) }
-        }
+        PasskeyDetailsContent(
+            record,
+            authenticators = authenticators,
+            innerPadding = innerPadding,
+            rows =
+                PasskeyDetailsRows(
+                    relyingParty = { shape ->
+                        DetailRow(
+                            "Relying party",
+                            rpLabel(record.rp, preferRpName),
+                            shape,
+                            leadingContent = { RpIcon(iconPack, record.rp, preferRpName) },
+                        )
+                    },
+                    user = { shape -> DetailRow("User", userLabel(record.user.name, record.user.displayName), shape) },
+                ),
+            onViewAttestation = { showAttestationDialog = true },
+        )
     }
 
     if (showAttestationDialog) {
