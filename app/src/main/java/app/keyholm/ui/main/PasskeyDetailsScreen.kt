@@ -24,14 +24,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -103,19 +98,13 @@ private fun DetailRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NonDiscoverableInfo() {
-    val tooltip = rememberTooltipState()
-    val scope = rememberCoroutineScope()
-    TooltipBox(
-        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-        tooltip = { PlainTooltip { Text("Non-discoverable passkey") } },
-        state = tooltip,
+private fun NonDiscoverableNotice() {
+    ListItem(
+        leadingContent = { Icon(Icons.Outlined.Info, contentDescription = null) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     ) {
-        IconButton(onClick = { scope.launch { tooltip.show() } }) {
-            Icon(Icons.Outlined.Info, contentDescription = "Non-discoverable passkey")
-        }
+        Text("Non-discoverable passkey")
     }
 }
 
@@ -183,7 +172,6 @@ private fun DetailsSection(
                 rpLabel(record.rp, preferRpName),
                 shape,
                 leadingContent = { RpIcon(iconPack, record.rp, preferRpName) },
-                trailingContent = if (record.discoverable) null else ({ NonDiscoverableInfo() }),
             )
         }
         item { shape -> DetailRow("User", userLabel(record.user.name, record.user.displayName), shape) }
@@ -305,6 +293,9 @@ internal fun PasskeyDetailsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(innerPadding),
         ) {
+            if (!record.discoverable) {
+                NonDiscoverableNotice()
+            }
             if (record.likelyInvalid) {
                 LikelyInvalidWarning()
             }
