@@ -89,10 +89,12 @@ private fun DiscoverabilityProto.isDiscoverable(): Boolean =
         }
     }
 
+internal fun RelyingPartyProto.toDomain(): RelyingParty = RelyingParty(id = RpId(id), name = name)
+
 internal fun PasskeyRecordProto.toDomain(): PasskeyRecord =
     PasskeyRecord(
         credentialId = CredentialId(credentialId),
-        rp = RelyingParty(id = RpId(rp.id), name = rp.name),
+        rp = rp.toDomain(),
         user =
             CredentialUser(
                 handle = UserHandle(user.handle),
