@@ -198,11 +198,6 @@ object WebAuthn {
     const val ALG_ML_DSA_65 = -49
     const val ALG_ML_DSA_87 = -50
 
-    fun supportsAttachment(creationOptions: CreationOptions): Boolean {
-        val attachment = creationOptions.authenticatorSelection?.authenticatorAttachment
-        return attachment.isNullOrEmpty() || attachment == PLATFORM_ATTACHMENT
-    }
-
     val KEYHOLM_AAGUID: Uuid = Uuid.parse("69840def-9dcf-4632-bf87-6ac2e451b4f5")
 
     val ZERO_AAGUID: Uuid = Uuid.NIL

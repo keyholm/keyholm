@@ -27,7 +27,6 @@ import app.keyholm.webauthn.RpId
 import app.keyholm.webauthn.TrustDecision
 import app.keyholm.webauthn.TrustPolicy
 import app.keyholm.webauthn.UserHandle
-import app.keyholm.webauthn.WebAuthn
 import app.keyholm.webauthn.discoverableRequested
 import app.keyholm.webauthn.parseCreationOptions
 import app.keyholm.webauthn.resolveTrustDecision
@@ -198,11 +197,7 @@ internal class RegistrationRequestResolver(
                     }
 
                     is Registration.Ready -> {
-                        if (WebAuthn.supportsAttachment(parsed.value)) {
-                            Registration.Ready(CreateRequest(providerRequest, callingRequest, parsed.value))
-                        } else {
-                            Registration.NoCreateOption(ErrorMessages.DEVICE_BOUND_NOT_SUPPORTED)
-                        }
+                        Registration.Ready(CreateRequest(providerRequest, callingRequest, parsed.value))
                     }
                 }
             }

@@ -27,7 +27,6 @@ internal object ErrorMessages {
     const val MALFORMED_REQUEST = "Invalid passkey request."
     const val MIGRATION_LINK_MALFORMED = "Import list is corrupt."
     const val CHECK_EXISTING_FAILED = "Couldn't check for existing passkeys."
-    const val DEVICE_BOUND_NOT_SUPPORTED = "This site doesn't support Keyholm's device-bound passkeys."
     const val ALREADY_REGISTERED = "You already have a passkey on this device for this identity and site."
     const val BIOMETRICS_NOT_ENROLLED = "Only biometrics are allowed but none were found."
     const val BIOMETRICS_UNAVAILABLE = "Only biometrics are allowed but no biometric device is available."

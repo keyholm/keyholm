@@ -60,6 +60,7 @@ private const val CREDENTIALS = "credentials"
 private const val UNLOCK_ENTRY_TITLE = "Keyholm"
 private const val EXTRA_PREFER_RP_NAME = "app.keyholm.extra.PREFER_RP_NAME"
 private const val EXTRA_NATIVE_APP_TRUST = "app.keyholm.extra.NATIVE_APP_TRUST"
+private const val CROSS_PLATFORM_ATTACHMENT = "cross-platform"
 
 internal fun credentialUri(credentialId: CredentialId): Uri =
     Uri
@@ -131,6 +132,10 @@ class Service internal constructor(
                             callback.onResult(BeginCreateCredentialResponse(emptyList()))
                             return@launch
                         }
+                    if (options.authenticatorSelection?.authenticatorAttachment == CROSS_PLATFORM_ATTACHMENT) {
+                        callback.onResult(BeginCreateCredentialResponse(emptyList()))
+                        return@launch
+                    }
                     val algorithms = offeredAlgorithms(options, settings)
                     if (algorithms.isEmpty()) {
                         callback.onResult(BeginCreateCredentialResponse(emptyList()))
