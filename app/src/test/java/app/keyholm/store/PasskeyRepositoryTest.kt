@@ -205,6 +205,23 @@ class PasskeyRepositoryTest {
         }
 
     @Test
+    fun `setting the user replaces its name and display name`() =
+        runBlocking<Unit> {
+            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
+            repo.put(record(credentialId = CredentialId("cred-1")))
+
+            repo.setUser(CredentialId("cred-1"), "bob", "Bob")
+
+            val user =
+                repo.passkeys
+                    .first()
+                    .single()
+                    .user
+            assertThat(user.name).isEqualTo("bob")
+            assertThat(user.displayName).isEqualTo("Bob")
+        }
+
+    @Test
     fun `update fails when the credential id is not found`() =
         runBlocking<Unit> {
             val repo = PasskeyRepository(dataStore(), deletedKeys::add)

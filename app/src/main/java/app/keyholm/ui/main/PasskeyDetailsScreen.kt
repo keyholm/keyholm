@@ -49,7 +49,6 @@ import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.common.truncated
-import app.keyholm.ui.common.userLabel
 import app.keyholm.util.sha256
 import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.RelyingParty
@@ -325,7 +324,9 @@ internal fun PasskeyDetailsScreen(
                             renameRpWithUndo(scope, snackbarHostState, viewModel, record, it)
                         }
                     },
-                    user = { shape -> DetailRow("User", userLabel(record.user.name, record.user.displayName), shape) },
+                    user = { shape ->
+                        UserRow(record, shape) { renameUserWithUndo(scope, snackbarHostState, viewModel, record, it) }
+                    },
                 ),
             onViewAttestation = { showAttestationDialog = true },
         )

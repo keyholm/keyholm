@@ -271,6 +271,18 @@ class MainViewModel internal constructor(
         }
     }
 
+    fun setUser(
+        record: PasskeyRecord,
+        name: String,
+        displayName: String,
+    ) {
+        viewModelScope.launch {
+            if (!writeStore { passkeyRepo.setUser(record.credentialId, name, displayName) }) {
+                reportError(ErrorMessages.UPDATE_FAILED)
+            }
+        }
+    }
+
     fun applyNativeAppException(
         key: DeniedNativeAppKey,
         action: NativeAppExceptionAction,
