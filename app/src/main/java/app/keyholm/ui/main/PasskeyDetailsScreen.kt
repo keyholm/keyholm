@@ -65,6 +65,22 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 
+private fun copyToClipboard(
+    context: Context,
+    label: String,
+    value: String,
+) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clip =
+        ClipData.newPlainText(label, value).apply {
+            description.extras =
+                PersistableBundle().apply {
+                    putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
+                }
+        }
+    clipboard.setPrimaryClip(clip)
+}
+
 @Composable
 private fun DetailRow(
     label: String,
@@ -76,17 +92,7 @@ private fun DetailRow(
     val context = LocalContext.current
     ListItem(
         selected = false,
-        onClick = {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip =
-                ClipData.newPlainText(label, value).apply {
-                    description.extras =
-                        PersistableBundle().apply {
-                            putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
-                        }
-                }
-            clipboard.setPrimaryClip(clip)
-        },
+        onClick = { copyToClipboard(context, label, value) },
         supportingContent = { Text(value, style = MaterialTheme.typography.bodySmall) },
         leadingContent = leadingContent,
         trailingContent = trailingContent,
