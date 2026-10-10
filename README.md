@@ -152,27 +152,33 @@ However, `root` cannot get to the passkey private key material or extract it.
 
 ## Roadmap
 
-### UX
+### Hybrid transport over QR code (PXP)
 
-- ordering/grouping options of some kind
-- since no play services means no signal API, support at least for editing the
-  name/display name
-- translations if anybody wants them
-
-### Hybrid transport
-
-- CTAP 2.3 BLE hybrid transport support (i.e. scan a QR code with Keyholm)
+- CTAP 2.3 over BLE-only
   - Only requires Nearby devices aka Bluetooth permissions.
+- Claims `FIDO_2_1` and `FIDO_2_3` but just like Chromium's hybrid authenticator without:
+  - `pinUvAuthToken` (PIN/UV auth protocol) - already protected by Noise channel
+  - `hmac-secret` - needs above so we use Chromium's `prf` extension instead
+  - `authenticatorSelection` - the QR scan already selects the device.
+
+### `age` keys over PXP
 
 ### Security
 
-- Password protection **for Keyholm**: this would protect Keyholm from being used,
+- Password protection **for Keyholm's UI**: this would protect Keyholm from being used,
   given physical access, in spite of knowledge of device credential/biometrics access.
   Note that it's **not possible** to fully protect the private keys
   themselves with a password while also keeping them device-bound.
   `root` access will ALWAYS remove any password protection to the keys
   themselves.
 - Device-bound key encrypted **metadata**: would resist a simple filesystem dump
+
+### UX
+
+if anybody wants them:
+
+- ordering/grouping options of some kind
+- translations
 
 ## License
 
