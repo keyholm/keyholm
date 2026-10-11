@@ -1,0 +1,6 @@
+Mostly bug fixes/UX improvements but also:
+
+- Editable RP name, username and display name
+- Non-discoverable passkeys
+
+This will hopefully be the same as v0.1, which will be the first release to guarantee backwards compatibility.
