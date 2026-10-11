@@ -58,6 +58,15 @@ Think of Keyholm as a way to activate the built-in security key on your phone.
   - Android Keystore
   - Tink for encrypting stores
   - `snow` and otherwise Rust for PXP crypto/noise channel
+- Scan a QR code to authenticate on other machines
+  - CTAP 2.3 BLE-only hybrid transport support
+  - Only requires Nearby devices aka Bluetooth permissions.
+  - Claims `FIDO_2_1` and `FIDO_2_3` but just like Chromium's hybrid authenticator without:
+    - `pinUvAuthToken` (PIN/UV auth protocol) - already protected by Noise channel
+    - `hmac-secret` - needs above so we use Chromium's `prf` extension instead
+    - `authenticatorSelection` - the QR scan already selects the device.
+  - Experimental and must be enabled in settings
+  - Tested with [linux-credentials/credentialsd](https://github.com/linux-credentials/credentialsd)
 
 ## Releases
 
@@ -171,16 +180,7 @@ However, `root` cannot get to the passkey private key material or extract it.
 
 ### v1
 
-I'm planning two more big features before v1.
-
-#### Hybrid transport over QR code (PXP)
-
-- CTAP 2.3 over BLE-only
-  - Only requires Nearby Devices aka Bluetooth permissions.
-- Claims `FIDO_2_1` and `FIDO_2_3` but just like Chromium's hybrid authenticator without:
-  - `pinUvAuthToken` (PIN/UV auth protocol) - already protected by Noise channel
-  - `hmac-secret` - needs above so we use Chromium's `prf` extension instead
-  - `authenticatorSelection` - the QR scan already selects the device.
+I'm planning one more big feature before v1.
 
 #### Security
 
