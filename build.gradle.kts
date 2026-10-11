@@ -4,7 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose") version "2.4.21" apply false
     id("org.jetbrains.kotlin.plugin.serialization") version "2.4.21" apply false
     id("com.google.protobuf") version "0.10.0" apply false
-    id("com.diffplug.spotless") version "8.10.3"
+    id("com.diffplug.spotless") version "8.10.4"
     id("dev.detekt") version "2.0.0-alpha.6" apply false
 }
 
