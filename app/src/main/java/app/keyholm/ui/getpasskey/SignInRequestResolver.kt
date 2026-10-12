@@ -9,7 +9,6 @@ import app.keyholm.provider.credentialId
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
-import app.keyholm.store.StoredRecordException
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.Outcome
 import app.keyholm.util.logger
@@ -27,8 +26,6 @@ import app.keyholm.webauthn.WebAuthn
 import app.keyholm.webauthn.parseRequestOptionsOrLog
 import app.keyholm.webauthn.resolveTrustDecision
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.flow.first
-import java.io.IOException
 import java.security.Signature
 
 internal class SignInRequestResolver(
@@ -54,7 +51,8 @@ internal class SignInRequestResolver(
         if (providerRequest == null || option == null) return SignInResult.Internal()
 
         val records =
-            passkeysOrLog().getOrElse {
+            passkeyRepo.storedPasskeys().getOrElse {
+                log.e(it) { "couldn't read the passkey store" }
                 return SignInResult.Interrupted(ErrorMessages.LOOKUP_FAILED)
             }
 
@@ -124,17 +122,6 @@ internal class SignInRequestResolver(
             is Outcome.Failure -> SignInResult.Internal(ctx.toastMessage)
         }
     }
-
-    private suspend fun passkeysOrLog(): Result<List<PasskeyRecord>> =
-        try {
-            Result.success(passkeyRepo.passkeys.first())
-        } catch (e: IOException) {
-            log.e(e) { "couldn't read the passkey store" }
-            Result.failure(e)
-        } catch (e: StoredRecordException) {
-            log.e(e) { "couldn't read the passkey store" }
-            Result.failure(e)
-        }
 
     private suspend fun recordDenial(decision: TrustDecision.Denied) {
         if (decision !is TrustDecision.Denied.NativeApp) return

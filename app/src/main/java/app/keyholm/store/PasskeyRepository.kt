@@ -70,6 +70,15 @@ class PasskeyRepository internal constructor(
             .map { proto -> proto.recordsList.map { it.toDomain() } }
             .flowOn(dispatcher)
 
+    suspend fun storedPasskeys(): Result<List<PasskeyRecord>> =
+        try {
+            Result.success(passkeys.first())
+        } catch (e: IOException) {
+            Result.failure(e)
+        } catch (e: StoredRecordException) {
+            Result.failure(e)
+        }
+
     suspend fun summary(): PasskeySummary = summarize(passkeys.first())
 
     suspend fun put(record: PasskeyRecord): Result<Unit> {

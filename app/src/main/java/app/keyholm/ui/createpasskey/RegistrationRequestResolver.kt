@@ -11,7 +11,6 @@ import app.keyholm.provider.CreationOffer
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
-import app.keyholm.store.StoredRecordException
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.B64
 import app.keyholm.webauthn.Caller
@@ -34,7 +33,6 @@ import co.touchlab.kermit.Logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerializationException
-import java.io.IOException
 
 private val USER_ID_BYTES = 1..64
 
@@ -50,13 +48,8 @@ internal class RegistrationRequestResolver(
 ) {
     suspend fun prepareRegistration(offer: CreationOffer): Registration<RegistrationContext> {
         val existing =
-            try {
-                passkeyRepo.passkeys.first()
-            } catch (e: IOException) {
-                log.e(e) { "couldn't read the passkey store" }
-                return Registration.Interrupted(ErrorMessages.CHECK_EXISTING_FAILED)
-            } catch (e: StoredRecordException) {
-                log.e(e) { "couldn't read the passkey store" }
+            passkeyRepo.storedPasskeys().getOrElse {
+                log.e(it) { "couldn't read the passkey store" }
                 return Registration.Interrupted(ErrorMessages.CHECK_EXISTING_FAILED)
             }
 
