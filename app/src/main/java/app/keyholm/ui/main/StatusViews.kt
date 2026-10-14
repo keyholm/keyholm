@@ -107,7 +107,15 @@ internal fun EmptyPasskeysMessage(modifier: Modifier = Modifier) {
 }
 
 internal const val LOAD_ERROR = "Failed to load data."
-internal const val UNRECOGNIZED_DATA = "This version of Keyholm can't load the app data."
+private const val UNRECOGNIZED_DATA = "This version of Keyholm can't load the app data."
+private const val STORE_KEY_LOST = "Keyholm's data cannot be decrypted, clear app data."
+
+internal fun loadErrorMessage(vararg stored: Stored<*>): String =
+    when {
+        stored.any { it is Stored.Unrecoverable } -> STORE_KEY_LOST
+        stored.any { it is Stored.Unrecognized } -> UNRECOGNIZED_DATA
+        else -> LOAD_ERROR
+    }
 
 @Composable
 internal fun LoadErrorCard(

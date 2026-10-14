@@ -45,14 +45,13 @@ import app.keyholm.store.exceptionKeys
 import app.keyholm.store.toExceptionKeys
 import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.appLabel
-import app.keyholm.ui.main.LOAD_ERROR
 import app.keyholm.ui.main.LoadErrorCard
 import app.keyholm.ui.main.MainUiState
 import app.keyholm.ui.main.MainViewModel
 import app.keyholm.ui.main.NativeAppExceptionAction
 import app.keyholm.ui.main.Stored
 import app.keyholm.ui.main.SwipeActionBackground
-import app.keyholm.ui.main.UNRECOGNIZED_DATA
+import app.keyholm.ui.main.loadErrorMessage
 import app.keyholm.webauthn.NativeAppTrust
 import app.keyholm.webauthn.PackageName
 import kotlinx.coroutines.launch
@@ -93,7 +92,7 @@ fun ExceptionsScreen(
         ) {
             val nativeApps = uiState.nativeApps
             if (nativeApps !is Stored.Available) {
-                LoadErrorCard(if (nativeApps is Stored.Unrecognized) UNRECOGNIZED_DATA else LOAD_ERROR, Modifier.fillMaxSize())
+                LoadErrorCard(loadErrorMessage(nativeApps), Modifier.fillMaxSize())
                 return@Column
             }
             val denied =

@@ -7,10 +7,10 @@ internal object ErrorMessages {
     const val NATIVE_APP_TRUST_DENIED =
         "Keyholm is set to block native apps from using passkeys."
 
-    const val SAVE_FAILED = "Failed to save passkey, check device storage."
-    const val UPDATE_FAILED = "Failed to update passkey, check device storage."
+    const val SAVE_FAILED = "Failed to save passkey."
+    const val UPDATE_FAILED = "Failed to update passkey."
     const val SETTINGS_SAVE_FAILED = "Failed to update setting, check device storage."
-    const val DENIAL_RECORD_FAILED = "Failed to record blocked app, check device storage."
+    const val DENIAL_RECORD_FAILED = "Failed to record blocked app."
     const val ICON_PACK_NOT_A_PACK = "That file isn't an icon pack."
     const val ICON_PACK_INSTALL_FAILED = "Failed to save icon pack, check device storage."
     const val ICON_PACK_REMOVE_FAILED = "Failed to remove icon pack, check device storage."

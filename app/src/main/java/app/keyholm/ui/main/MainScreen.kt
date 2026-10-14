@@ -151,8 +151,7 @@ private fun PasskeyListContent(
         val passkeys = uiState.passkeys
         val placeholders = uiState.migrationPlaceholders
         if (passkeys !is Stored.Available || placeholders !is Stored.Available) {
-            val unrecognized = passkeys is Stored.Unrecognized || placeholders is Stored.Unrecognized
-            item { LoadErrorCard(if (unrecognized) UNRECOGNIZED_DATA else LOAD_ERROR, Modifier.fillParentMaxSize()) }
+            item { LoadErrorCard(loadErrorMessage(passkeys, placeholders), Modifier.fillParentMaxSize()) }
             return@LazyColumn
         }
         if (passkeys.value.isEmpty() && placeholders.value.isEmpty()) {

@@ -208,6 +208,8 @@ dependencies {
     implementation("androidx.credentials:credentials:1.6.0")
     implementation("androidx.datastore:datastore-preferences:1.3.0")
     implementation("androidx.datastore:datastore:1.3.0")
+    implementation("androidx.datastore:datastore-tink:1.3.0")
+    implementation("com.google.crypto.tink:tink-android:1.24.0")
     implementation("com.google.protobuf:protobuf-javalite:4.36.2")
     implementation("androidx.biometric:biometric:1.4.0-alpha07")
     implementation("androidx.biometric:biometric-compose:1.4.0-alpha07")

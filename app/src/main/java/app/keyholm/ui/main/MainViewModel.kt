@@ -19,6 +19,7 @@ import app.keyholm.store.MigrationRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.StoredRecordException
+import app.keyholm.store.isStoreUnrecoverable
 import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import app.keyholm.Application as KeyholmApplication
 
 private const val STATE_STOP_TIMEOUT_MS = 5_000L
 
@@ -61,6 +63,8 @@ sealed interface Stored<out T> {
     data object Unavailable : Stored<Nothing>
 
     data object Unrecognized : Stored<Nothing>
+
+    data object Unrecoverable : Stored<Nothing>
 }
 
 data class DeviceStatus(
@@ -147,7 +151,13 @@ class MainViewModel internal constructor(
     private fun <T> Flow<T>.stored(): Flow<Stored<T>> =
         map<T, Stored<T>> { Stored.Available(it) }.retryWhen { e, _ ->
             log.e(e) { "store read failed" }
-            emit(if (e is StoredRecordException) Stored.Unrecognized else Stored.Unavailable)
+            emit(
+                when {
+                    e.isStoreUnrecoverable() -> Stored.Unrecoverable
+                    e is StoredRecordException -> Stored.Unrecognized
+                    else -> Stored.Unavailable
+                },
+            )
             refreshTicks.drop(1).first()
             true
         }
@@ -174,7 +184,10 @@ class MainViewModel internal constructor(
     }
 
     fun lockIfIdle() {
-        if (!unlocking) unlocked.value = false
+        if (!unlocking) {
+            unlocked.value = false
+            getApplication<KeyholmApplication>().stores.close()
+        }
     }
 
     private val settingsState: Flow<SettingsState> =

@@ -3,9 +3,10 @@ package app.keyholm.ui.main
 import androidx.biometric.BiometricPrompt
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.store.RecordLifecycle
+import app.keyholm.store.isStoreLocked
 import app.keyholm.store.readStore
-import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
+import app.keyholm.util.logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -78,6 +79,7 @@ class PendingDeleteController<Id, R>(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val onError: (String) -> Unit,
 ) {
+    private val log = logger()
     private val pending: PendingDeletes<Id, R> = MutableStateFlow(emptyMap())
 
     val batch: Flow<List<R>> = pending.map { it.values.map(Pending<R>::record) }
@@ -143,6 +145,13 @@ class PendingDeleteController<Id, R>(
     private suspend fun forget(id: Id) = write { store.delete(id) }
 
     private suspend fun write(block: suspend () -> Result<Unit>) {
-        if (!writeStore(block)) onError(ErrorMessages.UPDATE_FAILED)
+        block().onFailure { e ->
+            if (e.isStoreLocked()) {
+                log.w(e) { "store locked, delete stays pending" }
+            } else {
+                log.e(e) { "store write failed" }
+                onError(ErrorMessages.UPDATE_FAILED)
+            }
+        }
     }
 }

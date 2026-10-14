@@ -53,6 +53,7 @@ Think of Keyholm as a way to activate the built-in security key on your phone.
 - _account list_ export/import
   - for making it marginally easier to switch devices
   - remember all keys still need to be manually recreated on the new device
+- metadata/state encrypted at rest
 
 ## Releases
 
@@ -175,7 +176,6 @@ However, `root` cannot get to the passkey private key material or extract it.
   themselves with a password while also keeping them device-bound.
   `root` access will ALWAYS remove any password protection to the keys
   themselves.
-- Device-bound key encrypted **metadata**: would resist a simple filesystem dump
 
 ### UX
 

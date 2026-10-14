@@ -1,1 +1,6 @@
-UI & stability improvements and APK size optimizations.
+This release has one big change:
+
+- Keyholm now always encrypts its metadata at rest
+  - App data from previous versions is migrated
+
+Otherwise UI & stability improvements and APK size optimizations.

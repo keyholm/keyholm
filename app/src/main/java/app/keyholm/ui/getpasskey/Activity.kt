@@ -16,6 +16,7 @@ import androidx.credentials.provider.PendingIntentHandler
 import androidx.credentials.provider.ProviderGetCredentialRequest
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import app.keyholm.Application
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.provider.PendingSignatures
 import app.keyholm.provider.credentialId
@@ -133,6 +134,11 @@ class Activity internal constructor(
         SignInRequestResolver(applicationContext, intent, passkeyRepo, deniedAppsRepo, keyMaterial, dispatcher)
     }
     private val log = logger()
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) (applicationContext as Application).stores.close()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

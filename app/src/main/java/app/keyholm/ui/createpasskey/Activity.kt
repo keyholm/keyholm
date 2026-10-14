@@ -11,6 +11,7 @@ import androidx.credentials.exceptions.domerrors.DomError
 import androidx.credentials.provider.ProviderCreateCredentialRequest
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import app.keyholm.Application
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.keystore.SecureKeyManager
@@ -186,6 +187,11 @@ class Activity internal constructor(
     }
     private val ceremony by lazy {
         RegistrationCeremony(this, dispatcher, keyMaterial, cryptoPrompt, prompts, requestResolver)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) (applicationContext as Application).stores.close()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

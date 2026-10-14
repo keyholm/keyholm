@@ -5,19 +5,25 @@ import java.io.IOException
 
 private val log = Logger.withTag("app.keyholm.store.StoreAccess")
 
+private fun logFailure(
+    e: Throwable,
+    operation: String,
+) {
+    if (e.isStoreLocked()) log.w(e) { "store $operation failed, device locked" } else log.e(e) { "store $operation failed" }
+}
+
 internal suspend fun <T> readStore(read: suspend () -> T): T? =
     try {
         read()
     } catch (e: IOException) {
-        log.e(e) { "store read failed" }
+        logFailure(e, "read")
         null
     } catch (e: StoredRecordException) {
-        log.e(e) { "store read failed" }
+        logFailure(e, "read")
         null
     }
 
 internal suspend fun writeStore(write: suspend () -> Result<Unit>): Boolean =
     write()
-        .onFailure {
-            log.e(it) { "store write failed" }
-        }.isSuccess
+        .onFailure { logFailure(it, "write") }
+        .isSuccess

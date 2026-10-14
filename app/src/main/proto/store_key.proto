@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package app.keyholm.store.proto;
+
+option java_package = "app.keyholm.store.proto";
+option java_multiple_files = true;
+
+message StoreKeysetProto {
+  oneof protection {
+    DeviceKeysetProto device = 1;
+  }
+}
+
+message DeviceKeysetProto {
+  bytes salt = 1;
+  bytes keyset = 2;
+}

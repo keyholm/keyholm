@@ -56,6 +56,7 @@ import app.keyholm.ui.common.rememberAppIcon
 import app.keyholm.ui.main.settings.SECTION_TITLE_ACCOUNT_MIGRATION
 import app.keyholm.ui.main.settings.SECTION_TITLE_CONTRIBUTE
 import app.keyholm.ui.main.settings.SECTION_TITLE_KEY_CREATION
+import app.keyholm.ui.main.settings.SECTION_TITLE_SECURITY
 import app.keyholm.ui.main.settings.SECTION_TITLE_SIGNATURE_ALGORITHMS
 import app.keyholm.ui.main.settings.SECTION_TITLE_TROUBLESHOOTING
 import app.keyholm.ui.main.settings.SECTION_TITLE_TRUST_BEHAVIOR
@@ -129,6 +130,23 @@ private val HELP_INTRO =
     but it only ever supports the latest Android version.
 
     Keyholm does not, cannot and will never use the network.
+    """.trimIndent()
+
+private val HELP_BODY_SECURITY =
+    """
+    There are a number of dimensions to protecting Keyholm and its data. Remember that the most vital data,
+    the private keys, are _always_ protected by user authentication and by the secure hardware.
+
+    Keyholm's metadata/state, besides the settings, is encrypted with AES-GCM.
+    The random DEK is stored wrapped with AES-GCM under a KEK derived from a device-bound, Android keystore HMAC key
+    and a random salt.
+
+    Together this means that the store files sit on the filesystem encrypted at rest with
+    said DEK, which itself is protected by a key that never leaves secure
+    hardware. Note that both the output of the HMAC and the DEK reside in process memory.
+
+    The security options and descriptions here are about protecting use of the app's interface as well as its metadata.
+    All the options in this section currently use non-cryptographic prompts to protect Keyholm and its UI.
     """.trimIndent()
 
 private val HELP_BODY_TRUST_BEHAVIOR =
@@ -211,6 +229,7 @@ private data class HelpSection(
 
 private val HELP_SECTIONS =
     listOf(
+        HelpSection(SECTION_TITLE_SECURITY, HELP_BODY_SECURITY),
         HelpSection(SECTION_TITLE_TRUST_BEHAVIOR, HELP_BODY_TRUST_BEHAVIOR),
         HelpSection(SECTION_TITLE_KEY_CREATION, HELP_BODY_KEY_CREATION),
         HelpSection(SECTION_TITLE_SIGNATURE_ALGORITHMS, HELP_BODY_SIGNATURE_ALGORITHMS),
