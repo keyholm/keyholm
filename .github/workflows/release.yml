@@ -25,6 +25,14 @@ jobs:
             exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: Ensure a changelog exists for this version
+        run: |
+          code=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
+          changelog="fastlane/metadata/android/en-US/changelogs/$code.txt"
+          if [ ! -s "$changelog" ]; then
+            echo "::error file=$changelog::missing changelog for versionCode $code"
+            exit 1
+          fi
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           install: true
