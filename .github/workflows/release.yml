@@ -32,6 +32,8 @@ jobs:
           minimum_release_age: 7d
       - name: Check formatting, lint and test
         run: gradle -PcheckDependencyVersions check
+      - name: Check fastlane metadata
+        uses: ./.github/actions/fastlane
       - name: Build unsigned release APK
         run: gradle assembleRelease
       - name: Stage unsigned APK

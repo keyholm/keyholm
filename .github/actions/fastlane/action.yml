@@ -1,0 +1,8 @@
+name: Check fastlane metadata
+description: Run fdroiddata's fastlane check against the checked out commit
+
+runs:
+  using: docker
+  image: docker://registry.gitlab.com/fdroid/fdroidserver:buildserver
+  entrypoint: bash
+  args: [-l, -eo, pipefail, .github/actions/fastlane/check.sh]

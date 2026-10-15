@@ -19,3 +19,5 @@ jobs:
           minimum_release_age: 7d
       - name: Check formatting, lint and test
         run: gradle check
+      - name: Check fastlane metadata
+        uses: ./.github/actions/fastlane

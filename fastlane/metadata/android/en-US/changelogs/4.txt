@@ -1,6 +1,6 @@
 Keyholm's first release on fdroid! It's quite feature complete already when it comes to single-device passkeys:
 
-- Passkey creation/passkey use as an Android passkey service
+- Passkey creation/use as an Android passkey service
 - Passkey management
 - Extensive settings for configuring exactly how to create/use your passkeys
 - PRF support
@@ -9,4 +9,4 @@ Keyholm's first release on fdroid! It's quite feature complete already when it c
 - Editable RP name, username and display name
 - Non-discoverable passkeys
 
-This will hopefully be the same as v0.1, which will be the first release to guarantee backwards compatibility.
+This should be the same as v0.1, which will be the first release with backwards compatibility.
