@@ -58,9 +58,13 @@ Think of Keyholm as a way to activate the built-in security key on your phone.
 
 [<img src="docs/badge_obtainium.png"
   alt="Get it on Obtainium" width="161" height="48">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%7B%22id%22%3A%22app.keyholm%22%2C%22url%22%3A%22https%3A%2F%2Fgithub.com%2Fkeyholm%2Fkeyholm%22%2C%22author%22%3A%22keyholm%22%2C%22name%22%3A%22Keyholm%22%2C%22additionalSettings%22%3A%22%7B%5C%22apkFilterRegEx%5C%22%3A%5C%22%5Ekeyholm%5C%5C%5C%5C.apk%24%5C%22%2C%5C%22includePrereleases%5C%22%3Atrue%7D%22%7D)
+&nbsp; &nbsp; &nbsp; &nbsp;
+[<img src="docs/badge_f-droid.png"
+  alt="Get it on F-Droid"
+  height="48">](https://f-droid.org/packages/app.keyholm)
 
 Releases are done via GitHub workflows, see the releases themselves for how to
-verify provenance of the artifacts.
+verify provenance of the artifacts. Remember that F-Droid releases are significantly delayed.
 
 ### Verification
 
