@@ -45,6 +45,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
@@ -82,21 +83,25 @@ private const val ANDROID_DEVICE_CREDENTIAL =
 
 private fun String.reflowParagraphs(): String = split(Regex("\n{2,}")).joinToString("\n") { it.replace('\n', ' ') }
 
-private val INLINE_MARKUP = Regex("""\[([^]]+)]\(([^)]+)\)|\*\*([^*]+)\*\*""")
+private val INLINE_MARKUP =
+    Regex("""\[(?<label>[^]]+)]\((?<url>[^)]+)\)|\*\*(?<bold>[^*]+)\*\*|_(?<italic>[^_]+)_""")
 
 @Composable
-private fun linkedText(raw: String): AnnotatedString {
+private fun formattedText(raw: String): AnnotatedString {
     val text = raw.reflowParagraphs()
     return remember(text) {
         buildAnnotatedString {
             var cursor = 0
             for (match in INLINE_MARKUP.findAll(text)) {
                 append(text.substring(cursor, match.range.first))
-                val (linkLabel, url, boldText) = match.destructured
-                if (url.isNotEmpty()) {
-                    withLink(LinkAnnotation.Url(url)) { append(linkLabel) }
-                } else {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(boldText) }
+                val groups = match.groups
+                val url = groups["url"]
+                val bold = groups["bold"]
+                val italic = groups["italic"]
+                when {
+                    url != null -> withLink(LinkAnnotation.Url(url.value)) { append(groups["label"]?.value.orEmpty()) }
+                    bold != null -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(bold.value) }
+                    italic != null -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(italic.value) }
                 }
                 cursor = match.range.last + 1
             }
@@ -236,7 +241,7 @@ private fun HelpSectionView(section: HelpSection) {
                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                 shapes = ListItemDefaults.shapes(shape = shape),
             ) {
-                Text(linkedText(section.body), style = MaterialTheme.typography.bodyMedium)
+                Text(formattedText(section.body), style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
@@ -348,7 +353,7 @@ fun HelpScreen(onBack: () -> Unit) {
                         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                         shapes = ListItemDefaults.shapes(shape = shape),
                     ) {
-                        Text(linkedText(HELP_INTRO), style = MaterialTheme.typography.bodyMedium)
+                        Text(formattedText(HELP_INTRO), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
