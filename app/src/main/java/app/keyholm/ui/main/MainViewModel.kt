@@ -219,11 +219,6 @@ class MainViewModel internal constructor(
 
     val iconPacks = IconPackController(iconPackStorage, viewModelScope, reportError).also(::addCloseable)
 
-    init {
-        pendingDeletes.resume()
-        placeholderDeletes.resume()
-    }
-
     fun refresh() {
         refreshTicks.update { it + 1 }
     }

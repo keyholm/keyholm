@@ -227,6 +227,10 @@ private fun MainContent(importEntries: List<MigrationExportEntry>) {
         viewModel.errors.collect { snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Long) }
     }
 
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        viewModel.pendingDeletes.resume()
+        viewModel.placeholderDeletes.resume()
+    }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.lockIfIdle() }
 
     // Launchers must be registered unconditionally

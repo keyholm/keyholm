@@ -87,9 +87,11 @@ class PendingDeleteController<Id, R>(
             val now = Instant.now()
             val stored = readStore { store.records.first() } ?: return@launch
             val pendingFromStore =
-                stored.mapNotNull { record ->
-                    (store.lifecycle(record) as? RecordLifecycle.PendingDelete)?.let { record to it.at }
-                }
+                stored
+                    .filterNot { store.id(it) in pending.value }
+                    .mapNotNull { record ->
+                        (store.lifecycle(record) as? RecordLifecycle.PendingDelete)?.let { record to it.at }
+                    }
             val (overdue, inFlight) = pendingFromStore.partition { (_, at) -> !at.isAfter(now) }
             overdue.forEach { (record, _) -> deleteKeyMaterial(record) }
             overdue.forEach { (record, _) -> forget(store.id(record)) }
