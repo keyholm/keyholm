@@ -1,7 +1,6 @@
 package app.keyholm.ui.main
 
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.keyholm.iconpack.IconPackController
@@ -12,7 +11,6 @@ import app.keyholm.provider.setCredentialProviderComponentEnabled
 import app.keyholm.settings.Settings
 import app.keyholm.settings.SettingsController
 import app.keyholm.settings.SettingsRepository
-import app.keyholm.settings.deleteSettingsStoreFile
 import app.keyholm.store.DeniedNativeAppKey
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.DeniedNativeApps
@@ -20,9 +18,6 @@ import app.keyholm.store.MigrationPlaceholder
 import app.keyholm.store.MigrationRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
-import app.keyholm.store.deleteDeniedNativeAppStoreFile
-import app.keyholm.store.deleteMigrationStoreFile
-import app.keyholm.store.deletePasskeyStoreFile
 import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
@@ -105,7 +100,7 @@ private data class StoresState(
 
 class MainViewModel internal constructor(
     application: Application,
-    private val dispatcher: CoroutineDispatcher,
+    dispatcher: CoroutineDispatcher,
     renderDispatcher: CoroutineDispatcher,
 ) : AndroidViewModel(application) {
     constructor(application: Application) : this(application, Dispatchers.IO, Dispatchers.Default)
@@ -222,38 +217,6 @@ class MainViewModel internal constructor(
     fun refresh() {
         refreshTicks.update { it + 1 }
     }
-
-    fun resetEverything() {
-        pendingDeletes.clear()
-        placeholderDeletes.clear()
-        viewModelScope.launch {
-            withContext(dispatcher) { SecureKeyManager().deleteAllKeys() }
-            val failure =
-                listOf(
-                    passkeyRepo.saveAll(emptyList()),
-                    migrationRepo.saveAll(emptyList()),
-                    deniedAppsRepo.clear(),
-                    settingsRepo.reset(),
-                ).firstNotNullOfOrNull { it.exceptionOrNull() }
-            if (failure != null) {
-                log.e(failure) { "reset failed, deleting the store files" }
-                val deleted = withContext(dispatcher) { deleteStoreFiles(getApplication<Application>()) }
-                if (!deleted) {
-                    reportError(ErrorMessages.UPDATE_FAILED)
-                    return@launch
-                }
-            }
-            refresh()
-        }
-    }
-
-    private fun deleteStoreFiles(context: Context): Boolean =
-        listOf(
-            deletePasskeyStoreFile(context),
-            deleteMigrationStoreFile(context),
-            deleteDeniedNativeAppStoreFile(context),
-            deleteSettingsStoreFile(context),
-        ).all { it }
 
     fun setRpName(
         record: PasskeyRecord,

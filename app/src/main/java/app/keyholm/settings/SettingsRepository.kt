@@ -3,11 +3,9 @@ package app.keyholm.settings
 import android.content.Context
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
-import androidx.datastore.preferences.preferencesDataStoreFile
 import app.keyholm.Application
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.webauthn.AlgorithmFamily
@@ -24,11 +22,6 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 
 internal const val SETTINGS_STORE_NAME = "settings"
-
-internal fun deleteSettingsStoreFile(context: Context): Boolean {
-    val file = context.preferencesDataStoreFile(SETTINGS_STORE_NAME)
-    return !file.exists() || file.delete()
-}
 
 internal object SettingsKeys {
     val deviceBoundWarningDismissed = booleanPreferencesKey("device_bound_warning_dismissed")
@@ -74,14 +67,6 @@ class SettingsRepository(
             .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
             .map { it.toSettings(appContext, dispatcher) }
             .flowOn(dispatcher)
-
-    suspend fun reset(): Result<Unit> =
-        try {
-            dataStore.edit { it.clear() }
-            Result.success(Unit)
-        } catch (e: IOException) {
-            Result.failure(e)
-        }
 }
 
 internal suspend fun Preferences.toSettings(

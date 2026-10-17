@@ -144,7 +144,6 @@ private fun mainEntryProvider(
     entry<SettingsRoute> {
         SettingsScreen(
             viewModel = viewModel,
-            cryptoPrompt = cryptoPrompt,
             onBack = { backStack.removeLastOrNull() },
             onOpenHelp = { backStack.add(HelpRoute) },
             onOpenExceptions = { backStack.add(ExceptionsRoute) },

@@ -2,7 +2,6 @@ package app.keyholm.store
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.dataStoreFile
 import app.keyholm.Application
 import app.keyholm.store.proto.DeniedNativeAppsProto
 import app.keyholm.webauthn.AssetLinkStatement
@@ -18,11 +17,6 @@ import java.io.IOException
 import java.time.Instant
 
 internal const val DENIED_NATIVE_APPS_STORE_FILE = "denied_native_apps.pb"
-
-internal fun deleteDeniedNativeAppStoreFile(context: Context): Boolean {
-    val file = context.dataStoreFile(DENIED_NATIVE_APPS_STORE_FILE)
-    return !file.exists() || file.delete()
-}
 
 class DeniedNativeAppRepository internal constructor(
     private val dataStore: DataStore<DeniedNativeAppsProto>,
@@ -49,8 +43,6 @@ class DeniedNativeAppRepository internal constructor(
     suspend fun revoke(key: DeniedNativeAppKey) = update { it.revoke(key, Instant.now()) }
 
     suspend fun dismiss(key: DeniedNativeAppKey) = update { it.dismiss(key) }
-
-    suspend fun clear() = update { DeniedNativeApps() }
 
     suspend fun clearAccepted() = update { it.copy(accepted = emptyMap()) }
 

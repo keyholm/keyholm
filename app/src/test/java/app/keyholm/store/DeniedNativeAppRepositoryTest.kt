@@ -103,17 +103,4 @@ class DeniedNativeAppRepositoryTest {
                     .denied.keys,
             ).containsExactly(key("example.com", "com.pending", setOf("CC:DD")))
         }
-
-    @Test
-    fun `clear empties the store`() =
-        runBlocking<Unit> {
-            val repo = DeniedNativeAppRepository(dataStore())
-            repo.record(RpId("example.com"), PackageName("com.a"), CertFingerprint.of(setOf("AA")))
-            repo.accept(key("example.com", "com.b", setOf("BB")))
-
-            repo.clear()
-
-            assertThat(repo.nativeApps.first().denied).isEmpty()
-            assertThat(repo.accepted.first()).isEmpty()
-        }
 }

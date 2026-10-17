@@ -134,10 +134,6 @@ class SecureKeyManager {
         if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
     }
 
-    fun deleteAllKeys() {
-        keyStore.aliases().toList().forEach { keyStore.deleteEntry(it) }
-    }
-
     fun certificateChainPem(credentialId: CredentialId): List<String> =
         keyStore
             .getCertificateChain(alias(credentialId))

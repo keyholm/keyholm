@@ -260,19 +260,6 @@ class PasskeyRepositoryTest {
         }
 
     @Test
-    fun `saveAll replaces the whole set`() =
-        runBlocking<Unit> {
-            val repo = PasskeyRepository(dataStore(), deletedKeys::add)
-            repo.put(record(credentialId = CredentialId("cred-1")))
-
-            repo.saveAll(
-                listOf(record(credentialId = CredentialId("cred-2")), record(credentialId = CredentialId("cred-3"))),
-            )
-
-            assertThat(repo.passkeys.first().map { it.credentialId.b64 }).containsExactly("cred-2", "cred-3")
-        }
-
-    @Test
     fun `summary counts records and reports the latest last-used time`() =
         runBlocking<Unit> {
             val repo = PasskeyRepository(dataStore(), deletedKeys::add)

@@ -132,10 +132,6 @@ class PendingDeleteController<Id, R>(
         scope.launch { undone.forEach { restore(it.record) } }
     }
 
-    fun clear() {
-        pending.cancelAll()
-    }
-
     suspend fun planFor(record: R): DeletePlan = withContext(dispatcher) { store.planDelete(record) }
 
     private suspend fun deleteKeyMaterial(record: R) {

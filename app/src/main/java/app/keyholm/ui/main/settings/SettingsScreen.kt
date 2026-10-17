@@ -1,6 +1,5 @@
 package app.keyholm.ui.main.settings
 
-import androidx.biometric.AuthenticationRequest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,9 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -35,7 +32,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,21 +41,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import app.keyholm.store.PasskeyRecord
-import app.keyholm.ui.common.AuthenticatorsResolution
 import app.keyholm.ui.common.BackButton
-import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.Section
-import app.keyholm.ui.common.resolveCreateAuthenticators
 import app.keyholm.ui.main.DeviceStatusRows
-import app.keyholm.ui.main.LOAD_ERROR
 import app.keyholm.ui.main.MainUiState
 import app.keyholm.ui.main.MainViewModel
 import app.keyholm.ui.main.Stored
 import app.keyholm.webauthn.NativeAppTrust
 import app.keyholm.webauthn.TrustMode
-import kotlinx.coroutines.launch
-import java.util.Locale
 
 private const val TITLE_SETTINGS = "Settings"
 private const val CONTENT_DESCRIPTION_HELP = "Help"
@@ -212,14 +201,9 @@ private fun NativeAppTrustRow(
 }
 
 private const val LABEL_RESET_SETTINGS = "Settings"
-private const val LABEL_ALL_DATA = "All data"
-private const val DESCRIPTION_ALL_DATA = "Deletes every passkey and its hardware key. This cannot be undone."
 
 @Composable
-private fun ResetSection(
-    viewModel: MainViewModel,
-    onRequestResetConfirm: () -> Unit,
-) {
+private fun ResetSection(viewModel: MainViewModel) {
     Section(title = SECTION_TITLE_RESET) {
         item { shape ->
             ListItem(
@@ -233,65 +217,8 @@ private fun ResetSection(
                 Text(LABEL_RESET_SETTINGS)
             }
         }
-        item { shape ->
-            ListItem(
-                selected = false,
-                onClick = onRequestResetConfirm,
-                supportingContent = {
-                    Text(DESCRIPTION_ALL_DATA, style = MaterialTheme.typography.bodySmall)
-                },
-                leadingContent = {
-                    Icon(
-                        Icons.Default.DeleteForever,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                },
-                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                verticalAlignment = Alignment.CenterVertically,
-                shapes = ListItemDefaults.shapes(shape = shape),
-            ) {
-                Text(LABEL_ALL_DATA, color = MaterialTheme.colorScheme.error)
-            }
-        }
     }
 }
-
-private const val DIALOG_TITLE_RESET = "Reset Keyholm?"
-private const val DIALOG_BODY_RESET_TEMPLATE =
-    "This permanently deletes all %d stored passkeys and their " +
-        "keys in the secure element. Every site you've registered with will need a new " +
-        "passkey. Consider exporting the account list above. This cannot be undone."
-private const val BUTTON_RESET = "Reset"
-private const val BUTTON_CANCEL = "Cancel"
-
-@Composable
-private fun ResetConfirmDialog(
-    passkeys: Stored<List<PasskeyRecord>>,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(DIALOG_TITLE_RESET) },
-        text = {
-            if (passkeys is Stored.Available) {
-                Text(DIALOG_BODY_RESET_TEMPLATE.format(Locale.ROOT, passkeys.value.size))
-            } else {
-                Text(LOAD_ERROR)
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) { Text(BUTTON_RESET, color = MaterialTheme.colorScheme.error) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(BUTTON_CANCEL) }
-        },
-    )
-}
-
-private const val CONFIRM_TITLE_RESET_ALL = "Reset all data"
-private const val CONFIRM_DESCRIPTION_RESET_ALL = "Confirm your identity to delete all Keyholm data."
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -300,13 +227,10 @@ fun SettingsScreen(
     onOpenHelp: () -> Unit,
     onOpenExceptions: () -> Unit,
     viewModel: MainViewModel = viewModel(),
-    cryptoPrompt: CryptoPrompt,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val uiState = state as? MainUiState.Ready ?: return
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var showResetConfirm by remember { mutableStateOf(false) }
     Scaffold(
         topBar = { SettingsTopBar(onBack, onOpenHelp) },
     ) { innerPadding ->
@@ -324,35 +248,7 @@ fun SettingsScreen(
             KeyCreationSection(uiState, viewModel)
             AlgorithmSection(uiState, viewModel)
             AccountMigrationSection(uiState, viewModel, context)
-            ResetSection(viewModel, onRequestResetConfirm = { showResetConfirm = true })
+            ResetSection(viewModel)
         }
-    }
-
-    if (showResetConfirm) {
-        ResetConfirmDialog(
-            passkeys = uiState.passkeys,
-            onConfirm = {
-                showResetConfirm = false
-                scope.launch {
-                    val policy = uiState.settings.createAuthenticators
-                    when (val authenticators = resolveCreateAuthenticators(context, policy)) {
-                        is AuthenticatorsResolution.Unavailable -> {
-                            viewModel.reportError(authenticators.message)
-                        }
-
-                        is AuthenticatorsResolution.Ready -> {
-                            val confirmed =
-                                cryptoPrompt.confirm(
-                                    CONFIRM_TITLE_RESET_ALL,
-                                    allowedAuthenticators = authenticators.value,
-                                    content = AuthenticationRequest.BodyContent.PlainText(CONFIRM_DESCRIPTION_RESET_ALL),
-                                )
-                            if (confirmed) viewModel.resetEverything()
-                        }
-                    }
-                }
-            },
-            onDismiss = { showResetConfirm = false },
-        )
     }
 }

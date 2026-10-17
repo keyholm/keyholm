@@ -2,7 +2,6 @@ package app.keyholm.store
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.dataStoreFile
 import app.keyholm.Application
 import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
@@ -32,11 +31,6 @@ internal fun summarize(records: List<PasskeyRecord>): PasskeySummary =
     )
 
 internal const val PASSKEY_STORE_FILE = "passkeys.pb"
-
-internal fun deletePasskeyStoreFile(context: Context): Boolean {
-    val file = context.dataStoreFile(PASSKEY_STORE_FILE)
-    return !file.exists() || file.delete()
-}
 
 internal fun deletePasskeyKeys(
     record: PasskeyRecord,
@@ -134,11 +128,6 @@ class PasskeyRepository internal constructor(
             if (!found) throw NoSuchElementException("no stored passkey ${credentialId.b64}")
         }
     }
-
-    suspend fun saveAll(records: List<PasskeyRecord>): Result<Unit> =
-        write {
-            PasskeyRecordsProto.newBuilder().addAllRecords(records.map { r -> r.toProto() }).build()
-        }
 
     private suspend fun write(transform: (PasskeyRecordsProto) -> PasskeyRecordsProto): Result<Unit> =
         try {

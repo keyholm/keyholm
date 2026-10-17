@@ -2,7 +2,6 @@ package app.keyholm.store
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.dataStoreFile
 import app.keyholm.Application
 import app.keyholm.store.proto.MigrationPlaceholdersProto
 import app.keyholm.webauthn.RpId
@@ -14,11 +13,6 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 
 internal const val MIGRATION_STORE_FILE = "migration_placeholders.pb"
-
-internal fun deleteMigrationStoreFile(context: Context): Boolean {
-    val file = context.dataStoreFile(MIGRATION_STORE_FILE)
-    return !file.exists() || file.delete()
-}
 
 class MigrationRepository internal constructor(
     private val dataStore: DataStore<MigrationPlaceholdersProto>,
@@ -52,11 +46,6 @@ class MigrationRepository internal constructor(
         write { current ->
             val kept = current.placeholdersList.filterNot { it.rp.id == rpId.value && it.userName == userName }
             MigrationPlaceholdersProto.newBuilder().addAllPlaceholders(kept).build()
-        }
-
-    suspend fun saveAll(records: List<MigrationPlaceholder>): Result<Unit> =
-        write {
-            MigrationPlaceholdersProto.newBuilder().addAllPlaceholders(records.map { placeholder -> placeholder.toProto() }).build()
         }
 
     private suspend fun write(transform: (MigrationPlaceholdersProto) -> MigrationPlaceholdersProto): Result<Unit> =
