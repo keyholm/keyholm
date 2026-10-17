@@ -2,8 +2,8 @@ package app.keyholm.store
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.dataStore
 import androidx.datastore.dataStoreFile
+import app.keyholm.Application
 import app.keyholm.store.proto.MigrationPlaceholdersProto
 import app.keyholm.webauthn.RpId
 import kotlinx.coroutines.CoroutineDispatcher
@@ -13,12 +13,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 
-private const val MIGRATION_STORE_FILE = "migration_placeholders.pb"
-
-private val Context.migrationDataStore: DataStore<MigrationPlaceholdersProto> by dataStore(
-    fileName = MIGRATION_STORE_FILE,
-    serializer = MigrationPlaceholdersSerializer,
-)
+internal const val MIGRATION_STORE_FILE = "migration_placeholders.pb"
 
 internal fun deleteMigrationStoreFile(context: Context): Boolean {
     val file = context.dataStoreFile(MIGRATION_STORE_FILE)
@@ -29,7 +24,7 @@ class MigrationRepository internal constructor(
     private val dataStore: DataStore<MigrationPlaceholdersProto>,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
-    constructor(context: Context) : this(context.applicationContext.migrationDataStore)
+    constructor(context: Context) : this((context.applicationContext as Application).stores.migrationPlaceholders)
 
     val placeholders: Flow<List<MigrationPlaceholder>> =
         dataStore.data

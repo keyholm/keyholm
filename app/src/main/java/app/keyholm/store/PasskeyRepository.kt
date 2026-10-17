@@ -2,8 +2,8 @@ package app.keyholm.store
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.dataStore
 import androidx.datastore.dataStoreFile
+import app.keyholm.Application
 import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.proto.DiscoverabilityProto
@@ -31,12 +31,7 @@ internal fun summarize(records: List<PasskeyRecord>): PasskeySummary =
         lastUsedTime = records.maxOfOrNull { it.lastUsedAt },
     )
 
-private const val PASSKEY_STORE_FILE = "passkeys.pb"
-
-private val Context.passkeyDataStore: DataStore<PasskeyRecordsProto> by dataStore(
-    fileName = PASSKEY_STORE_FILE,
-    serializer = PasskeyRecordsSerializer,
-)
+internal const val PASSKEY_STORE_FILE = "passkeys.pb"
 
 internal fun deletePasskeyStoreFile(context: Context): Boolean {
     val file = context.dataStoreFile(PASSKEY_STORE_FILE)
@@ -63,7 +58,7 @@ class PasskeyRepository internal constructor(
         context: Context,
         keyManager: SecureKeyManager,
         hmacKeyManager: HmacKeyManager,
-    ) : this(context.applicationContext.passkeyDataStore, { deletePasskeyKeys(it, keyManager, hmacKeyManager) })
+    ) : this((context.applicationContext as Application).stores.passkeys, { deletePasskeyKeys(it, keyManager, hmacKeyManager) })
 
     val passkeys: Flow<List<PasskeyRecord>> =
         dataStore.data

@@ -2,8 +2,8 @@ package app.keyholm.store
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.dataStore
 import androidx.datastore.dataStoreFile
+import app.keyholm.Application
 import app.keyholm.store.proto.DeniedNativeAppsProto
 import app.keyholm.webauthn.AssetLinkStatement
 import app.keyholm.webauthn.CertFingerprint
@@ -17,12 +17,7 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 import java.time.Instant
 
-private const val DENIED_NATIVE_APPS_STORE_FILE = "denied_native_apps.pb"
-
-private val Context.deniedNativeAppsDataStore: DataStore<DeniedNativeAppsProto> by dataStore(
-    fileName = DENIED_NATIVE_APPS_STORE_FILE,
-    serializer = DeniedNativeAppsSerializer,
-)
+internal const val DENIED_NATIVE_APPS_STORE_FILE = "denied_native_apps.pb"
 
 internal fun deleteDeniedNativeAppStoreFile(context: Context): Boolean {
     val file = context.dataStoreFile(DENIED_NATIVE_APPS_STORE_FILE)
@@ -33,7 +28,7 @@ class DeniedNativeAppRepository internal constructor(
     private val dataStore: DataStore<DeniedNativeAppsProto>,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
-    constructor(context: Context) : this(context.applicationContext.deniedNativeAppsDataStore)
+    constructor(context: Context) : this((context.applicationContext as Application).stores.deniedNativeApps)
 
     val nativeApps: Flow<DeniedNativeApps> =
         dataStore.data.map { it.toDomain() }.flowOn(dispatcher)

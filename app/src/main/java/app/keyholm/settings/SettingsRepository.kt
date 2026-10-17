@@ -1,15 +1,14 @@
 package app.keyholm.settings
 
 import android.content.Context
-import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
+import app.keyholm.Application
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.webauthn.AlgorithmFamily
 import app.keyholm.webauthn.AlgorithmPreference
@@ -24,9 +23,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 
-private const val SETTINGS_STORE_NAME = "settings"
-
-internal val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = SETTINGS_STORE_NAME)
+internal const val SETTINGS_STORE_NAME = "settings"
 
 internal fun deleteSettingsStoreFile(context: Context): Boolean {
     val file = context.preferencesDataStoreFile(SETTINGS_STORE_NAME)
@@ -70,7 +67,7 @@ class SettingsRepository(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val appContext = context.applicationContext
-    internal val dataStore = appContext.settingsDataStore
+    internal val dataStore = (appContext as Application).stores.settings
 
     val settings: Flow<Settings> =
         dataStore.data

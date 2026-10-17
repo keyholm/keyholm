@@ -4,6 +4,8 @@ import android.content.pm.ApplicationInfo
 import co.touchlab.kermit.Logger
 
 class Application : android.app.Application() {
+    val stores by lazy { Stores(this) }
+
     override fun onCreate() {
         super.onCreate()
         val debuggable = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
