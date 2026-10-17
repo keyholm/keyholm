@@ -13,7 +13,7 @@ import app.keyholm.settings.SettingsRepository
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
-import app.keyholm.store.StoredRecordException
+import app.keyholm.store.readStore
 import app.keyholm.util.logger
 import app.keyholm.webauthn.NativeAppTrust
 import app.keyholm.webauthn.RpId
@@ -24,7 +24,6 @@ import app.keyholm.webauthn.resolveTrustDecision
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import java.io.IOException
 
 private const val UNLOCK_REQUEST_CODE = 1
 
@@ -45,10 +44,12 @@ internal class GetCredentialEntries(
             }
         }
 
-    suspend fun of(request: BeginGetCredentialRequest): List<CredentialEntry>? =
+    suspend fun of(
+        request: BeginGetCredentialRequest,
+        records: List<PasskeyRecord>,
+    ): List<CredentialEntry>? =
         withContext(dispatcher) {
             PendingSignatures.clear()
-            val records = passkeyRepo.passkeys.first()
             val settings = settingsRepo.settings.first()
             val perOption =
                 request.beginGetCredentialOptions
@@ -85,16 +86,7 @@ internal class GetCredentialEntries(
         trust: NativeAppTrust,
     ): Boolean {
         if (callingAppInfo == null) return false
-        val accepted =
-            try {
-                deniedAppsRepo.accepted.first()
-            } catch (e: IOException) {
-                log.e(e) { "couldn't read the denied apps store" }
-                return false
-            } catch (e: StoredRecordException) {
-                log.e(e) { "couldn't read the denied apps store" }
-                return false
-            }
+        val accepted = readStore { deniedAppsRepo.accepted.first() } ?: return false
         return context.resolveTrustDecision(callingAppInfo, rpId, TrustPolicy(trust, accepted), dispatcher) is TrustDecision.Allowed
     }
 

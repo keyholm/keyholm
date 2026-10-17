@@ -29,7 +29,7 @@ import app.keyholm.settings.Settings
 import app.keyholm.settings.SettingsRepository
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.PasskeySummary
-import app.keyholm.store.StoredRecordException
+import app.keyholm.store.readStore
 import app.keyholm.util.logger
 import app.keyholm.webauthn.AlgorithmFamily
 import app.keyholm.webauthn.AlgorithmNegotiation
@@ -43,7 +43,6 @@ import app.keyholm.webauthn.attestationRequested
 import app.keyholm.webauthn.mode
 import app.keyholm.webauthn.parseCreationOptions
 import app.keyholm.webauthn.toTrust
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -52,7 +51,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
-import java.io.IOException
 
 private const val REQUEST_CODE = 0
 private const val SCHEME = "keyholm"
@@ -122,50 +120,40 @@ class Service internal constructor(
 
         val job =
             scope.launch {
-                try {
-                    val settings = settingsRepo.settings.first()
-                    val options =
-                        try {
-                            parseCreationOptions(request.requestJson)
-                        } catch (e: SerializationException) {
-                            log.e(e) { "couldn't parse the request JSON" }
-                            callback.onResult(BeginCreateCredentialResponse(emptyList()))
-                            return@launch
-                        }
-                    if (options.authenticatorSelection?.authenticatorAttachment == CROSS_PLATFORM_ATTACHMENT) {
+                val settings = settingsRepo.settings.first()
+                val options =
+                    try {
+                        parseCreationOptions(request.requestJson)
+                    } catch (e: SerializationException) {
+                        log.e(e) { "couldn't parse the request JSON" }
                         callback.onResult(BeginCreateCredentialResponse(emptyList()))
                         return@launch
                     }
-                    val algorithms = offeredAlgorithms(options, settings)
-                    if (algorithms.isEmpty()) {
-                        callback.onResult(BeginCreateCredentialResponse(emptyList()))
-                        return@launch
-                    }
-                    val offer =
-                        CreationOffer(
-                            algorithms = algorithms,
-                            attestation = offeredAttestation(options),
-                            identity = settings.identityPreference,
-                            authenticators = settings.createAuthenticators,
-                            invalidateOnBiometricEnrollment = settings.invalidateOnBiometricEnrollment,
-                            nativeAppTrust = settings.nativeAppTrust,
-                        )
-                    val entry =
-                        buildCreateEntry(
-                            offer,
-                            settings.preferRpName,
-                            passkeyRepo.summary(),
-                        )
-                    callback.onResult(BeginCreateCredentialResponse(listOf(entry)))
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: IOException) {
-                    log.e(e) { "couldn't read the store" }
+                if (options.authenticatorSelection?.authenticatorAttachment == CROSS_PLATFORM_ATTACHMENT) {
                     callback.onResult(BeginCreateCredentialResponse(emptyList()))
-                } catch (e: StoredRecordException) {
-                    log.e(e) { "couldn't read the store" }
-                    callback.onResult(BeginCreateCredentialResponse(emptyList()))
+                    return@launch
                 }
+                val algorithms = offeredAlgorithms(options, settings)
+                if (algorithms.isEmpty()) {
+                    callback.onResult(BeginCreateCredentialResponse(emptyList()))
+                    return@launch
+                }
+                val offer =
+                    CreationOffer(
+                        algorithms = algorithms,
+                        attestation = offeredAttestation(options),
+                        identity = settings.identityPreference,
+                        authenticators = settings.createAuthenticators,
+                        invalidateOnBiometricEnrollment = settings.invalidateOnBiometricEnrollment,
+                        nativeAppTrust = settings.nativeAppTrust,
+                    )
+                val summary =
+                    readStore { passkeyRepo.summary() } ?: run {
+                        callback.onResult(BeginCreateCredentialResponse(emptyList()))
+                        return@launch
+                    }
+                val entry = buildCreateEntry(offer, settings.preferRpName, summary)
+                callback.onResult(BeginCreateCredentialResponse(listOf(entry)))
             }
         cancellationSignal.setOnCancelListener { job.cancel() }
     }
@@ -225,38 +213,33 @@ class Service internal constructor(
     ) {
         val job =
             scope.launch {
-                try {
-                    if (settingsRepo.settings.first().requireUnlock) {
-                        callback.onResult(
-                            BeginGetCredentialResponse(
-                                authenticationActions =
-                                    listOf(
-                                        AuthenticationAction(UNLOCK_ENTRY_TITLE, unlockPendingIntent(applicationContext)),
-                                    ),
-                            ),
-                        )
-                        return@launch
-                    }
-                    val entries = getEntries.of(request)
-                    if (entries == null) {
-                        callback.onError(
-                            GetPublicKeyCredentialDomException(
-                                EncodingError(),
-                                "requestJson is not valid request options",
-                            ),
-                        )
-                        return@launch
-                    }
-                    callback.onResult(BeginGetCredentialResponse(entries))
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: IOException) {
-                    log.e(e) { "couldn't read the passkey store" }
-                    callback.onError(GetCredentialInterruptedException())
-                } catch (e: StoredRecordException) {
-                    log.e(e) { "couldn't read the passkey store" }
-                    callback.onError(GetCredentialInterruptedException())
+                if (settingsRepo.settings.first().requireUnlock) {
+                    callback.onResult(
+                        BeginGetCredentialResponse(
+                            authenticationActions =
+                                listOf(
+                                    AuthenticationAction(UNLOCK_ENTRY_TITLE, unlockPendingIntent(applicationContext)),
+                                ),
+                        ),
+                    )
+                    return@launch
                 }
+                val records =
+                    readStore { passkeyRepo.passkeys.first() } ?: run {
+                        callback.onError(GetCredentialInterruptedException())
+                        return@launch
+                    }
+                val entries = getEntries.of(request, records)
+                if (entries == null) {
+                    callback.onError(
+                        GetPublicKeyCredentialDomException(
+                            EncodingError(),
+                            "requestJson is not valid request options",
+                        ),
+                    )
+                    return@launch
+                }
+                callback.onResult(BeginGetCredentialResponse(entries))
             }
         cancellationSignal.setOnCancelListener { job.cancel() }
     }

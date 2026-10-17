@@ -11,6 +11,8 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.provider.GetCredentialEntries
+import app.keyholm.store.PasskeyRepository
+import app.keyholm.store.readStore
 import app.keyholm.ui.common.AuthenticatorsResolution
 import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.WorkingIndicator
@@ -18,6 +20,7 @@ import app.keyholm.ui.common.resolveCreateAuthenticators
 import app.keyholm.ui.theme.KeyholmTheme
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -32,6 +35,7 @@ class UnlockActivity internal constructor(
     private val cryptoPrompt = CryptoPrompt(this)
     private val working = mutableStateOf(false)
     private val entries by lazy { GetCredentialEntries(applicationContext, dispatcher) }
+    private val passkeyRepo by lazy { PasskeyRepository(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,7 +69,7 @@ class UnlockActivity internal constructor(
                 if (unlocked) {
                     working.value = true
                     try {
-                        entries.of(request)
+                        readStore { passkeyRepo.passkeys.first() }?.let { entries.of(request, it) }
                     } finally {
                         working.value = false
                     }

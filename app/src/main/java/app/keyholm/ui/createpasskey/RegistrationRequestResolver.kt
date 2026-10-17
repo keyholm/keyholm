@@ -11,6 +11,7 @@ import app.keyholm.provider.CreationOffer
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
+import app.keyholm.store.readStore
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.B64
 import app.keyholm.webauthn.Caller
@@ -48,10 +49,8 @@ internal class RegistrationRequestResolver(
 ) {
     suspend fun prepareRegistration(offer: CreationOffer): Registration<RegistrationContext> {
         val existing =
-            passkeyRepo.storedPasskeys().getOrElse {
-                log.e(it) { "couldn't read the passkey store" }
-                return Registration.Interrupted(ErrorMessages.CHECK_EXISTING_FAILED)
-            }
+            readStore { passkeyRepo.passkeys.first() }
+                ?: return Registration.Interrupted(ErrorMessages.CHECK_EXISTING_FAILED)
 
         return when (val request = retrieveValidatedRequest()) {
             is Registration.Failed -> request

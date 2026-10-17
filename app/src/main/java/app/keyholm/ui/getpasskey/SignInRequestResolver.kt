@@ -9,6 +9,7 @@ import app.keyholm.provider.credentialId
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
+import app.keyholm.store.readStore
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.Outcome
 import app.keyholm.util.logger
@@ -26,6 +27,7 @@ import app.keyholm.webauthn.WebAuthn
 import app.keyholm.webauthn.parseRequestOptionsOrLog
 import app.keyholm.webauthn.resolveTrustDecision
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.first
 import java.security.Signature
 
 internal class SignInRequestResolver(
@@ -51,10 +53,8 @@ internal class SignInRequestResolver(
         if (providerRequest == null || option == null) return SignInResult.Internal()
 
         val records =
-            passkeyRepo.storedPasskeys().getOrElse {
-                log.e(it) { "couldn't read the passkey store" }
-                return SignInResult.Interrupted(ErrorMessages.LOOKUP_FAILED)
-            }
+            readStore { passkeyRepo.passkeys.first() }
+                ?: return SignInResult.Interrupted(ErrorMessages.LOOKUP_FAILED)
 
         val record = records.firstOrNull { it.credentialId == intent.credentialId() }
         if (record == null) return SignInResult.NoCredential()
