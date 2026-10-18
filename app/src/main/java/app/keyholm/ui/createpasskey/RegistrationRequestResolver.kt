@@ -65,12 +65,15 @@ internal class RegistrationRequestResolver(
     ): Registration<RegistrationContext> {
         val options = request.options
         val rpId = RpId(options.rp.id)
+        val accepted =
+            readStore { deniedAppsRepo.accepted.first() }
+                ?: return Registration.Interrupted(ErrorMessages.EXCEPTIONS_READ_FAILED)
 
         val decision =
             context.resolveTrustDecision(
                 request.providerRequest.callingAppInfo,
                 rpId,
-                TrustPolicy(offer.nativeAppTrust, deniedAppsRepo.accepted.first()),
+                TrustPolicy(offer.nativeAppTrust, accepted),
                 dispatcher,
                 request.callingRequest.clientDataHash?.let(::ClientDataHash),
             )

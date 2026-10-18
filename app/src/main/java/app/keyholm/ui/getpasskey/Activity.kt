@@ -24,6 +24,7 @@ import app.keyholm.provider.preferRpName
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
+import app.keyholm.store.readStore
 import app.keyholm.ui.common.CANCELLATION_ERRORS
 import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.ErrorMessages
@@ -166,10 +167,13 @@ class Activity internal constructor(
         providerRequest: ProviderGetCredentialRequest?,
         singleTap: SingleTap.Proceeding,
     ) {
+        val accepted =
+            readStore { deniedAppsRepo.accepted.first() }
+                ?: return failGetCredential(GetCredentialInterruptedException(), ErrorMessages.EXCEPTIONS_READ_FAILED)
         val policy =
             TrustPolicy(
                 intent.nativeAppTrust(applicationContext, dispatcher),
-                deniedAppsRepo.accepted.first(),
+                accepted,
             )
         // We reuse the single tap pending signature if possible, even though we may need to
         // reprompt.
