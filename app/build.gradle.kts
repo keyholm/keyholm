@@ -131,6 +131,10 @@ android {
             // Prebuilt and already stripped; ships via androidx.datastore:datastore.
             keepDebugSymbols.add("**/libdatastore_shared_counter.so")
         }
+        resources {
+            excludes += "google/protobuf/*.proto"
+            excludes += "kotlin/**/*.kotlin_builtins"
+        }
     }
     lint {
         baseline = file("lint-baseline.xml")
