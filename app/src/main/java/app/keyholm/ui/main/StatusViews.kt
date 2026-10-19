@@ -107,9 +107,13 @@ internal fun EmptyPasskeysMessage(modifier: Modifier = Modifier) {
 }
 
 internal const val LOAD_ERROR = "Failed to load data, check device storage."
+internal const val UNRECOGNIZED_DATA = "This version of Keyholm can't load the app data."
 
 @Composable
-internal fun LoadErrorCard(modifier: Modifier = Modifier) {
+internal fun LoadErrorCard(
+    message: String,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -123,7 +127,7 @@ internal fun LoadErrorCard(modifier: Modifier = Modifier) {
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            LOAD_ERROR,
+            message,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.error,
         )

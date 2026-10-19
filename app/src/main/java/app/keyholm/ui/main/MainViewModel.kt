@@ -18,6 +18,7 @@ import app.keyholm.store.MigrationPlaceholder
 import app.keyholm.store.MigrationRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
+import app.keyholm.store.StoredRecordException
 import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
@@ -58,6 +59,8 @@ sealed interface Stored<out T> {
     ) : Stored<T>
 
     data object Unavailable : Stored<Nothing>
+
+    data object Unrecognized : Stored<Nothing>
 }
 
 data class DeviceStatus(
@@ -144,7 +147,7 @@ class MainViewModel internal constructor(
     private fun <T> Flow<T>.stored(): Flow<Stored<T>> =
         map<T, Stored<T>> { Stored.Available(it) }.retryWhen { e, _ ->
             log.e(e) { "store read failed" }
-            emit(Stored.Unavailable)
+            emit(if (e is StoredRecordException) Stored.Unrecognized else Stored.Unavailable)
             refreshTicks.drop(1).first()
             true
         }
