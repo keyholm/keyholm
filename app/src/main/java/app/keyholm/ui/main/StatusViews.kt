@@ -106,7 +106,7 @@ internal fun EmptyPasskeysMessage(modifier: Modifier = Modifier) {
     }
 }
 
-internal const val LOAD_ERROR = "Failed to load data, check device storage."
+internal const val LOAD_ERROR = "Failed to load data."
 internal const val UNRECOGNIZED_DATA = "This version of Keyholm can't load the app data."
 
 @Composable
