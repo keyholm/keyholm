@@ -137,7 +137,7 @@ android {
         }
         resources {
             excludes += "google/protobuf/*.proto"
-            excludes += "kotlin/**/*.kotlin_builtins"
+            excludes += "**/*.kotlin_builtins"
         }
     }
     lint {
