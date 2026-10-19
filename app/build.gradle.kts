@@ -16,6 +16,7 @@ dependencyLocking {
 }
 
 configurations.configureEach {
+    exclude(group = "androidx.appcompat", module = "appcompat")
     // staging is a release-like build with debug signing essentially
     if (isCanBeResolved &&
         !name.startsWith("staging") &&
@@ -133,8 +134,6 @@ android {
     }
     lint {
         baseline = file("lint-baseline.xml")
-        // Compat drawable loading exists for pre-API-21 vector and theme handling.
-        disable += "UseCompatLoadingForDrawables"
         // Only releases fail on newer dependency versions
         if (!providers.gradleProperty("checkDependencyVersions").isPresent) {
             disable += "GradleDependency"
@@ -197,7 +196,6 @@ tasks.withType<Detekt>().configureEach {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.19.1")
-    implementation("androidx.appcompat:appcompat:1.8.0")
     implementation("androidx.activity:activity-ktx:1.13.0")
     implementation("androidx.credentials:credentials:1.6.0")
     implementation("androidx.datastore:datastore-preferences:1.2.1")

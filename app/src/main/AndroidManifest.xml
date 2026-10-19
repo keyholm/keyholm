@@ -75,5 +75,9 @@
                 android:resource="@xml/provider" />
         </service>
 
+        <activity
+            android:name="androidx.biometric.internal.ui.FingerprintDialogActivity"
+            tools:node="remove" />
+
     </application>
 </manifest>
