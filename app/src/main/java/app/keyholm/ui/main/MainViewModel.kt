@@ -29,10 +29,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -140,9 +142,11 @@ class MainViewModel internal constructor(
         }
 
     private fun <T> Flow<T>.stored(): Flow<Stored<T>> =
-        map<T, Stored<T>> { Stored.Available(it) }.catch { e ->
+        map<T, Stored<T>> { Stored.Available(it) }.retryWhen { e, _ ->
             log.e(e) { "store read failed" }
             emit(Stored.Unavailable)
+            refreshTicks.drop(1).first()
+            true
         }
 
     private val storesState: Flow<StoresState> =
