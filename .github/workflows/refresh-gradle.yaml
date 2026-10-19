@@ -1,6 +1,7 @@
 name: Refresh gradle metadata and locks
 
 on:
+  workflow_dispatch:
   push:
     branches: ["renovate/**"]
 
