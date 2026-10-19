@@ -87,6 +87,10 @@ android {
         versionName = "0.0.4"
     }
 
+    androidResources {
+        localeFilters += "en"
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
