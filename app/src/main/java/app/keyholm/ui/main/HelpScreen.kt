@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
@@ -306,7 +305,7 @@ private fun AboutSection() {
                     Image(
                         bitmap = rememberAppIcon(),
                         contentDescription = null,
-                        modifier = Modifier.size(LEADING_WIDTH).clip(CircleShape),
+                        modifier = Modifier.size(LEADING_WIDTH),
                     )
                     Spacer(Modifier.width(16.dp))
                     Text(
