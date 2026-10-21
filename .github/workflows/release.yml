@@ -15,6 +15,9 @@ jobs:
       unsigned_sha256: ${{ steps.stage.outputs.sha256 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - name: Read release tag from build.gradle.kts
         id: version
         run: |
@@ -24,8 +27,11 @@ jobs:
             echo "::error::tag $tag already exists"
             exit 1
           fi
+          previous=$(git describe --tags --abbrev=0 --match 'v*')
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "previous_tag=$previous" >> "$GITHUB_OUTPUT"
       - name: Ensure a changelog exists for this version
+        id: changelog
         run: |
           code=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
           changelog="fastlane/metadata/android/en-US/changelogs/$code.txt"
@@ -33,6 +39,7 @@ jobs:
             echo "::error file=$changelog::missing changelog for versionCode $code"
             exit 1
           fi
+          echo "path=$changelog" >> "$GITHUB_OUTPUT"
       - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
         with:
           install: true
@@ -69,8 +76,13 @@ jobs:
           REPO: ${{ github.repository }}
           TAG: ${{ steps.version.outputs.tag }}
           SHA: ${{ github.sha }}
+          CHANGELOG: ${{ steps.changelog.outputs.path }}
+          PREVIOUS_TAG: ${{ steps.version.outputs.previous_tag }}
         run: |
-          cat > dist/notes.md <<EOF
+          printf "## What's Changed\n\n" > dist/notes.md
+          cat "$CHANGELOG" >> dist/notes.md
+          printf '\n**Full Changelog**: https://github.com/%s/compare/%s...%s\n\n' "$REPO" "$PREVIOUS_TAG" "$TAG" >> dist/notes.md
+          cat >> dist/notes.md <<EOF
           ## Artifacts
 
           | | |
