@@ -3,6 +3,7 @@ package app.keyholm.ui.createpasskey
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -102,6 +103,7 @@ private fun ToggleRow(
     ListItem(
         selected = false,
         onClick = { toggle.onCheckedChange(!toggle.checked) },
+        modifier = Modifier.heightIn(min = 60.dp),
         enabled = toggle.enabled,
         supportingContent =
             subtitle?.let {
