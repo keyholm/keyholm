@@ -102,9 +102,8 @@ private fun ToggleRow(
 ) {
     ListItem(
         selected = false,
-        onClick = { toggle.onCheckedChange(!toggle.checked) },
+        onClick = { if (toggle.enabled) toggle.onCheckedChange(!toggle.checked) },
         modifier = Modifier.heightIn(min = 60.dp),
-        enabled = toggle.enabled,
         supportingContent =
             subtitle?.let {
                 {
