@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    implementation("com.squareup.okhttp3:okhttp:5.5.0")
+    implementation("com.squareup.okhttp3:okhttp:5.5.1")
     implementation("com.squareup.okio:okio:3.18.2")
 
     compileOnly("com.android.tools.build:gradle:9.4.1")
