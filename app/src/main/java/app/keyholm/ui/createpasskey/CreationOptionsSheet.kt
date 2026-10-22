@@ -115,7 +115,7 @@ private fun ToggleRow(
             },
         trailingContent = { Switch(checked = toggle.checked, onCheckedChange = toggle.onCheckedChange, enabled = toggle.enabled) },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         shapes = ListItemDefaults.shapes(shape = shape),
     ) {
