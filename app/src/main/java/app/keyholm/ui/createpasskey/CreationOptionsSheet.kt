@@ -1,10 +1,13 @@
 package app.keyholm.ui.createpasskey
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -193,11 +196,23 @@ private fun CreationOptionsSheetContent(
     if (toggles.attestation != null || toggles.identity != null) {
         CreationTogglesSection(toggles)
     }
-    AlgorithmSection(
-        algorithms = prompt.algorithms,
-        icon = icon,
-        onSelect = onSelectAlgorithm,
-    )
+    val algorithm = prompt.algorithms.singleOrNull()
+    if (algorithm == null) {
+        AlgorithmSection(
+            algorithms = prompt.algorithms,
+            icon = icon,
+            onSelect = onSelectAlgorithm,
+        )
+    } else {
+        Box(
+            Modifier.fillMaxWidth().padding(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 4.dp),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            Button(onClick = { onSelectAlgorithm(algorithm) }) {
+                Text("Continue")
+            }
+        }
+    }
     HorizontalDivider(
         thickness = 2.dp,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
