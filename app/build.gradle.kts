@@ -83,8 +83,8 @@ android {
         applicationId = "app.keyholm"
         minSdk = 35
         targetSdk = 37
-        versionCode = 4
-        versionName = "0.0.4"
+        versionCode = 5
+        versionName = "0.0.5"
     }
 
     androidResources {
