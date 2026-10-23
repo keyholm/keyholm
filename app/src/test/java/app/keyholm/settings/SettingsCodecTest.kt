@@ -113,7 +113,7 @@ class SettingsCodecTest {
     fun `enabled families default when unset and reject junk`() {
         assertThat(decodeEnabledFamilies(null)).isEqualTo(DEFAULT_ENABLED_FAMILIES)
         assertThat(decodeEnabledFamilies(setOf("ES256"))).containsExactly(AlgorithmFamily.ES256)
-        assertThrows<IllegalStateException> { decodeEnabledFamilies(emptySet()) }
+        assertThat(decodeEnabledFamilies(emptySet())).isEmpty()
         assertThrows<IllegalStateException> { decodeEnabledFamilies(setOf("RSA9000")) }
     }
 

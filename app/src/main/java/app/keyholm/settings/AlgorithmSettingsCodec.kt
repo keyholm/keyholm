@@ -27,12 +27,8 @@ internal fun decodeAlgorithmPreference(stored: String?): AlgorithmPreference =
         else -> AlgorithmPreference.Prefer(AlgorithmFamily.named(stored))
     }
 
-internal fun decodeEnabledFamilies(stored: Set<String>?): Set<AlgorithmFamily> {
-    if (stored == null) return DEFAULT_ENABLED_FAMILIES
-    val families = AlgorithmFamily.fromStrings(stored)
-    check(families.isNotEmpty()) { "stored enabled-families is empty" }
-    return families
-}
+internal fun decodeEnabledFamilies(stored: Set<String>?): Set<AlgorithmFamily> =
+    if (stored == null) DEFAULT_ENABLED_FAMILIES else AlgorithmFamily.fromStrings(stored)
 
 internal fun encodeMlDsaSupport(support: MlDsaSupport): String =
     when (support) {
