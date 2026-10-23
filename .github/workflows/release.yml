@@ -154,14 +154,14 @@ jobs:
               dist/keyholm-unsigned.apk dist/keyholm-unsigned.apk.sigstore.json
           fi
 
-  reproduce:
+  reproduce-fdroid:
     needs: build
-    uses: ./.github/workflows/reproduce.yml
+    uses: ./.github/workflows/reproduce-fdroid.yml
     with:
       unsigned_sha256: ${{ needs.build.outputs.unsigned_sha256 }}
 
   verify:
-    needs: [build, reproduce]
+    needs: [build, reproduce-fdroid]
     runs-on: ubuntu-latest
     environment: release
     steps:
