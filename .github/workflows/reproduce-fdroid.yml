@@ -61,17 +61,24 @@ jobs:
           SHA: ${{ github.sha }}
           NAME: ${{ needs.reference.outputs.name }}
           CODE: ${{ needs.reference.outputs.code }}
+        shell: python3 {0}
         run: |
-          curl -fsSLo /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64
-          chmod +x /usr/local/bin/yq
+          import os
+          from ruamel.yaml import YAML
 
-          yq -i '
-            .Builds[-1].versionName = strenv(NAME) |
-            .Builds[-1].versionCode = env(CODE) |
-            .Builds[-1].commit = strenv(SHA) |
-            del(.Binaries)
-          ' metadata/app.keyholm.yml
-          yq '.Builds[-1].sudo // [] | .[]' metadata/app.keyholm.yml > sudo.sh
+          yaml = YAML()
+          path = "metadata/app.keyholm.yml"
+          with open(path) as f:
+              app = yaml.load(f)
+          build = app["Builds"][-1]
+          build["versionName"] = os.environ["NAME"]
+          build["versionCode"] = int(os.environ["CODE"])
+          build["commit"] = os.environ["SHA"]
+          app.pop("Binaries", None)
+          with open(path, "w") as f:
+              yaml.dump(app, f)
+          with open("sudo.sh", "w") as f:
+              f.writelines(line + "\n" for line in build.get("sudo") or [])
       - name: Run the recipe's sudo steps
         working-directory: fdroiddata
         run: bash -eux sudo.sh
