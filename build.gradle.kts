@@ -12,7 +12,7 @@ spotless {
     kotlin {
         target("app/src/**/*.kt")
         targetExclude("**/build/**")
-        ktlint("1.8.0")
+        ktlint()
             .editorConfigOverride(
                 mapOf(
                     "ktlint_code_style" to "ktlint_official",
@@ -24,7 +24,7 @@ spotless {
     }
     kotlinGradle {
         target("*.gradle.kts", "app/*.gradle.kts", "publicsuffixlist/*.gradle.kts")
-        ktlint("1.8.0")
+        ktlint()
             .editorConfigOverride(
                 mapOf("ktlint_code_style" to "ktlint_official"),
             )

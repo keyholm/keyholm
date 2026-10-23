@@ -174,7 +174,6 @@ composeCompiler {
 }
 
 detekt {
-    toolVersion = "2.0.0-alpha.6"
     source.setFrom("src/main/java")
     config.setFrom(rootProject.file("config/detekt/detekt.yml"))
     baseline = rootProject.file("config/detekt/baseline.xml")
