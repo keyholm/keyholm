@@ -99,3 +99,10 @@ jobs:
             echo "::error::F-Droid build $actual doesn't match reference build $EXPECTED"
             exit 1
           fi
+      - name: Scan the APK with fdroid scanner
+        working-directory: fdroiddata
+        env:
+          CODE: ${{ needs.reference.outputs.code }}
+        run: |
+          export PATH="$GITHUB_WORKSPACE/fdroidserver:$PATH" PYTHONPATH="$GITHUB_WORKSPACE/fdroidserver"
+          fdroid scanner --verbose --exit-code "unsigned/app.keyholm_$CODE.apk"
