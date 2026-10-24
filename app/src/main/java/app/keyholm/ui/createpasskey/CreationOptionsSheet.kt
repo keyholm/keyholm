@@ -146,7 +146,7 @@ internal fun CreationOptionsSheet(
     var includeAttestation by remember { mutableStateOf(prompt.attestation.initial) }
     var includeDeviceProperties by remember { mutableStateOf(false) }
     var identifyAsKeyholm by remember { mutableStateOf(prompt.identity.initial) }
-    val devicePropertiesEnabled = includeAttestation && prompt.devicePropertiesAvailable
+    val includeDevicePropertiesChosen = includeAttestation && prompt.devicePropertiesAvailable && includeDeviceProperties
     Sheet(onDismiss) {
         CreationOptionsSheetContent(
             prompt = prompt,
@@ -160,8 +160,8 @@ internal fun CreationOptionsSheet(
                             null
                         },
                     deviceProperties =
-                        if (prompt.attestation is OptionChoice.Ask) {
-                            CreationToggle(devicePropertiesEnabled && includeDeviceProperties, enabled = devicePropertiesEnabled) {
+                        if (prompt.attestation is OptionChoice.Ask && includeAttestation) {
+                            CreationToggle(includeDevicePropertiesChosen, enabled = prompt.devicePropertiesAvailable) {
                                 includeDeviceProperties = it
                             }
                         } else {
@@ -175,7 +175,7 @@ internal fun CreationOptionsSheet(
                         },
                 ),
             onSelectAlgorithm = {
-                onChoice(CreationChoice(it, includeAttestation, devicePropertiesEnabled && includeDeviceProperties, identifyAsKeyholm))
+                onChoice(CreationChoice(it, includeAttestation, includeDevicePropertiesChosen, identifyAsKeyholm))
             },
         )
     }

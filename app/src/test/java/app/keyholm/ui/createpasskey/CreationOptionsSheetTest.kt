@@ -101,14 +101,15 @@ class CreationOptionsSheetTest {
     }
 
     @Test
-    fun disablesDevicePropertiesWhileAttestationIsOff() {
+    fun hidesDevicePropertiesWhileAttestationIsOff() {
         showSheet()
 
-        switchIn(DEVICE_PROPERTIES_ROW).assertIsNotEnabled()
-        switchIn(DEVICE_PROPERTIES_ROW).assertIsOff()
+        compose.onNodeWithText(DEVICE_PROPERTIES_ROW).assertDoesNotExist()
         switchIn(ATTESTATION_ROW).performClick()
         switchIn(DEVICE_PROPERTIES_ROW).assertIsEnabled()
         switchIn(DEVICE_PROPERTIES_ROW).assertIsOff()
+        switchIn(ATTESTATION_ROW).performClick()
+        compose.onNodeWithText(DEVICE_PROPERTIES_ROW).assertDoesNotExist()
     }
 
     @Test
