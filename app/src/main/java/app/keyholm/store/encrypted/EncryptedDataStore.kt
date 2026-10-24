@@ -29,14 +29,6 @@ internal fun <T> encryptedDataStore(
     return DeferredDataStore(dispatcher) { scope ->
         DataStoreFactory.create(
             serializer = AeadSerializer(keys.aead(), serializer, storeAad(name)),
-            migrations =
-                listOf(
-                    PlaintextStoreMigration(
-                        oldFile = context.dataStoreFile(name),
-                        newFile = file,
-                        serializer = serializer,
-                    ),
-                ),
             scope = scope,
             produceFile = { file },
         )
