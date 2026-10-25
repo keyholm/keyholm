@@ -84,7 +84,7 @@ android {
         minSdk = 35
         targetSdk = 37
         versionCode = 6
-        versionName = "0.0.6"
+        versionName = "0.1.0"
     }
 
     androidResources {
