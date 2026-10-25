@@ -268,6 +268,12 @@ private fun AlgorithmSection(
     icon: ImageBitmap,
     onSelect: (WebAuthnAlgorithm) -> Unit,
 ) {
+    Text(
+        "Choose an algorithm to continue:",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+    )
     SheetSection {
         algorithms.forEach { algorithm ->
             item { rowShape ->
