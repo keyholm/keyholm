@@ -124,6 +124,13 @@ class PendingDeleteController<Id, R>(
         pending.update { it + (id to Pending(record, job)) }
     }
 
+    fun dropMissing(records: List<R>) {
+        val ids = records.mapTo(HashSet(), store::id)
+        pending.value.keys
+            .filterNot { it in ids }
+            .forEach { pending.cancel(it) }
+    }
+
     fun cancel(record: R) {
         pending.cancel(store.id(record))
         scope.launch { restore(record) }

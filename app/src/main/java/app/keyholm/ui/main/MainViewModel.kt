@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
@@ -164,8 +165,11 @@ class MainViewModel internal constructor(
 
     private val storesState: Flow<StoresState> =
         combine(
-            passkeyRepo.passkeys.map { it.asReversed() }.stored(),
-            migrationRepo.placeholders.stored(),
+            passkeyRepo.passkeys
+                .onEach { pendingDeletes.dropMissing(it) }
+                .map { it.asReversed() }
+                .stored(),
+            migrationRepo.placeholders.onEach { placeholderDeletes.dropMissing(it) }.stored(),
             deniedAppsRepo.nativeApps.stored(),
         ) { passkeys, placeholders, nativeApps ->
             StoresState(passkeys, placeholders, nativeApps)
