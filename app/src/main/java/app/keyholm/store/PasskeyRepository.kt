@@ -59,6 +59,9 @@ class PasskeyRepository internal constructor(
             .map { proto -> proto.recordsList.map { it.toDomain() } }
             .flowOn(dispatcher)
 
+    val activePasskeys: Flow<List<PasskeyRecord>> =
+        passkeys.map { records -> records.filter { it.lifecycle is RecordLifecycle.Active } }
+
     suspend fun summary(): PasskeySummary = summarize(passkeys.first())
 
     suspend fun put(record: PasskeyRecord): Result<Unit> {

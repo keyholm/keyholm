@@ -49,7 +49,7 @@ internal class RegistrationRequestResolver(
 ) {
     suspend fun prepareRegistration(offer: CreationOffer): Registration<RegistrationContext> {
         val existing =
-            readStore { passkeyRepo.passkeys.first() }
+            readStore { passkeyRepo.activePasskeys.first() }
                 ?: return Registration.Interrupted(ErrorMessages.CHECK_EXISTING_FAILED)
 
         return when (val request = retrieveValidatedRequest()) {

@@ -69,7 +69,7 @@ class UnlockActivity internal constructor(
                 if (unlocked) {
                     working.value = true
                     try {
-                        readStore { passkeyRepo.passkeys.first() }?.let { entries.of(request, it) }
+                        readStore { passkeyRepo.activePasskeys.first() }?.let { entries.of(request, it) }
                     } finally {
                         working.value = false
                     }

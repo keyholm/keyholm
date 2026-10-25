@@ -225,7 +225,7 @@ class Service internal constructor(
                     return@launch
                 }
                 val records =
-                    readStore { passkeyRepo.passkeys.first() } ?: run {
+                    readStore { passkeyRepo.activePasskeys.first() } ?: run {
                         callback.onError(GetCredentialInterruptedException())
                         return@launch
                     }

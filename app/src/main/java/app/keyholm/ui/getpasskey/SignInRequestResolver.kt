@@ -53,7 +53,7 @@ internal class SignInRequestResolver(
         if (providerRequest == null || option == null) return SignInResult.Internal()
 
         val records =
-            readStore { passkeyRepo.passkeys.first() }
+            readStore { passkeyRepo.activePasskeys.first() }
                 ?: return SignInResult.Interrupted(ErrorMessages.LOOKUP_FAILED)
 
         val record = records.firstOrNull { it.credentialId == intent.credentialId() }
