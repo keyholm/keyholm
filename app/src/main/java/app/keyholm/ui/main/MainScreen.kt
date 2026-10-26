@@ -29,8 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.keyholm.iconpack.IconPack
@@ -183,8 +181,6 @@ fun MainScreen(
     val uiState = state as? MainUiState.Ready ?: return
     val iconPack by viewModel.iconPacks.pack.collectAsStateWithLifecycle()
     val context = LocalContext.current
-
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
     PendingDeleteUndo(uiState.pendingDeleteBatches, snackbarHostState, uiState.settings.preferRpName) {
         viewModel.pendingDeletes.undoAll()

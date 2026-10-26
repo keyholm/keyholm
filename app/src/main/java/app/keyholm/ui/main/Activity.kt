@@ -231,6 +231,7 @@ private fun MainContent(importEntries: List<MigrationExportEntry>) {
         viewModel.placeholderDeletes.resume()
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.lockIfIdle() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
     // Launchers must be registered unconditionally
     val cryptoPrompt = rememberCryptoPrompt()
