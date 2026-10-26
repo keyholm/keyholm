@@ -40,7 +40,7 @@ You can never export or sync these passkeys.
 Think of Keyholm as a way to activate the built-in security key on your phone.
 
 - target devices: phones with secure hardware (including Pixels)
-- no INTERNET permission
+- no `INTERNET` permission
 - no Google Play Services ever
 - takes advantage of latest Android version/APIs
 - allows extensive control over particulars of what credentials it creates and how.
@@ -49,11 +49,11 @@ Think of Keyholm as a way to activate the built-in security key on your phone.
   - supports ML-DSA: post-quantum! but Android 17 and TEE-only
 - supports `android-key` attestation
 - supports PRF extension
+- metadata/state encrypted at rest
 - uses `QUERY_ALL_PACKAGES` in order to display icons for apps that were denied passkey usage
 - _account list_ export/import
   - for making it marginally easier to switch devices
   - remember all keys still need to be manually recreated on the new device
-- metadata/state encrypted at rest
 
 ## Releases
 
@@ -65,7 +65,12 @@ Think of Keyholm as a way to activate the built-in security key on your phone.
   height="48">](https://f-droid.org/packages/app.keyholm)
 
 Releases are done via GitHub workflows, see the releases themselves for how to
-verify provenance of the artifacts. Remember that F-Droid releases are significantly delayed.
+verify provenance of the artifacts.
+
+### F-Droid
+
+Remember that F-Droid releases are significantly delayed. GitHub APKs
+and F-Droid APKs are signed with the same key so you can switch back and forth!
 
 ### Verification
 
@@ -95,12 +100,13 @@ Signer #1 certificate SHA-256 digest: 9185c957794a7ff443f5bd453b1c913d80bad0d09d
 
 ## Building
 
-This project doesn't use `gradlew`. Install `mise`.
+This project doesn't use `gradlew`. Install `mise` then:
 
-## Stability
-
-No guarantees whatsoever before v0.1.0. Releases may completely invalidate any saved keys
-and require a full reset or even an uninstall.
+```
+mise exec -- gradle assembleDebug
+# Debug keys but release build
+mise exec -- gradle assembleStaging
+```
 
 ## Security
 
@@ -127,15 +133,17 @@ hardware level. Even `root` cannot get at the private key material.
 
 #### Filesystem dump
 
-No matter how Keyholm manages its state, the worst a filesystem dump could reveal
-is the list of users at which sites you have access to.
+Keyholm encrypts the stores at rest so a simple filesystem dump reveals nothing.
+
+But no matter how Keyholm manages its state, the worst a filesystem dump could reveal
+is the metadata, like a list of users at which sites you have access to.
 
 #### Unlocked device UI access
 
-You can require unlock to open Keyholm or even see the list of passkeys for a
-site,
-so given simple physical access to the device, protection is always at least
-device credential/biometrics.
+Device credentials/biometrics are required by default to open Keyholm
+and can be required to even see the list of passkeys for a given site,
+so given simple physical access to the device, Keyholm UI protection
+is always at least device credential/biometrics.
 
 #### Root
 
@@ -160,7 +168,7 @@ However, `root` cannot get to the passkey private key material or extract it.
 ### Hybrid transport over QR code (PXP)
 
 - CTAP 2.3 over BLE-only
-  - Only requires Nearby devices aka Bluetooth permissions.
+  - Only requires Nearby Devices aka Bluetooth permissions.
 - Claims `FIDO_2_1` and `FIDO_2_3` but just like Chromium's hybrid authenticator without:
   - `pinUvAuthToken` (PIN/UV auth protocol) - already protected by Noise channel
   - `hmac-secret` - needs above so we use Chromium's `prf` extension instead
@@ -172,17 +180,14 @@ However, `root` cannot get to the passkey private key material or extract it.
 
 - Password protection **for Keyholm's UI**: this would protect Keyholm from being used,
   given physical access, in spite of knowledge of device credential/biometrics access.
-  Note that it's **not possible** to fully protect the private keys
+  Note that it's **not possible** to fully protect use of the keys
   themselves with a password while also keeping them device-bound.
-  `root` access will ALWAYS remove any password protection to the keys
+  `root` access will ALWAYS remove any password protection to use of the keys
   themselves.
 
 ### UX
 
-if anybody wants them:
-
-- ordering/grouping options of some kind
-- translations
+Translations if anybody wants them.
 
 ## License
 
