@@ -38,14 +38,14 @@ private const val DESCRIPTION_IDENTITY_ALWAYS_ASK = "Offer both options at creat
 private const val LABEL_BIOMETRICS = "Biometrics"
 private const val DESCRIPTION_BIOMETRICS =
     "Biometrics for authentication."
+private const val DESCRIPTION_BIOMETRICS_WITH_DEVICE_CREDENTIAL =
+    "$DESCRIPTION_BIOMETRICS\nKeys not invalidated by biometrics changes."
 private const val LABEL_DEVICE_CREDENTIAL = "Device credential"
 private const val DESCRIPTION_DEVICE_CREDENTIAL =
     "PIN/pattern/password for authentication."
 private const val DESCRIPTION_DEVICE_CREDENTIAL_ENABLED =
-    "$DESCRIPTION_DEVICE_CREDENTIAL\nKeys invalidated by disabling secure lock screen.\nKeys not invalidated by biometrics changes."
+    "$DESCRIPTION_DEVICE_CREDENTIAL\nKeys invalidated by disabling secure lock screen."
 private const val LABEL_INVALIDATE_AFTER_ENROLLMENT_CHANGES = "Invalidate keys on enrollment changes"
-private const val DESCRIPTION_INVALIDATE_AFTER_ENROLLMENT_CHANGES =
-    "Keys invalidated by biometrics changes."
 
 @Composable
 private fun AuthenticatorIdentityRow(
@@ -120,7 +120,13 @@ private fun BiometricsRow(
         selected = false,
         onClick = {},
         supportingContent = {
-            Text(DESCRIPTION_BIOMETRICS, style = MaterialTheme.typography.bodySmall)
+            val description =
+                if (uiState.settings.createAuthenticators == AuthenticatorPolicy.Either) {
+                    DESCRIPTION_BIOMETRICS_WITH_DEVICE_CREDENTIAL
+                } else {
+                    DESCRIPTION_BIOMETRICS
+                }
+            Text(description, style = MaterialTheme.typography.bodySmall)
         },
         trailingContent = {
             Switch(
@@ -192,9 +198,6 @@ private fun InvalidateOnEnrollmentRow(
     ListItem(
         selected = false,
         onClick = {},
-        supportingContent = {
-            Text(DESCRIPTION_INVALIDATE_AFTER_ENROLLMENT_CHANGES, style = MaterialTheme.typography.bodySmall)
-        },
         trailingContent = {
             Switch(
                 checked = uiState.settings.invalidateOnBiometricEnrollment,
