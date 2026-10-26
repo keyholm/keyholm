@@ -29,7 +29,7 @@ private const val DESCRIPTION_KEY_SECTION = "Changes are only applied to new key
 private const val LABEL_AUTHENTICATOR_IDENTITY = "Include authenticator identity"
 private const val LABEL_IDENTITY_ALWAYS = "Always"
 private const val LABEL_IDENTITY_NEVER = "Never"
-private const val LABEL_IDENTITY_ALWAYS_ASK = "Always ask"
+private const val LABEL_IDENTITY_ALWAYS_ASK = "Ask"
 private const val DESCRIPTION_IDENTITY_ALWAYS =
     "Include Keyholm's identifier (AAGUID)."
 private const val DESCRIPTION_IDENTITY_NEVER =

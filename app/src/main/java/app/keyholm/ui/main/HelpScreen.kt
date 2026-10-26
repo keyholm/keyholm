@@ -210,7 +210,7 @@ private val HELP_BODY_TROUBLESHOOTING =
     it's possible that the list of algorithms supported by the RP
     and the list of algorithms supported and enabled by Keyholm don't intersect.
 
-    You can try enabling all of them and setting "Always ask" for algorithm preference.
+    You can try enabling all of them and setting "Ask" for algorithm preference.
     This would at least reveal if any algorithm at all is supported by Keyholm.
     """.trimIndent()
 

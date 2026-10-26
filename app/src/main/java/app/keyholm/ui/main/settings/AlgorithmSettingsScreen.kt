@@ -106,7 +106,7 @@ internal fun offersSomethingWithout(
     }
 
 private const val LABEL_FIRST_OFFERED = "First offered"
-private const val LABEL_ALWAYS_ASK = "Always ask"
+private const val LABEL_ALWAYS_ASK = "Ask"
 private const val LABEL_PREFERRED_ALGORITHM = "Preferred algorithm"
 private const val LABEL_FALLBACK_ALGORITHM = "Fallback algorithm preference"
 private const val DESCRIPTION_FALLBACK_ALGORITHM =
