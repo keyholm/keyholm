@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -170,6 +171,20 @@ private const val STATUS_SECURE_ELEMENT_OK = "Dedicated secure element (StrongBo
 private const val STATUS_SECURE_ELEMENT_NOT_OK = "No dedicated secure element (StrongBox) found."
 private const val STATUS_PROVIDER_OK = "Keyholm is enabled as a passkey service."
 private const val STATUS_PROVIDER_NOT_OK = "Keyholm is not enabled as a passkey service."
+
+@Composable
+internal fun InfoRow(text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = Icons.Default.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp),
+        )
+        Spacer(Modifier.width(16.dp))
+        Text(text = text, style = MaterialTheme.typography.bodyMedium)
+    }
+}
 
 @Composable
 internal fun DeviceStatusRows(device: DeviceStatus) {

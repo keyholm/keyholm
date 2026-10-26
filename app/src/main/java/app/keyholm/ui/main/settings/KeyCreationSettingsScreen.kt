@@ -167,7 +167,12 @@ private fun DeviceCredentialRow(
                         if (on) AuthenticatorPolicy.Either else AuthenticatorPolicy.Biometric,
                     )
                 },
-                enabled = uiState.settings.createAuthenticators != AuthenticatorPolicy.DeviceCredential,
+                enabled =
+                    when (uiState.settings.createAuthenticators) {
+                        AuthenticatorPolicy.DeviceCredential -> false
+                        AuthenticatorPolicy.Biometric -> true
+                        AuthenticatorPolicy.Either -> uiState.device.biometricsEnrolled
+                    },
             )
         },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),

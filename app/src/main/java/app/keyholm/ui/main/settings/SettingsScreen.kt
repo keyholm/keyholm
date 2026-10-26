@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -44,6 +45,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.main.DeviceStatusRows
+import app.keyholm.ui.main.InfoRow
 import app.keyholm.ui.main.MainUiState
 import app.keyholm.ui.main.MainViewModel
 import app.keyholm.ui.main.Stored
@@ -72,6 +74,9 @@ private fun SettingsTopBar(
     )
 }
 
+private const val STATUS_NO_BIOMETRICS =
+    "No biometrics enrolled on this device. Device credential authentication is required."
+
 @Composable
 private fun StatusSection(uiState: MainUiState.Ready) {
     Section(title = SECTION_TITLE_STATUS) {
@@ -80,6 +85,10 @@ private fun StatusSection(uiState: MainUiState.Ready) {
                 Modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(16.dp),
             ) {
                 DeviceStatusRows(uiState.device)
+                if (!uiState.device.biometricsEnrolled) {
+                    Spacer(Modifier.height(8.dp))
+                    InfoRow(STATUS_NO_BIOMETRICS)
+                }
             }
         }
     }

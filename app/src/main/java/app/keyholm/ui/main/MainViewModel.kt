@@ -1,10 +1,12 @@
 package app.keyholm.ui.main
 
 import android.app.Application
+import androidx.biometric.BiometricManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.keyholm.iconpack.IconPackController
 import app.keyholm.iconpack.IconPackStorage
+import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.provider.isCredentialProviderEnabled
 import app.keyholm.provider.setCredentialProviderComponentEnabled
@@ -73,6 +75,7 @@ data class DeviceStatus(
     val tee: Boolean,
     val teeMlDsa: Boolean,
     val providerEnabled: Boolean,
+    val biometricsEnrolled: Boolean,
 )
 
 enum class NativeAppExceptionAction { APPROVE, DISMISS, REVOKE }
@@ -145,6 +148,9 @@ class MainViewModel internal constructor(
                     tee = tee,
                     teeMlDsa = SecureKeyManager.isAlgorithmAvailable(context, WebAuthnAlgorithm.ML_DSA_87),
                     providerEnabled = isCredentialProviderEnabled(context),
+                    biometricsEnrolled =
+                        BiometricManager.from(context).canAuthenticate(AuthenticatorPolicy.Biometric.promptMask) ==
+                            BiometricManager.BIOMETRIC_SUCCESS,
                 )
             }
         }
