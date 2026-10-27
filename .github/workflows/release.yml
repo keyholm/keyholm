@@ -180,6 +180,12 @@ jobs:
     runs-on: ubuntu-latest
     environment: release
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        with:
+          install: true
+          cache: true
+          minimum_release_age: 7d
       - name: Download unsigned and signed APKs from the draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -191,8 +197,6 @@ jobs:
             --pattern keyholm.apk --dir dist
       - name: Put apksigner on PATH
         run: ls -d "$ANDROID_SDK_ROOT"/build-tools/*/ | sort -V | tail -1 >> "$GITHUB_PATH"
-      - name: Install apksigcopier
-        run: pipx install apksigcopier
       - name: Signed APK differs from the reproducible build only by its signature
         run: |
           unsigned=$(sha256sum dist/keyholm-unsigned.apk | cut -d' ' -f1)
