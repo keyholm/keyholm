@@ -17,6 +17,7 @@ backend = "vfox:mise-plugins/vfox-android-sdk"
 specifiers = ["latest"]
 
 [tools.android-sdk."platforms.linux-x64"]
+checksum = "sha256:0877a1d048fe4a24efe2eff536ca4223f7adeb58648bb81909d33c446918cfa8"
 url = "https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip"
 
 [[tools.gradle]]

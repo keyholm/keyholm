@@ -15,7 +15,7 @@ postinstall = "mise run android-sdk-install"
 
 [tasks.android-sdk-install]
 run = """
-  android sdk install build-tools/36.0.0 platforms/android-37.0
+  android sdk install build-tools/37.0.0 platforms/android-37.2
 """
 
 [tasks.refresh-gradle]
