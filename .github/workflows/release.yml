@@ -201,10 +201,10 @@ jobs:
           signed=$(sha256sum dist/keyholm.apk | cut -d' ' -f1)
           echo "::notice title=Unsigned APK sha256::$unsigned"
           echo "::notice title=Signed APK sha256::$signed"
-          mise exec -- apksigcopier compare dist/keyholm.apk dist/keyholm-unsigned.apk --unsigned
+          apksigcopier compare dist/keyholm.apk dist/keyholm-unsigned.apk --unsigned
           echo "OK: signed release matches the unsigned reproducible build"
       - name: Show signer certificate
-        run: mise exec -- apksigner verify --print-certs -v dist/keyholm.apk
+        run: apksigner verify --print-certs -v dist/keyholm.apk
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: Cosign the signed APK (keyless)
         env:

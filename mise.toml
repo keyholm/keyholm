@@ -10,13 +10,14 @@ uv = "latest"
 "pypi:apksigcopier" = "latest"
 
 [hooks]
-postinstall = "mise run accept-android-sdk-licenses"
+postinstall = "mise run setup-android-sdk"
 
-# Accepting the licenses has become somewhat difficult so just install
-# something unversioned
-[tasks.accept-android-sdk-licenses]
+# Install the minimum to trigger accept licenses
+# and have gradle install the right versions of things
+[tasks.setup-android-sdk]
 run = """
   android sdk install platform-tools
+  gradle assembleRelease --dry-run
 """
 
 [tasks.refresh-gradle]
