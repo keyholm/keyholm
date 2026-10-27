@@ -165,7 +165,11 @@ However, `root` cannot get to the passkey private key material or extract it.
 
 ## Roadmap
 
-### Hybrid transport over QR code (PXP)
+### v1
+
+I'm planning two more big features before v1.
+
+#### Hybrid transport over QR code (PXP)
 
 - CTAP 2.3 over BLE-only
   - Only requires Nearby Devices aka Bluetooth permissions.
@@ -174,16 +178,21 @@ However, `root` cannot get to the passkey private key material or extract it.
   - `hmac-secret` - needs above so we use Chromium's `prf` extension instead
   - `authenticatorSelection` - the QR scan already selects the device.
 
-### `age` keys over PXP
-
-### Security
+#### Security
 
 - Password protection **for Keyholm's UI**: this would protect Keyholm from being used,
-  given physical access, in spite of knowledge of device credential/biometrics access.
-  Note that it's **not possible** to fully protect use of the keys
-  themselves with a password while also keeping them device-bound.
+  given physical access, in spite of knowledge of device credential/biometrics access
+  as well as protect the metadata with the password.
+  Note that it's **not possible** to fully protect use of the keys themselves
+  from `root` with a password while also keeping them device-bound.
   `root` access will ALWAYS remove any password protection to use of the keys
   themselves.
+
+### Other stuff
+
+### `age` keys over PXP
+
+See [#55](https://github.com/keyholm/keyholm/issues/55)
 
 ### UX
 

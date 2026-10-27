@@ -1,7 +1,7 @@
-Keyholm now guarantees backwards compatibility, starting with this version.
+Keyholm now guarantees app data backwards compatibility, starting with this version's.
 
 WARNING: If you're upgrading from v0.0.4 or below and don't want to lose your data,
-you must upgrade to v0.0.5 first!
-Keyholm now only supports encrypted at rest data.
+you must upgrade to v0.0.5 first to migrate!
+Keyholm only supports encrypted at rest data from now on.
 
 Otherwise there are just small UX improvements in this release.
