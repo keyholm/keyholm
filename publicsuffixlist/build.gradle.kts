@@ -8,12 +8,13 @@ android {
     compileSdk {
         version =
             release(37) {
-                minorApiLevel = 1
+                minorApiLevel = 2
             }
     }
+    buildToolsVersion = "37.0.0"
 
     defaultConfig {
-        minSdk = 26
+        minSdk = 35
     }
 
     compileOptions {

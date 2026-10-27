@@ -10,11 +10,13 @@ uv = "latest"
 "pypi:apksigcopier" = "latest"
 
 [hooks]
-postinstall = "mise run android-sdk-install"
+postinstall = "mise run accept-android-sdk-licenses"
 
-[tasks.android-sdk-install]
+# Accepting the licenses has become somewhat difficult so just install
+# something unversioned
+[tasks.accept-android-sdk-licenses]
 run = """
-  android sdk install build-tools/37.0.0 platforms/android-37.2
+  android sdk install platform-tools
 """
 
 [tasks.refresh-gradle]
