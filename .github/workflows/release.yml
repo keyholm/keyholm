@@ -6,6 +6,7 @@ on:
 permissions:
   contents: write
   id-token: write
+  attestations: write
 
 jobs:
   build:
@@ -95,7 +96,7 @@ jobs:
           The signed APK's ZIP payload is byte-identical to \`keyholm-unsigned.apk\`.
           Only the APK Signing Block differs. See the workflow run for the recorded SHA-256 of each.
 
-          ## Verify the Sigstore bundles
+          ## Verify provenance
 
           Install [cosign](https://docs.sigstore.dev/cosign/installation/):
 
@@ -119,6 +120,20 @@ jobs:
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \\
             --certificate-github-workflow-sha \$SHA \\
             keyholm-unsigned.apk
+          \`\`\`
+
+          Both APKs also have [build provenance attestations](https://github.com/${REPO}/attestations):
+
+          \`\`\`bash
+          gh attestation verify keyholm.apk \\
+            --repo ${REPO} \\
+            --signer-workflow ${REPO}/.github/workflows/release.yml \\
+            --source-digest \$SHA
+
+          gh attestation verify keyholm-unsigned.apk \\
+            --repo ${REPO} \\
+            --signer-workflow ${REPO}/.github/workflows/release.yml \\
+            --source-digest \$SHA
           \`\`\`
 
           ## Verify the APK signature
@@ -198,3 +213,9 @@ jobs:
             dist/keyholm.apk
           gh release upload "${{ needs.build.outputs.tag }}" --repo "${{ github.repository }}" \
             dist/keyholm.apk.sigstore.json
+      - name: Attest build provenance of both APKs
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            dist/keyholm-unsigned.apk
+            dist/keyholm.apk
