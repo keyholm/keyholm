@@ -4,7 +4,6 @@ shell = "bash -c -o errexit"
 
 [tools]
 android-sdk = "latest"
-android-cli = "latest"
 gradle = "9.8.2"
 java = "temurin-25"
 uv = "latest"
