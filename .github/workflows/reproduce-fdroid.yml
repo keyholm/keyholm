@@ -86,7 +86,7 @@ jobs:
         working-directory: fdroiddata
         run: |
           export PATH="$GITHUB_WORKSPACE/fdroidserver:$PATH" PYTHONPATH="$GITHUB_WORKSPACE/fdroidserver"
-          fdroid build -v -l app.keyholm
+          fdroid build -v --stop -l app.keyholm
       - name: Compare with the reference build
         working-directory: fdroiddata
         env:
