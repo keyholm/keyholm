@@ -74,6 +74,16 @@ jobs:
           build["versionName"] = os.environ["NAME"]
           build["versionCode"] = int(os.environ["CODE"])
           build["commit"] = os.environ["SHA"]
+          # Temporary until the recipe with these lines is merged into fdroiddata
+          build["sudo"] = [
+              "apt-get update",
+              "apt-get install -y openjdk-25-jdk-headless rustup gcc libc-dev yq",
+              "update-alternatives --auto java",
+          ]
+          build["init"] = [
+              'sdkmanager "ndk;$(tomlq -r .versions.ndk ../gradle/libs.versions.toml)"',
+              """cargo install cargo-ndk --locked --version "$(tomlq -r '.tools."cargo:cargo-ndk"[0].version' ../mise.lock)\"""",
+          ]
           app.pop("Binaries", None)
           with open(path, "w") as f:
               yaml.dump(app, f)
