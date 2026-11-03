@@ -13,6 +13,7 @@ plugins {
 
 dependencyLocking {
     lockMode.set(LockMode.STRICT)
+    ignoredDependencies.add("androidx.biometric:*")
 }
 
 configurations.configureEach {
@@ -211,8 +212,8 @@ dependencies {
     implementation("androidx.datastore:datastore-tink:1.3.0")
     implementation("com.google.crypto.tink:tink-android:1.24.0")
     implementation("com.google.protobuf:protobuf-javalite:4.36.2")
-    implementation("androidx.biometric:biometric:1.4.0-SNAPSHOT")
-    implementation("androidx.biometric:biometric-compose:1.4.0-SNAPSHOT")
+    implementation("androidx.biometric:biometric:1.4.0-20261102.175530-1")
+    implementation("androidx.biometric:biometric-compose:1.4.0-20261102.175530-1")
     implementation("com.upokecenter:cbor:4.5.6")
     implementation("com.caverock:androidsvg-aar:1.4")
     implementation(project(":publicsuffixlist"))
