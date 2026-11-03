@@ -1,3 +1,8 @@
+buildscript {
+    repositories { google() }
+    dependencies { classpath("com.android.tools:r8:9.6.0-alpha09") }
+}
+
 plugins {
     id("com.android.application") version "9.5.0" apply false
     id("com.android.library") version "9.5.0" apply false
