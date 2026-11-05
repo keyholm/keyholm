@@ -10,6 +10,8 @@
 
     <uses-permission tools:node="remove" android:name="android.permission.INTERNET" />
 
+    <uses-permission tools:node="remove" android:name="android.permission.USE_FINGERPRINT" />
+
     <permission
         android:name="${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         tools:node="remove" />
