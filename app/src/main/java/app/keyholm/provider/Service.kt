@@ -25,11 +25,10 @@ import androidx.credentials.provider.CredentialProviderService
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
 import app.keyholm.R
 import app.keyholm.authenticator.AlgorithmNegotiation
-import app.keyholm.authenticator.MlDsaSupport
-import app.keyholm.ctap.AlgorithmFamily
+import app.keyholm.authenticator.availableFamilies
+import app.keyholm.authenticator.availableMlDsaSupport
 import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.WebAuthnAlgorithm
-import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.settings.Settings
 import app.keyholm.settings.SettingsRepository
 import app.keyholm.store.PasskeyRepository
@@ -165,16 +164,11 @@ class Service internal constructor(
     ): List<WebAuthnAlgorithm> =
         AlgorithmNegotiation.offeredAlgorithms(
             requested = options.requestedAlgorithms(),
-            enabled = settings.enabledFamilies.filterTo(mutableSetOf(), ::isFamilyAvailable),
+            enabled = availableFamilies(applicationContext, settings.enabledFamilies),
             preferred = settings.preferredAlgorithm,
             fallback = settings.fallbackAlgorithm,
-            mlDsa = if (isFamilyAvailable(AlgorithmFamily.ML_DSA)) settings.mlDsaSupport else MlDsaSupport.OFF,
+            mlDsa = availableMlDsaSupport(applicationContext, settings.mlDsaSupport),
         )
-
-    private fun isFamilyAvailable(family: AlgorithmFamily): Boolean =
-        family.algorithms.any {
-            SecureKeyManager.isAlgorithmAvailable(applicationContext, it)
-        }
 
     private fun offeredAttestation(options: CreationOptions): AttestationOffer =
         if (attestationRequested(options.attestation)) AttestationOffer.Ask else AttestationOffer.NotRequested
