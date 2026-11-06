@@ -2,12 +2,12 @@ package app.keyholm.ui.createpasskey
 
 import android.content.Context
 import android.content.Intent
+import app.keyholm.authenticator.IdentityPreference
+import app.keyholm.ctap.RpId
 import app.keyholm.provider.AttestationOffer
 import app.keyholm.provider.CreationOffer
 import app.keyholm.provider.preferRpName
 import app.keyholm.ui.common.CryptoPrompt
-import app.keyholm.webauthn.IdentityPreference
-import app.keyholm.webauthn.RpId
 
 internal typealias CreationOptionsChooser = suspend (prompt: CreationOptionsPrompt) -> CreationChoice?
 

@@ -25,6 +25,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.keyholm.ctap.RpId
+import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.ui.common.Sheet
 import app.keyholm.ui.common.SheetHeader
 import app.keyholm.ui.common.SheetHeadlineTrim
@@ -32,8 +34,6 @@ import app.keyholm.ui.common.SheetRow
 import app.keyholm.ui.common.SheetSection
 import app.keyholm.ui.common.SheetSupportingTrim
 import app.keyholm.ui.common.rememberAppIcon
-import app.keyholm.webauthn.RpId
-import app.keyholm.webauthn.WebAuthnAlgorithm
 
 internal sealed interface OptionChoice {
     val initial: Boolean

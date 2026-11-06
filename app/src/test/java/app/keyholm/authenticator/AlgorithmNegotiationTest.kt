@@ -1,5 +1,11 @@
-package app.keyholm.webauthn
+package app.keyholm.authenticator
 
+import app.keyholm.ctap.WebAuthnAlgorithm
+import app.keyholm.webauthn.CreationOptions
+import app.keyholm.webauthn.CredentialParameters
+import app.keyholm.webauthn.RpEntity
+import app.keyholm.webauthn.UserEntity
+import app.keyholm.webauthn.requestedAlgorithms
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.Test
 
@@ -9,14 +15,12 @@ private val ML_DSA_65 = WebAuthnAlgorithm.ML_DSA_65
 private val ML_DSA_87 = WebAuthnAlgorithm.ML_DSA_87
 
 private fun options(vararg requested: WebAuthnAlgorithm) =
-    AlgorithmNegotiation.requestedAlgorithms(
-        CreationOptions(
-            rp = RpEntity("keyholm.app", "Keyholm"),
-            user = UserEntity("AA", "alice", "Alice"),
-            challenge = "AA",
-            pubKeyCredParams = requested.map { CredentialParameters(alg = it.coseAlg) },
-        ),
-    )
+    CreationOptions(
+        rp = RpEntity("keyholm.app", "Keyholm"),
+        user = UserEntity("AA", "alice", "Alice"),
+        challenge = "AA",
+        pubKeyCredParams = requested.map { CredentialParameters(alg = it.coseAlg) },
+    ).requestedAlgorithms()
 
 class AlgorithmNegotiationTest {
     @Test

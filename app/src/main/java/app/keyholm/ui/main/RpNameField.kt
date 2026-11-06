@@ -4,7 +4,7 @@ import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextRange
-import app.keyholm.webauthn.RelyingParty
+import app.keyholm.ctap.RelyingParty
 
 @Composable
 internal fun RpNameField(

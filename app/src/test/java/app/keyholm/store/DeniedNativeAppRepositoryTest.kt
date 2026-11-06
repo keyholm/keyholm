@@ -3,11 +3,11 @@ package app.keyholm.store
 import android.app.Application
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataStoreFactory
+import app.keyholm.ctap.RpId
 import app.keyholm.store.proto.DeniedNativeAppsProto
 import app.keyholm.webauthn.AssetLinkStatement
 import app.keyholm.webauthn.CertFingerprint
 import app.keyholm.webauthn.PackageName
-import app.keyholm.webauthn.RpId
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

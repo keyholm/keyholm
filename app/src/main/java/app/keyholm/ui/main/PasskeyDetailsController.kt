@@ -2,12 +2,12 @@ package app.keyholm.ui.main
 
 import android.content.Context
 import android.content.Intent
+import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.util.logger
-import app.keyholm.webauthn.CredentialId
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow

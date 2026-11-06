@@ -21,12 +21,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Shape
+import app.keyholm.authenticator.AlgorithmNegotiation
+import app.keyholm.authenticator.AlgorithmPreference
+import app.keyholm.ctap.AlgorithmFamily
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.main.MainUiState
 import app.keyholm.ui.main.MainViewModel
-import app.keyholm.webauthn.AlgorithmFamily
-import app.keyholm.webauthn.AlgorithmNegotiation
-import app.keyholm.webauthn.AlgorithmPreference
 
 private const val DESCRIPTION_SIGNATURE_ALGORITHMS =
     "Algorithm selection during creation. At least one must be enabled."

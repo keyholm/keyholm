@@ -1,6 +1,7 @@
 package app.keyholm.webauthn
 
 import android.content.Context
+import app.keyholm.ctap.RpId
 import app.keyholm.util.logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext

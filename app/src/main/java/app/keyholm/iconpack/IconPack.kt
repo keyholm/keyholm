@@ -6,9 +6,9 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.createBitmap
+import app.keyholm.ctap.RelyingParty
+import app.keyholm.ctap.RpId
 import app.keyholm.util.logger
-import app.keyholm.webauthn.RelyingParty
-import app.keyholm.webauthn.RpId
 import com.caverock.androidsvg.SVG
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext

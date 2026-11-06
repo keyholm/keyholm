@@ -12,6 +12,10 @@ import androidx.credentials.provider.ProviderCreateCredentialRequest
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import app.keyholm.Application
+import app.keyholm.ctap.AuthenticatorData
+import app.keyholm.ctap.CredentialUser
+import app.keyholm.ctap.RelyingParty
+import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.keystore.SecureKeyManager
@@ -25,15 +29,11 @@ import app.keyholm.ui.common.appLabel
 import app.keyholm.ui.common.promptContent
 import app.keyholm.ui.common.userLabel
 import app.keyholm.ui.theme.KeyholmTheme
-import app.keyholm.webauthn.AuthenticatorData
 import app.keyholm.webauthn.Caller
 import app.keyholm.webauthn.CreationOptions
-import app.keyholm.webauthn.CredentialUser
 import app.keyholm.webauthn.PackageName
 import app.keyholm.webauthn.PrfExtension
-import app.keyholm.webauthn.RelyingParty
 import app.keyholm.webauthn.SigningInput
-import app.keyholm.webauthn.WebAuthnAlgorithm
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel

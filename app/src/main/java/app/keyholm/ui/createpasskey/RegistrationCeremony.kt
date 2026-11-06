@@ -15,6 +15,8 @@ import androidx.credentials.exceptions.domerrors.InvalidStateError
 import androidx.credentials.exceptions.publickeycredential.CreatePublicKeyCredentialDomException
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.fragment.app.FragmentActivity
+import app.keyholm.ctap.AuthenticatorData
+import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.provider.CreationOffer
@@ -34,10 +36,8 @@ import app.keyholm.util.logger
 import app.keyholm.webauthn.AttestationObject
 import app.keyholm.webauthn.AttestationObjects
 import app.keyholm.webauthn.AttestationResponse
-import app.keyholm.webauthn.AuthenticatorData
 import app.keyholm.webauthn.ClientDataJson
 import app.keyholm.webauthn.ClientDataType
-import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.CredentialResponseJson
 import app.keyholm.webauthn.DerSignature
 import app.keyholm.webauthn.PrfExtension

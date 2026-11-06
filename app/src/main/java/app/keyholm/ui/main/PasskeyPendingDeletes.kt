@@ -1,6 +1,7 @@
 package app.keyholm.ui.main
 
 import androidx.biometric.BiometricPrompt
+import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.PasskeyRecord
@@ -9,7 +10,6 @@ import app.keyholm.store.RecordLifecycle
 import app.keyholm.store.deletePasskeyKeys
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
-import app.keyholm.webauthn.CredentialId
 import kotlinx.coroutines.flow.Flow
 import java.security.GeneralSecurityException
 import java.security.ProviderException

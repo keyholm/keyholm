@@ -19,10 +19,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import app.keyholm.ctap.RelyingParty
+import app.keyholm.ctap.RpId
 import app.keyholm.iconpack.IconPack
 import app.keyholm.iconpack.RenderedIcon
-import app.keyholm.webauthn.RelyingParty
-import app.keyholm.webauthn.RpId
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin

@@ -10,15 +10,15 @@ import androidx.credentials.provider.BiometricPromptData
 import androidx.credentials.provider.CredentialEntry
 import androidx.credentials.provider.PublicKeyCredentialEntry
 import app.keyholm.R
+import app.keyholm.ctap.CredentialId
+import app.keyholm.ctap.RpId
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.util.logger
-import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.NativeAppTrust
 import app.keyholm.webauthn.RequestOptions
-import app.keyholm.webauthn.RpId
 import java.security.GeneralSecurityException
 import java.security.Signature
 

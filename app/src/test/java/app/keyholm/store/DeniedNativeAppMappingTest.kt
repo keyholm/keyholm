@@ -1,11 +1,11 @@
 package app.keyholm.store
 
+import app.keyholm.ctap.RpId
 import app.keyholm.store.proto.DeniedNativeAppProto
 import app.keyholm.store.proto.DeniedNativeAppsProto
 import app.keyholm.webauthn.AssetLinkStatement
 import app.keyholm.webauthn.CertFingerprint
 import app.keyholm.webauthn.PackageName
-import app.keyholm.webauthn.RpId
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith

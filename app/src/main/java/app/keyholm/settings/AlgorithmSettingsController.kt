@@ -1,10 +1,10 @@
 package app.keyholm.settings
 
 import androidx.datastore.preferences.core.MutablePreferences
-import app.keyholm.webauthn.AlgorithmFamily
-import app.keyholm.webauthn.AlgorithmNegotiation
-import app.keyholm.webauthn.AlgorithmPreference
-import app.keyholm.webauthn.MlDsaSupport
+import app.keyholm.authenticator.AlgorithmNegotiation
+import app.keyholm.authenticator.AlgorithmPreference
+import app.keyholm.authenticator.MlDsaSupport
+import app.keyholm.ctap.AlgorithmFamily
 
 class AlgorithmSettingsController(
     private val launchEdit: (suspend (MutablePreferences) -> Unit) -> Unit,

@@ -1,5 +1,9 @@
 package app.keyholm.webauthn
 
+import app.keyholm.ctap.ALG_ES256
+import app.keyholm.ctap.AuthenticatorData
+import app.keyholm.ctap.ClientDataHash
+import app.keyholm.ctap.RpId
 import com.google.common.truth.Truth.assertThat
 import com.upokecenter.cbor.CBORObject
 import org.junit.jupiter.api.Test
@@ -31,13 +35,13 @@ class WebAuthnTest {
                         authData,
                         signature,
                         listOf(leaf, intermediate),
-                        WebAuthn.ALG_ES256,
+                        ALG_ES256,
                     ).bytes,
             )
         val attStmt = decoded.get("attStmt")
 
         assertThat(decoded.get("fmt").AsString()).isEqualTo("android-key")
-        assertThat(attStmt.get("alg").AsInt32Value()).isEqualTo(WebAuthn.ALG_ES256)
+        assertThat(attStmt.get("alg").AsInt32Value()).isEqualTo(ALG_ES256)
         assertThat(attStmt.get("sig").GetByteString()).isEqualTo(signature.bytes)
         assertThat(attStmt.get("x5c").size()).isEqualTo(2)
         assertThat(attStmt.get("x5c").get(0).GetByteString()).isEqualTo(leaf)
@@ -50,7 +54,7 @@ class WebAuthnTest {
         val rpId = RpId("keyholm.app")
         val expectedRpIdHash = MessageDigest.getInstance("SHA-256").digest(rpId.value.toByteArray())
 
-        val data = WebAuthn.assertionAuthData(rpId, signCount = 1)
+        val data = AuthenticatorData.forAssertion(rpId, signCount = 1)
 
         assertThat(data.bytes.size).isEqualTo(37)
         assertThat(data.bytes.copyOfRange(0, 32)).isEqualTo(expectedRpIdHash)

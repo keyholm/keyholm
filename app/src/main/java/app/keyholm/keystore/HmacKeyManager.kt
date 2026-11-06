@@ -4,10 +4,10 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
+import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.SecureKeyManager.Companion.ANDROID_KEYSTORE
 import app.keyholm.keystore.SecureKeyManager.Companion.policyFromKeyInfo
 import app.keyholm.util.logger
-import app.keyholm.webauthn.CredentialId
 import java.security.KeyStore
 import java.security.UnrecoverableKeyException
 import javax.crypto.KeyGenerator

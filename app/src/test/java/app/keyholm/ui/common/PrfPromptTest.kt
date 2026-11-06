@@ -2,10 +2,11 @@ package app.keyholm.ui.common
 
 import androidx.biometric.AuthenticationRequest
 import androidx.biometric.BiometricPrompt
+import app.keyholm.ctap.PrfResults
+import app.keyholm.ctap.PrfSalts
+import app.keyholm.ctap.RelyingParty
+import app.keyholm.ctap.RpId
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.webauthn.PrfExtension
-import app.keyholm.webauthn.RelyingParty
-import app.keyholm.webauthn.RpId
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -43,9 +44,9 @@ class PrfPromptTest {
 
     private fun evaluate(
         authenticator: RecordingAuthenticator,
-        salts: PrfExtension.Salts,
+        salts: PrfSalts,
         nextMacs: MutableList<Mac>,
-    ): PrfExtension.Results? =
+    ): PrfResults? =
         runBlocking {
             PrfPrompt(authenticator, Dispatchers.Unconfined).evaluate(
                 mac = mac(),
@@ -61,7 +62,7 @@ class PrfPromptTest {
         val authenticator = RecordingAuthenticator()
         val nextMacs = mutableListOf<Mac>()
 
-        val results = evaluate(authenticator, PrfExtension.Salts(FIRST, SECOND), nextMacs)
+        val results = evaluate(authenticator, PrfSalts(FIRST, SECOND), nextMacs)
 
         assertThat(authenticator.macs).hasSize(2)
         assertThat(authenticator.macs[0]).isNotSameInstanceAs(authenticator.macs[1])
@@ -75,7 +76,7 @@ class PrfPromptTest {
         val authenticator = RecordingAuthenticator()
         val nextMacs = mutableListOf<Mac>()
 
-        val results = evaluate(authenticator, PrfExtension.Salts(FIRST, null), nextMacs)
+        val results = evaluate(authenticator, PrfSalts(FIRST, null), nextMacs)
 
         assertThat(authenticator.macs).hasSize(1)
         assertThat(nextMacs).isEmpty()
@@ -87,7 +88,7 @@ class PrfPromptTest {
     fun `declining the second prompt returns no results`() {
         val authenticator = RecordingAuthenticator(declineFrom = 2)
 
-        val results = evaluate(authenticator, PrfExtension.Salts(FIRST, SECOND), mutableListOf())
+        val results = evaluate(authenticator, PrfSalts(FIRST, SECOND), mutableListOf())
 
         assertThat(authenticator.macs).hasSize(2)
         assertThat(results).isNull()

@@ -1,6 +1,6 @@
 package app.keyholm.provider
 
-import app.keyholm.webauthn.CredentialId
+import app.keyholm.ctap.CredentialId
 import java.security.Signature
 import java.util.concurrent.ConcurrentHashMap
 

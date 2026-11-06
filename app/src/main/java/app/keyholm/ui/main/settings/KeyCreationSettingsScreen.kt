@@ -19,11 +19,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Shape
+import app.keyholm.authenticator.IdentityPreference
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.main.MainUiState
 import app.keyholm.ui.main.MainViewModel
-import app.keyholm.webauthn.IdentityPreference
 
 private const val DESCRIPTION_KEY_SECTION = "Changes are only applied to new keys."
 private const val LABEL_AUTHENTICATOR_IDENTITY = "Include authenticator identity"

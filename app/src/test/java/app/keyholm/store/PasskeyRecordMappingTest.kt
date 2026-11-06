@@ -1,14 +1,14 @@
 package app.keyholm.store
 
+import app.keyholm.ctap.CredentialId
+import app.keyholm.ctap.CredentialUser
+import app.keyholm.ctap.RelyingParty
+import app.keyholm.ctap.RpId
+import app.keyholm.ctap.UserHandle
+import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.proto.KeySecurityLevelProto
-import app.keyholm.webauthn.CredentialId
-import app.keyholm.webauthn.CredentialUser
 import app.keyholm.webauthn.PackageName
-import app.keyholm.webauthn.RelyingParty
-import app.keyholm.webauthn.RpId
-import app.keyholm.webauthn.UserHandle
-import app.keyholm.webauthn.WebAuthnAlgorithm
 import com.google.common.truth.Truth.assertThat
 import com.google.protobuf.ByteString
 import org.junit.Test

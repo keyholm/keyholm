@@ -3,12 +3,12 @@ package app.keyholm.store
 import android.content.Context
 import androidx.datastore.core.DataStore
 import app.keyholm.Application
+import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.proto.DiscoverabilityProto
 import app.keyholm.store.proto.PasskeyRecordProto
 import app.keyholm.store.proto.PasskeyRecordsProto
-import app.keyholm.webauthn.CredentialId
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow

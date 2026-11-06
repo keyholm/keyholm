@@ -4,8 +4,8 @@ import android.text.format.DateUtils
 import androidx.biometric.AuthenticationRequest
 import androidx.biometric.PromptContentItemBulletedText
 import androidx.biometric.PromptContentItemPlainText
+import app.keyholm.ctap.RelyingParty
 import app.keyholm.store.PasskeyRecord
-import app.keyholm.webauthn.RelyingParty
 import java.time.Instant
 
 internal fun promptContent(

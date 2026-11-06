@@ -12,9 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextRange
+import app.keyholm.ctap.CredentialUser
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.userLabel
-import app.keyholm.webauthn.CredentialUser
 import kotlinx.coroutines.CoroutineScope
 
 private const val SEPARATOR = " ("

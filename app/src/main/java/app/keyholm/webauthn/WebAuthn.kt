@@ -1,115 +1,20 @@
 package app.keyholm.webauthn
 
+import app.keyholm.ctap.AuthenticatorData
+import app.keyholm.ctap.ClientDataHash
+import app.keyholm.ctap.CredentialId
+import app.keyholm.ctap.PrfResults
+import app.keyholm.ctap.PrfSalts
+import app.keyholm.ctap.UserHandle
+import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.util.B64
 import app.keyholm.util.sha256
 import com.upokecenter.cbor.CBOREncodeOptions
 import com.upokecenter.cbor.CBORObject
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.io.ByteArrayOutputStream
-import java.math.BigInteger
-import java.security.PublicKey
-import java.security.interfaces.ECPublicKey
-import kotlin.uuid.Uuid
-
-private const val BYTE_MASK = 0xff
-private const val BITS_PER_BYTE = 8
-private const val TWO_BYTES_SHIFT = 16
-private const val THREE_BYTES_SHIFT = 24
-private const val ED25519_RAW_KEY_BYTES = 32
-private const val ML_DSA_65_RAW_KEY_BYTES = 1952
-private const val ML_DSA_87_RAW_KEY_BYTES = 2592
-private const val COSE_CRV_ED25519 = 6
-private const val COSE_KTY_AKP = 7
-private const val FIELD_SIZE_BYTES = 32
-
-// COSE_Key labels for an EC2/OKP key (RFC 9053 §7.1) and an AKP key (RFC 9964 §6).
-private const val COSE_LABEL_ALG = 3
-private const val COSE_LABEL_AKP_PUB = -1
-private const val COSE_LABEL_X_COORD = -2
-private const val COSE_LABEL_Y_COORD = -3
 
 private val CANONICAL = CBOREncodeOptions("ctap2canonical=true")
-
-private fun BigInteger.toFixed32(): ByteArray {
-    val raw = toByteArray()
-    return when {
-        raw.size == FIELD_SIZE_BYTES -> raw
-        raw.size == FIELD_SIZE_BYTES + 1 && raw[0].toInt() == 0 -> raw.copyOfRange(1, FIELD_SIZE_BYTES + 1)
-        raw.size < FIELD_SIZE_BYTES -> ByteArray(FIELD_SIZE_BYTES - raw.size) + raw
-        else -> raw.copyOfRange(raw.size - FIELD_SIZE_BYTES, raw.size)
-    }
-}
-
-private fun coseKey(
-    pub: PublicKey,
-    algorithm: WebAuthnAlgorithm,
-): CoseKey =
-    when (algorithm) {
-        WebAuthnAlgorithm.ES256 -> {
-            val ecPub = pub as ECPublicKey
-            CBORObject
-                .NewMap()
-                .Add(1, 2) // kty = EC2
-                .Add(COSE_LABEL_ALG, WebAuthn.ALG_ES256)
-                .Add(-1, 1) // crv = P-256
-                .Add(COSE_LABEL_X_COORD, ecPub.w.affineX.toFixed32())
-                .Add(COSE_LABEL_Y_COORD, ecPub.w.affineY.toFixed32())
-                .EncodeToBytes(CANONICAL)
-                .let(::CoseKey)
-        }
-
-        WebAuthnAlgorithm.ED25519 -> {
-            // X.509 SubjectPublicKeyInfo for Ed25519 is a fixed 12-byte prefix
-            // followed by the raw 32-byte public key.
-            val raw = pub.encoded.copyOfRange(pub.encoded.size - ED25519_RAW_KEY_BYTES, pub.encoded.size)
-            CBORObject
-                .NewMap()
-                .Add(1, 1) // kty = OKP
-                .Add(COSE_LABEL_ALG, WebAuthn.ALG_EDDSA)
-                .Add(-1, COSE_CRV_ED25519) // crv = Ed25519
-                .Add(COSE_LABEL_X_COORD, raw)
-                .EncodeToBytes(CANONICAL)
-                .let(::CoseKey)
-        }
-
-        WebAuthnAlgorithm.ML_DSA_65 -> {
-            akpCoseKey(pub, WebAuthn.ALG_ML_DSA_65, ML_DSA_65_RAW_KEY_BYTES)
-        }
-
-        WebAuthnAlgorithm.ML_DSA_87 -> {
-            akpCoseKey(pub, WebAuthn.ALG_ML_DSA_87, ML_DSA_87_RAW_KEY_BYTES)
-        }
-    }
-
-// X.509 SubjectPublicKeyInfo for ML-DSA ends with the raw public key of the parameter set.
-private fun akpCoseKey(
-    pub: PublicKey,
-    coseAlg: Int,
-    rawKeyBytes: Int,
-): CoseKey =
-    CBORObject
-        .NewMap()
-        .Add(1, COSE_KTY_AKP) // kty = AKP
-        .Add(COSE_LABEL_ALG, coseAlg)
-        .Add(COSE_LABEL_AKP_PUB, pub.encoded.copyOfRange(pub.encoded.size - rawKeyBytes, pub.encoded.size))
-        .EncodeToBytes(CANONICAL)
-        .let(::CoseKey)
-
-private fun attestedCredentialData(
-    aaguid: Uuid,
-    credentialId: CredentialId,
-    cose: CoseKey,
-): ByteArray {
-    val credentialIdBytes = credentialId.bytes()
-    val out = ByteArrayOutputStream()
-    out.write(aaguid.toByteArray())
-    out.write((credentialIdBytes.size ushr BITS_PER_BYTE) and BYTE_MASK)
-    out.write(credentialIdBytes.size and BYTE_MASK)
-    out.write(credentialIdBytes)
-    out.write(cose.bytes)
-    return out.toByteArray()
-}
 
 private val json = Json { explicitNulls = false }
 
@@ -131,53 +36,6 @@ private fun clientDataJson(
         .toByteArray(Charsets.UTF_8)
         .let(::ClientDataJson)
 
-enum class WebAuthnAlgorithm(
-    val coseAlg: Int,
-    val displayName: String,
-    val family: AlgorithmFamily,
-) {
-    ES256(WebAuthn.ALG_ES256, "ES256", AlgorithmFamily.ES256),
-    ED25519(WebAuthn.ALG_EDDSA, "Ed25519", AlgorithmFamily.ED25519),
-    ML_DSA_87(WebAuthn.ALG_ML_DSA_87, "ML-DSA-87", AlgorithmFamily.ML_DSA),
-    ML_DSA_65(WebAuthn.ALG_ML_DSA_65, "ML-DSA-65", AlgorithmFamily.ML_DSA),
-    ;
-
-    companion object {
-        fun fromCoseAlg(coseAlg: Int): WebAuthnAlgorithm? = entries.firstOrNull { it.coseAlg == coseAlg }
-    }
-}
-
-enum class AlgorithmFamily(
-    val displayName: String,
-) {
-    ES256("ES256"),
-    ED25519("Ed25519"),
-    ML_DSA("ML-DSA"),
-    ;
-
-    val algorithms: List<WebAuthnAlgorithm> get() = WebAuthnAlgorithm.entries.filter { it.family == this }
-
-    companion object {
-        fun named(name: String): AlgorithmFamily = entries.firstOrNull { it.name == name } ?: error("unknown algorithm-family token $name")
-
-        fun fromStrings(strings: Set<String>): Set<AlgorithmFamily> = strings.mapTo(mutableSetOf(), ::named)
-
-        fun toStrings(families: Set<AlgorithmFamily>): Set<String> = families.map { it.name }.toSet()
-    }
-}
-
-enum class MlDsaSupport { OFF, STRONGEST_ONLY, PREFER_STRONGEST, FIRST_OFFERED }
-
-sealed interface AlgorithmPreference {
-    data object FirstOffered : AlgorithmPreference
-
-    data object AlwaysAsk : AlgorithmPreference
-
-    data class Prefer(
-        val family: AlgorithmFamily,
-    ) : AlgorithmPreference
-}
-
 enum class ClientDataType(
     val json: String,
 ) {
@@ -185,56 +43,7 @@ enum class ClientDataType(
     Get("webauthn.get"),
 }
 
-enum class IdentityPreference { ENABLED, DISABLED, ALWAYS_ASK }
-
 object WebAuthn {
-    private const val FLAG_UP = 0x01
-    private const val FLAG_UV = 0x04
-    private const val FLAG_AT = 0x40
-
-    // COSE algorithm identifiers (RFC 9053 §7.1, RFC 9964 §7.1)
-    const val ALG_ES256 = -7
-    const val ALG_EDDSA = -8
-    const val ALG_ML_DSA_65 = -49
-    const val ALG_ML_DSA_87 = -50
-
-    val KEYHOLM_AAGUID: Uuid = Uuid.parse("69840def-9dcf-4632-bf87-6ac2e451b4f5")
-
-    val ZERO_AAGUID: Uuid = Uuid.NIL
-
-    fun assertionAuthData(
-        rpId: RpId,
-        signCount: Int,
-    ): AuthenticatorData = authenticatorData(rpId, FLAG_UP or FLAG_UV, signCount)
-
-    private fun authenticatorData(
-        rpId: RpId,
-        flags: Int,
-        signCount: Int,
-        attestedCredData: ByteArray? = null,
-    ): AuthenticatorData {
-        val out = ByteArrayOutputStream()
-        out.write(sha256(rpId.value.toByteArray(Charsets.UTF_8)))
-        out.write(flags)
-        out.write((signCount ushr THREE_BYTES_SHIFT) and BYTE_MASK)
-        out.write((signCount ushr TWO_BYTES_SHIFT) and BYTE_MASK)
-        out.write((signCount ushr BITS_PER_BYTE) and BYTE_MASK)
-        out.write(signCount and BYTE_MASK)
-        if (attestedCredData != null) out.write(attestedCredData)
-        return AuthenticatorData(out.toByteArray())
-    }
-
-    fun registrationAuthData(
-        rpId: RpId,
-        credentialId: CredentialId,
-        pub: PublicKey,
-        aaguid: Uuid,
-        algorithm: WebAuthnAlgorithm,
-    ): AuthenticatorData {
-        val acd = attestedCredentialData(aaguid, credentialId, coseKey(pub, algorithm))
-        return authenticatorData(rpId, FLAG_UP or FLAG_UV or FLAG_AT, 0, acd)
-    }
-
     val PLACEHOLDER_CLIENT_DATA_JSON: ClientDataJson =
         ClientDataJson("""{"clientDataJSON":"provided_by_caller"}""".toByteArray(Charsets.UTF_8))
 
@@ -266,7 +75,7 @@ sealed interface RegistrationPrf {
     data object Requested : RegistrationPrf
 
     data class Evaluated(
-        val results: PrfExtension.Results,
+        val results: PrfResults,
     ) : RegistrationPrf
 }
 
@@ -276,16 +85,6 @@ object PrfExtension {
     data class Inputs(
         val first: PrfInput,
         val second: PrfInput?,
-    )
-
-    class Salts(
-        val first: ByteArray,
-        val second: ByteArray?,
-    )
-
-    data class Results(
-        val first: PrfOutput,
-        val second: PrfOutput?,
     )
 
     fun requestedAtCreation(creationOptions: CreationOptions): Boolean = creationOptions.extensions?.prf != null
@@ -312,114 +111,12 @@ object PrfExtension {
 
     private fun salt(input: PrfInput): ByteArray = sha256(SALT_PREFIX.toByteArray(Charsets.UTF_8) + byteArrayOf(0) + input.bytes)
 
-    fun salts(inputs: Inputs): Salts = Salts(salt(inputs.first), inputs.second?.let(::salt))
+    fun salts(inputs: Inputs): PrfSalts = PrfSalts(salt(inputs.first), inputs.second?.let(::salt))
 }
 
-object AlgorithmNegotiation {
-    fun requestedAlgorithms(creationOptions: CreationOptions): List<WebAuthnAlgorithm>? {
-        if (creationOptions.pubKeyCredParams.isEmpty()) return null
-        return creationOptions.pubKeyCredParams.mapNotNull { WebAuthnAlgorithm.fromCoseAlg(it.alg) }
-    }
-
-    private fun candidates(
-        requested: List<WebAuthnAlgorithm>?,
-        enabled: Set<AlgorithmFamily>,
-        mlDsa: MlDsaSupport,
-    ): List<WebAuthnAlgorithm> {
-        val mlDsaOrder =
-            when (mlDsa) {
-                MlDsaSupport.OFF -> {
-                    emptyList()
-                }
-
-                MlDsaSupport.STRONGEST_ONLY -> {
-                    listOf(WebAuthnAlgorithm.ML_DSA_87)
-                }
-
-                MlDsaSupport.PREFER_STRONGEST -> {
-                    AlgorithmFamily.ML_DSA.algorithms
-                }
-
-                MlDsaSupport.FIRST_OFFERED -> {
-                    requested?.filter { it.family == AlgorithmFamily.ML_DSA } ?: AlgorithmFamily.ML_DSA.algorithms
-                }
-            }
-        return WebAuthnAlgorithm.entries
-            .filter { it.family != AlgorithmFamily.ML_DSA && it.family in enabled } + mlDsaOrder
-    }
-
-    fun allowedAlgorithms(
-        enabled: Set<AlgorithmFamily>,
-        mlDsa: MlDsaSupport,
-    ): List<WebAuthnAlgorithm> = candidates(requested = null, enabled = enabled, mlDsa = mlDsa)
-
-    private fun matchingAlgorithms(
-        requested: List<WebAuthnAlgorithm>?,
-        enabled: Set<AlgorithmFamily>,
-        mlDsa: MlDsaSupport,
-    ): List<WebAuthnAlgorithm> {
-        val candidates = candidates(requested, enabled, mlDsa)
-        if (requested == null) return candidates.distinctBy { it.family }
-        // The ML-DSA setting already picked the parameter set, so a family is never offered twice.
-        return candidates
-            .filter { it in requested }
-            .distinctBy { it.family }
-            .sortedBy { algorithm -> requested.indexOfFirst { it.family == algorithm.family } }
-    }
-
-    fun offeredAlgorithms(
-        requested: List<WebAuthnAlgorithm>?,
-        enabled: Set<AlgorithmFamily>,
-        preferred: AlgorithmPreference,
-        fallback: AlgorithmPreference,
-        mlDsa: MlDsaSupport,
-    ): List<WebAuthnAlgorithm> {
-        val matching = matchingAlgorithms(requested, enabled, mlDsa)
-        return when (preferred) {
-            AlgorithmPreference.AlwaysAsk -> {
-                matching
-            }
-
-            AlgorithmPreference.FirstOffered -> {
-                listOfNotNull(matching.firstOrNull())
-            }
-
-            is AlgorithmPreference.Prefer -> {
-                firstOf(matching, preferred.family) ?: applyFallback(matching, fallback)
-            }
-        }
-    }
-
-    private fun firstOf(
-        matching: List<WebAuthnAlgorithm>,
-        family: AlgorithmFamily,
-    ): List<WebAuthnAlgorithm>? =
-        matching
-            .firstOrNull {
-                it.family ==
-                    family
-            }?.let { listOf(it) }
-
-    // The fallback only decides between algorithms left over once the preferred one turned out to be unavailable.
-    private fun applyFallback(
-        matching: List<WebAuthnAlgorithm>,
-        fallback: AlgorithmPreference,
-    ): List<WebAuthnAlgorithm> {
-        if (matching.size < 2) return matching
-        return when (fallback) {
-            AlgorithmPreference.AlwaysAsk -> {
-                matching
-            }
-
-            AlgorithmPreference.FirstOffered -> {
-                listOf(matching.first())
-            }
-
-            is AlgorithmPreference.Prefer -> {
-                firstOf(matching, fallback.family) ?: listOf(matching.first())
-            }
-        }
-    }
+fun CreationOptions.requestedAlgorithms(): List<WebAuthnAlgorithm>? {
+    if (pubKeyCredParams.isEmpty()) return null
+    return pubKeyCredParams.mapNotNull { WebAuthnAlgorithm.fromCoseAlg(it.alg) }
 }
 
 private const val NONE_FMT = "none"
@@ -607,7 +304,7 @@ object CredentialResponseJson {
     fun assertionResponseJson(
         credentialId: CredentialId,
         response: AssertionResponse,
-        prfResults: PrfExtension.Results? = null,
+        prfResults: PrfResults? = null,
     ): String {
         val id = credentialId.b64
         val payload =

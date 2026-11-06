@@ -17,6 +17,8 @@ import androidx.credentials.provider.ProviderGetCredentialRequest
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import app.keyholm.Application
+import app.keyholm.ctap.AuthenticatorData
+import app.keyholm.ctap.PrfResults
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.provider.PendingSignatures
 import app.keyholm.provider.credentialId
@@ -37,7 +39,6 @@ import app.keyholm.ui.common.promptContent
 import app.keyholm.ui.common.userLabel
 import app.keyholm.util.logger
 import app.keyholm.webauthn.AssertionResponse
-import app.keyholm.webauthn.AuthenticatorData
 import app.keyholm.webauthn.ClientDataJson
 import app.keyholm.webauthn.CredentialResponseJson
 import app.keyholm.webauthn.DerSignature
@@ -369,7 +370,7 @@ class Activity internal constructor(
     private fun respond(
         signIn: SignInContext,
         derSignature: DerSignature,
-        prfResults: PrfExtension.Results?,
+        prfResults: PrfResults?,
     ) {
         val responseJson =
             CredentialResponseJson.assertionResponseJson(

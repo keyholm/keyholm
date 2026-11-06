@@ -1,5 +1,6 @@
 package app.keyholm.webauthn
 
+import app.keyholm.ctap.RpId
 import app.keyholm.ui.common.ErrorMessages
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.Test

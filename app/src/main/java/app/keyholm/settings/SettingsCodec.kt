@@ -1,9 +1,9 @@
 package app.keyholm.settings
 
 import android.content.Context
+import app.keyholm.authenticator.IdentityPreference
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.webauthn.CommunityAssetLinks
-import app.keyholm.webauthn.IdentityPreference
 import app.keyholm.webauthn.NativeAppTrust
 import app.keyholm.webauthn.TrustMode
 import kotlinx.coroutines.CoroutineDispatcher

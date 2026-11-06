@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.pm.Signature
 import android.content.pm.SigningInfo
 import androidx.credentials.provider.CallingAppInfo
+import app.keyholm.ctap.ClientDataHash
+import app.keyholm.ctap.RpId
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.B64
 import app.keyholm.util.sha256

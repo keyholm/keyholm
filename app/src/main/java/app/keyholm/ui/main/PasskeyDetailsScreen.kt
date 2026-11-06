@@ -44,14 +44,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.keyholm.ctap.CredentialId
+import app.keyholm.ctap.RelyingParty
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.common.truncated
 import app.keyholm.util.sha256
-import app.keyholm.webauthn.CredentialId
-import app.keyholm.webauthn.RelyingParty
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.launch
 import java.text.DateFormat

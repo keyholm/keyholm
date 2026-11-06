@@ -2,11 +2,11 @@ package app.keyholm.settings
 
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.edit
+import app.keyholm.authenticator.IdentityPreference
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
-import app.keyholm.webauthn.IdentityPreference
 import app.keyholm.webauthn.TrustMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch

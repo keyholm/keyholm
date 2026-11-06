@@ -5,6 +5,9 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.credentials.GetPublicKeyCredentialOption
 import androidx.credentials.provider.ProviderGetCredentialRequest
+import app.keyholm.ctap.AuthenticatorData
+import app.keyholm.ctap.ClientDataHash
+import app.keyholm.ctap.RpId
 import app.keyholm.provider.credentialId
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.PasskeyRecord
@@ -14,12 +17,10 @@ import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.Outcome
 import app.keyholm.util.logger
 import app.keyholm.webauthn.Caller
-import app.keyholm.webauthn.ClientDataHash
 import app.keyholm.webauthn.ClientDataType
 import app.keyholm.webauthn.PackageName
 import app.keyholm.webauthn.PrfExtension
 import app.keyholm.webauthn.RequestOptions
-import app.keyholm.webauthn.RpId
 import app.keyholm.webauthn.SigningInput
 import app.keyholm.webauthn.TrustDecision
 import app.keyholm.webauthn.TrustPolicy
@@ -159,7 +160,7 @@ internal class SignInRequestResolver(
         prfInputs: PrfExtension.Inputs?,
     ): Outcome<SignInContext> {
         val newSignCount = record.signCount + 1
-        val authData = WebAuthn.assertionAuthData(record.rp.id, newSignCount)
+        val authData = AuthenticatorData.forAssertion(record.rp.id, newSignCount)
         val toSign = SigningInput(authData.bytes + clientData.hash.bytes)
 
         val algorithm = record.keystore.coseAlgorithm

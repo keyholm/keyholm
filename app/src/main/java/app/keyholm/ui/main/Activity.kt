@@ -44,6 +44,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import app.keyholm.ctap.CredentialId
 import app.keyholm.store.MigrationExportEntry
 import app.keyholm.store.MigrationImport
 import app.keyholm.store.migrationImportEntries
@@ -55,7 +56,6 @@ import app.keyholm.ui.main.settings.ExceptionsScreen
 import app.keyholm.ui.main.settings.SettingsScreen
 import app.keyholm.ui.theme.KeyholmTheme
 import app.keyholm.util.logger
-import app.keyholm.webauthn.CredentialId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable

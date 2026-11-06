@@ -1,11 +1,11 @@
 package app.keyholm.settings
 
 import android.app.Application
+import app.keyholm.authenticator.AlgorithmPreference
+import app.keyholm.authenticator.IdentityPreference
+import app.keyholm.authenticator.MlDsaSupport
+import app.keyholm.ctap.AlgorithmFamily
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.webauthn.AlgorithmFamily
-import app.keyholm.webauthn.AlgorithmPreference
-import app.keyholm.webauthn.IdentityPreference
-import app.keyholm.webauthn.MlDsaSupport
 import app.keyholm.webauthn.NativeAppTrust
 import app.keyholm.webauthn.TrustMode
 import com.google.common.truth.Truth.assertThat

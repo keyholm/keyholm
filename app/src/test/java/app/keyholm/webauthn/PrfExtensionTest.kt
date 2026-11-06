@@ -1,5 +1,6 @@
 package app.keyholm.webauthn
 
+import app.keyholm.ctap.CredentialId
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith

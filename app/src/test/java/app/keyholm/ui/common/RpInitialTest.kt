@@ -1,7 +1,7 @@
 package app.keyholm.ui.common
 
-import app.keyholm.webauthn.RelyingParty
-import app.keyholm.webauthn.RpId
+import app.keyholm.ctap.RelyingParty
+import app.keyholm.ctap.RpId
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.Test
 

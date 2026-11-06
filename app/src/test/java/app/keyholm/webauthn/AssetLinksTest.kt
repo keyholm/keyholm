@@ -1,5 +1,6 @@
 package app.keyholm.webauthn
 
+import app.keyholm.ctap.RpId
 import com.google.common.truth.Truth.assertThat
 import kotlinx.serialization.SerializationException
 import org.junit.jupiter.api.Test

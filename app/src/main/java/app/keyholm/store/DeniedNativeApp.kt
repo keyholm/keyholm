@@ -1,9 +1,9 @@
 package app.keyholm.store
 
+import app.keyholm.ctap.RpId
 import app.keyholm.webauthn.AssetLinkStatement
 import app.keyholm.webauthn.CertFingerprint
 import app.keyholm.webauthn.PackageName
-import app.keyholm.webauthn.RpId
 import java.time.Instant
 
 private const val MAX_DENIED_ENTRIES = 50

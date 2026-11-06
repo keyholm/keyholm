@@ -7,6 +7,7 @@ import androidx.credentials.provider.BeginGetCredentialRequest
 import androidx.credentials.provider.BeginGetPublicKeyCredentialOption
 import androidx.credentials.provider.CallingAppInfo
 import androidx.credentials.provider.CredentialEntry
+import app.keyholm.ctap.RpId
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.settings.Settings
 import app.keyholm.settings.SettingsRepository
@@ -16,7 +17,6 @@ import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.readStore
 import app.keyholm.util.logger
 import app.keyholm.webauthn.NativeAppTrust
-import app.keyholm.webauthn.RpId
 import app.keyholm.webauthn.TrustDecision
 import app.keyholm.webauthn.TrustPolicy
 import app.keyholm.webauthn.parseRequestOptionsOrLog

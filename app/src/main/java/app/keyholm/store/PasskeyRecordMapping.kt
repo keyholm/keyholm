@@ -1,5 +1,11 @@
 package app.keyholm.store
 
+import app.keyholm.ctap.CredentialId
+import app.keyholm.ctap.CredentialUser
+import app.keyholm.ctap.RelyingParty
+import app.keyholm.ctap.RpId
+import app.keyholm.ctap.UserHandle
+import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.proto.CoseAlgorithmProto
 import app.keyholm.store.proto.DiscoverabilityProto
@@ -9,13 +15,7 @@ import app.keyholm.store.proto.PasskeyRecordProto
 import app.keyholm.store.proto.PrfProto
 import app.keyholm.store.proto.RelyingPartyProto
 import app.keyholm.store.proto.UserProto
-import app.keyholm.webauthn.CredentialId
-import app.keyholm.webauthn.CredentialUser
 import app.keyholm.webauthn.PackageName
-import app.keyholm.webauthn.RelyingParty
-import app.keyholm.webauthn.RpId
-import app.keyholm.webauthn.UserHandle
-import app.keyholm.webauthn.WebAuthnAlgorithm
 
 private fun CoseAlgorithmProto.toWebAuthnAlgorithm(): WebAuthnAlgorithm =
     when (this) {

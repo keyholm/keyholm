@@ -3,11 +3,11 @@ package app.keyholm.provider
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import app.keyholm.authenticator.IdentityPreference
+import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.webauthn.IdentityPreference
 import app.keyholm.webauthn.NativeAppTrust
 import app.keyholm.webauthn.TrustMode
-import app.keyholm.webauthn.WebAuthnAlgorithm
 import app.keyholm.webauthn.mode
 import app.keyholm.webauthn.toTrust
 import kotlinx.coroutines.CoroutineDispatcher

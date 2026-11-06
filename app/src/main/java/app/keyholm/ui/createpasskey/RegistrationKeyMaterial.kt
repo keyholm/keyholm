@@ -3,6 +3,12 @@ package app.keyholm.ui.createpasskey
 import android.content.Context
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.widget.Toast
+import app.keyholm.ctap.AuthenticatorData
+import app.keyholm.ctap.ClientDataHash
+import app.keyholm.ctap.CredentialId
+import app.keyholm.ctap.KEYHOLM_AAGUID
+import app.keyholm.ctap.WebAuthnAlgorithm
+import app.keyholm.ctap.ZERO_AAGUID
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.KeySecurityLevel
@@ -16,11 +22,7 @@ import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.Outcome
 import app.keyholm.ui.common.resolveCreateAuthenticators
 import app.keyholm.util.logger
-import app.keyholm.webauthn.ClientDataHash
-import app.keyholm.webauthn.CredentialId
 import app.keyholm.webauthn.SigningInput
-import app.keyholm.webauthn.WebAuthn
-import app.keyholm.webauthn.WebAuthnAlgorithm
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -104,9 +106,9 @@ internal class RegistrationKeyMaterial(
         request: SecureKeyManager.CredentialKeyRequest,
         generated: SecureKeyManager.GeneratedCredential,
     ): Registration<KeyCreation> {
-        val aaguid = if (registration.identifyAsKeyholm) WebAuthn.KEYHOLM_AAGUID else WebAuthn.ZERO_AAGUID
+        val aaguid = if (registration.identifyAsKeyholm) KEYHOLM_AAGUID else ZERO_AAGUID
         val authData =
-            WebAuthn.registrationAuthData(registration.info.rp.id, credentialId, generated.publicKey, aaguid, request.algorithm)
+            AuthenticatorData.forRegistration(registration.info.rp.id, credentialId, generated.publicKey, aaguid, request.algorithm)
         val toSign = SigningInput(authData.bytes + clientDataHash.bytes)
         val signature =
             when (val r = signFor(request.credentialId, request.algorithm)) {

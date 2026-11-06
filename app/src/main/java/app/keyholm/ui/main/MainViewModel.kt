@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.biometric.BiometricManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.iconpack.IconPackController
 import app.keyholm.iconpack.IconPackStorage
 import app.keyholm.keystore.AuthenticatorPolicy
@@ -25,7 +26,6 @@ import app.keyholm.store.isStoreUnrecoverable
 import app.keyholm.store.writeStore
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
-import app.keyholm.webauthn.WebAuthnAlgorithm
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel

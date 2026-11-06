@@ -18,10 +18,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Shape
+import app.keyholm.authenticator.MlDsaSupport
+import app.keyholm.ctap.AlgorithmFamily
 import app.keyholm.ui.main.MainUiState
 import app.keyholm.ui.main.MainViewModel
-import app.keyholm.webauthn.AlgorithmFamily
-import app.keyholm.webauthn.MlDsaSupport
 
 private const val LABEL_ML_DSA_OFF = "Off"
 private const val LABEL_ML_DSA_STRONGEST_ONLY = "ML-DSA-87 only"

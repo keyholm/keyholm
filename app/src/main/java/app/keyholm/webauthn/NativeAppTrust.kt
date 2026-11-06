@@ -1,5 +1,7 @@
 package app.keyholm.webauthn
 
+import app.keyholm.ctap.RpId
+
 sealed interface NativeAppTrust {
     data object DenyAll : NativeAppTrust
 

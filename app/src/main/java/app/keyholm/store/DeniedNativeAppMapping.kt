@@ -1,5 +1,6 @@
 package app.keyholm.store
 
+import app.keyholm.ctap.RpId
 import app.keyholm.store.proto.AcceptedAppListProto
 import app.keyholm.store.proto.AcceptedAppProto
 import app.keyholm.store.proto.DeniedNativeAppProto
@@ -7,7 +8,6 @@ import app.keyholm.store.proto.DeniedNativeAppsProto
 import app.keyholm.webauthn.AssetLinkStatement
 import app.keyholm.webauthn.CertFingerprint
 import app.keyholm.webauthn.PackageName
-import app.keyholm.webauthn.RpId
 
 internal fun DeniedNativeAppsProto.toDomain(): DeniedNativeApps =
     DeniedNativeApps(

@@ -1,5 +1,7 @@
 package app.keyholm.ui.main
 
+import app.keyholm.ctap.RelyingParty
+import app.keyholm.ctap.RpId
 import app.keyholm.store.ImportResult
 import app.keyholm.store.MigrationExportEntry
 import app.keyholm.store.MigrationPlaceholder
@@ -7,8 +9,6 @@ import app.keyholm.store.MigrationRepository
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.RecordLifecycle
 import app.keyholm.store.readStore
-import app.keyholm.webauthn.RelyingParty
-import app.keyholm.webauthn.RpId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

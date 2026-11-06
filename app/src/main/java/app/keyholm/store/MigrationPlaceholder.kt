@@ -1,7 +1,7 @@
 package app.keyholm.store
 
 import androidx.compose.runtime.Immutable
-import app.keyholm.webauthn.RelyingParty
+import app.keyholm.ctap.RelyingParty
 import java.time.Instant
 
 // Add @Immutable just like for PasskeyRecord

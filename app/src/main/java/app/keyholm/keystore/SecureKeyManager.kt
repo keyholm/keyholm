@@ -8,10 +8,10 @@ import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
 import android.util.Base64
+import app.keyholm.ctap.ClientDataHash
+import app.keyholm.ctap.CredentialId
+import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.util.logger
-import app.keyholm.webauthn.ClientDataHash
-import app.keyholm.webauthn.CredentialId
-import app.keyholm.webauthn.WebAuthnAlgorithm
 import java.security.InvalidAlgorithmParameterException
 import java.security.Key
 import java.security.KeyFactory

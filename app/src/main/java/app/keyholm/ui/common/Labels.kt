@@ -2,9 +2,9 @@ package app.keyholm.ui.common
 
 import android.content.Context
 import android.content.pm.PackageManager
+import app.keyholm.ctap.RelyingParty
+import app.keyholm.ctap.RpId
 import app.keyholm.webauthn.PackageName
-import app.keyholm.webauthn.RelyingParty
-import app.keyholm.webauthn.RpId
 import java.text.BreakIterator
 
 private const val MAX_DISPLAY_LENGTH = 64

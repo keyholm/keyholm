@@ -2,9 +2,10 @@ package app.keyholm.ui.common
 
 import androidx.biometric.AuthenticationRequest
 import androidx.biometric.BiometricPrompt
+import app.keyholm.ctap.PrfOutput
+import app.keyholm.ctap.PrfResults
+import app.keyholm.ctap.PrfSalts
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.webauthn.PrfExtension
-import app.keyholm.webauthn.PrfOutput
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.crypto.Mac
@@ -19,22 +20,22 @@ internal class PrfPrompt(
     suspend fun evaluate(
         mac: Mac,
         nextMac: suspend () -> Outcome<Mac>,
-        salts: PrfExtension.Salts,
+        salts: PrfSalts,
         authenticators: AuthenticatorPolicy,
         content: (note: String?) -> AuthenticationRequest.BodyContent,
-    ): PrfExtension.Results? {
+    ): PrfResults? {
         val secondSalt = salts.second
         val firstTitle = if (secondSalt == null) PRF_PROMPT_TITLE else "$PRF_PROMPT_TITLE (1 of 2)"
         val first =
             output(mac, salts.first, firstTitle, authenticators, content(secondSalt?.let { TWO_SALTS_NOTE }))
                 ?: return null
-        if (secondSalt == null) return PrfExtension.Results(first, null)
+        if (secondSalt == null) return PrfResults(first, null)
         val second =
             when (val next = nextMac()) {
                 is Outcome.Success -> output(next.value, secondSalt, "$PRF_PROMPT_TITLE (2 of 2)", authenticators, content(null))
                 is Outcome.Failure -> null
             }
-        return second?.let { PrfExtension.Results(first, it) }
+        return second?.let { PrfResults(first, it) }
     }
 
     private suspend fun output(

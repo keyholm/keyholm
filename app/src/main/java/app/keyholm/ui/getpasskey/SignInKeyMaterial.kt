@@ -1,6 +1,8 @@
 package app.keyholm.ui.getpasskey
 
 import android.security.keystore.KeyPermanentlyInvalidatedException
+import app.keyholm.ctap.CredentialId
+import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureElementUnavailableException
@@ -10,8 +12,6 @@ import app.keyholm.store.PasskeyRepository
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.Outcome
 import app.keyholm.util.logger
-import app.keyholm.webauthn.CredentialId
-import app.keyholm.webauthn.WebAuthnAlgorithm
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.security.GeneralSecurityException

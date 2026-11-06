@@ -24,6 +24,11 @@ import androidx.credentials.provider.CreateEntry
 import androidx.credentials.provider.CredentialProviderService
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
 import app.keyholm.R
+import app.keyholm.authenticator.AlgorithmNegotiation
+import app.keyholm.authenticator.MlDsaSupport
+import app.keyholm.ctap.AlgorithmFamily
+import app.keyholm.ctap.CredentialId
+import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.settings.Settings
 import app.keyholm.settings.SettingsRepository
@@ -31,17 +36,13 @@ import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.PasskeySummary
 import app.keyholm.store.readStore
 import app.keyholm.util.logger
-import app.keyholm.webauthn.AlgorithmFamily
-import app.keyholm.webauthn.AlgorithmNegotiation
 import app.keyholm.webauthn.CreationOptions
-import app.keyholm.webauthn.CredentialId
-import app.keyholm.webauthn.MlDsaSupport
 import app.keyholm.webauthn.NativeAppTrust
 import app.keyholm.webauthn.TrustMode
-import app.keyholm.webauthn.WebAuthnAlgorithm
 import app.keyholm.webauthn.attestationRequested
 import app.keyholm.webauthn.mode
 import app.keyholm.webauthn.parseCreationOptions
+import app.keyholm.webauthn.requestedAlgorithms
 import app.keyholm.webauthn.toTrust
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -163,7 +164,7 @@ class Service internal constructor(
         settings: Settings,
     ): List<WebAuthnAlgorithm> =
         AlgorithmNegotiation.offeredAlgorithms(
-            requested = AlgorithmNegotiation.requestedAlgorithms(options),
+            requested = options.requestedAlgorithms(),
             enabled = settings.enabledFamilies.filterTo(mutableSetOf(), ::isFamilyAvailable),
             preferred = settings.preferredAlgorithm,
             fallback = settings.fallbackAlgorithm,

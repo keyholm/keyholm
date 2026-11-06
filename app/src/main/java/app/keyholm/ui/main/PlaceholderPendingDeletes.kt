@@ -1,9 +1,9 @@
 package app.keyholm.ui.main
 
+import app.keyholm.ctap.RpId
 import app.keyholm.store.MigrationPlaceholder
 import app.keyholm.store.MigrationRepository
 import app.keyholm.store.RecordLifecycle
-import app.keyholm.webauthn.RpId
 import kotlinx.coroutines.flow.Flow
 
 class PlaceholderPendingDeletes(

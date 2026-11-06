@@ -1,8 +1,8 @@
 package app.keyholm.store
 
 import android.net.Uri
+import app.keyholm.ctap.RpId
 import app.keyholm.util.B64
-import app.keyholm.webauthn.RpId
 import co.touchlab.kermit.Logger
 import com.google.common.truth.Truth.assertThat
 import com.upokecenter.cbor.CBORObject
