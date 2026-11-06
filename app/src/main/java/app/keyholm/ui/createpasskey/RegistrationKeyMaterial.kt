@@ -3,16 +3,15 @@ package app.keyholm.ui.createpasskey
 import android.content.Context
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.widget.Toast
+import app.keyholm.authenticator.CredentialKeyCreation
+import app.keyholm.authenticator.CredentialKeyMaterial
 import app.keyholm.ctap.AuthenticatorData
 import app.keyholm.ctap.ClientDataHash
 import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.KEYHOLM_AAGUID
-import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.ctap.ZERO_AAGUID
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.HmacKeyManager
-import app.keyholm.keystore.KeySecurityLevel
-import app.keyholm.keystore.SecureElementUnavailableException
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.MigrationRepository
 import app.keyholm.store.PasskeyRecord
@@ -24,12 +23,17 @@ import app.keyholm.ui.common.resolveCreateAuthenticators
 import app.keyholm.util.logger
 import app.keyholm.webauthn.SigningInput
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import java.security.GeneralSecurityException
-import java.security.ProviderException
-import java.security.Signature
 import javax.crypto.Mac
+
+private fun CredentialKeyCreation.Failed.toastMessage(): String? =
+    when (this) {
+        is CredentialKeyCreation.SecureElementUnavailable -> message
+        CredentialKeyCreation.KeyInvalidated -> ErrorMessages.KEY_INVALIDATED
+        CredentialKeyCreation.SecurityError -> ErrorMessages.SECURITY_ERROR_CREATE
+        is CredentialKeyCreation.HardwareError -> ErrorMessages.hardwareError(cause)
+    }
 
 internal class RegistrationKeyMaterial(
     private val context: Context,
@@ -37,13 +41,11 @@ internal class RegistrationKeyMaterial(
     private val migrationRepo: MigrationRepository,
     private val dispatcher: CoroutineDispatcher,
 ) {
-    private val keyManager by lazy { SecureKeyManager() }
+    private val keys = CredentialKeyMaterial(dispatcher)
     private val hmacKeyManager by lazy { HmacKeyManager() }
     private val log = logger()
 
-    suspend fun deleteKey(credentialId: CredentialId) = withContext(dispatcher) { keyManager.deleteKey(credentialId) }
-
-    suspend fun deletePrfKey(credentialId: CredentialId) = withContext(dispatcher) { hmacKeyManager.deleteKey(credentialId) }
+    suspend fun discard(credentialId: CredentialId) = keys.discard(credentialId)
 
     suspend fun resolveAuthenticators(policy: AuthenticatorPolicy): Registration<AuthenticatorPolicy> =
         when (val r = withContext(dispatcher) { resolveCreateAuthenticators(context, policy) }) {
@@ -72,74 +74,39 @@ internal class RegistrationKeyMaterial(
                 invalidateOnBiometricEnrollment = invalidateOnBiometricEnrollment,
                 includeDeviceProperties = registration.includeDeviceProperties,
             )
-        val generated =
-            when (val r = generateKey(request)) {
-                is Outcome.Failure -> return Registration.Internal(r.toastMessage)
-                is Outcome.Success -> r.value
-            }
-        return when (generated) {
-            is SecureKeyManager.CredentialKeyGeneration.Generated -> {
-                var material: Registration<KeyCreation>? = null
-                try {
-                    material = keyMaterialFor(registration, credentialId, clientDataHash, request, generated.credential)
-                } finally {
-                    if (material !is Registration.Ready) {
-                        withContext(NonCancellable) {
-                            deleteKey(credentialId)
-                            deletePrfKey(credentialId)
-                        }
-                    }
-                }
-                material
+        return when (val created = keys.create(request, registration.info.prfRequested)) {
+            is CredentialKeyCreation.Created -> {
+                val aaguid = if (registration.identifyAsKeyholm) KEYHOLM_AAGUID else ZERO_AAGUID
+                val authData =
+                    AuthenticatorData.forRegistration(
+                        registration.info.rp.id,
+                        credentialId,
+                        created.keys.generated.publicKey,
+                        aaguid,
+                        request.algorithm,
+                    )
+                Registration.Ready(
+                    KeyCreation.Created(
+                        KeyMaterial(
+                            authenticators = request.authenticators,
+                            generated = created.keys.generated,
+                            authData = authData,
+                            toSign = SigningInput(authData.bytes + clientDataHash.bytes),
+                            signature = created.keys.signature,
+                            prfSecurityLevel = created.keys.prfSecurityLevel,
+                        ),
+                    ),
+                )
             }
 
-            SecureKeyManager.CredentialKeyGeneration.DevicePropertiesUnavailable -> {
+            CredentialKeyCreation.DevicePropertiesUnavailable -> {
                 Registration.Ready(KeyCreation.DevicePropertiesUnavailable)
             }
-        }
-    }
 
-    private suspend fun keyMaterialFor(
-        registration: RegistrationContext,
-        credentialId: CredentialId,
-        clientDataHash: ClientDataHash,
-        request: SecureKeyManager.CredentialKeyRequest,
-        generated: SecureKeyManager.GeneratedCredential,
-    ): Registration<KeyCreation> {
-        val aaguid = if (registration.identifyAsKeyholm) KEYHOLM_AAGUID else ZERO_AAGUID
-        val authData =
-            AuthenticatorData.forRegistration(registration.info.rp.id, credentialId, generated.publicKey, aaguid, request.algorithm)
-        val toSign = SigningInput(authData.bytes + clientDataHash.bytes)
-        val signature =
-            when (val r = signFor(request.credentialId, request.algorithm)) {
-                is Outcome.Failure -> return Registration.Internal(r.toastMessage)
-                is Outcome.Success -> r.value
+            is CredentialKeyCreation.Failed -> {
+                Registration.Internal(created.toastMessage())
             }
-        val prfSecurityLevel =
-            when (
-                val r =
-                    generatePrfKey(
-                        credentialId,
-                        request.authenticators,
-                        request.invalidateOnBiometricEnrollment,
-                        registration.info.prfRequested,
-                    )
-            ) {
-                is Outcome.Failure -> return Registration.Internal(r.toastMessage)
-                is Outcome.Success -> r.value
-            }
-        return Registration.Ready(
-            KeyCreation.Created(
-                KeyMaterial(
-                    authenticators = request.authenticators,
-                    generated = generated,
-                    authData = authData,
-                    toSign = toSign,
-                    signature = signature,
-                    prfSecurityLevel = prfSecurityLevel,
-                ),
-            ),
-        )
+        }
     }
 
     suspend fun persist(record: PasskeyRecord): Registration<Unit> =
@@ -173,62 +140,6 @@ internal class RegistrationKeyMaterial(
             Outcome.Success(withContext(dispatcher) { hmacKeyManager.allowedAuthenticatorsForHmac(credentialId) })
         } catch (e: GeneralSecurityException) {
             log.e(e) { "hmacAuthenticatorsFor failed" }
-            Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
-        }
-
-    private suspend fun generateKey(request: SecureKeyManager.CredentialKeyRequest): Outcome<SecureKeyManager.CredentialKeyGeneration> =
-        try {
-            Outcome.Success(withContext(dispatcher) { keyManager.generateCredentialKey(request) })
-        } catch (e: SecureElementUnavailableException) {
-            Outcome.Failure(e.message)
-        } catch (e: GeneralSecurityException) {
-            log.e(e) { "failed to generate key" }
-            Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
-        } catch (e: ProviderException) {
-            log.e(e) { "failed to generate key" }
-            Outcome.Failure(ErrorMessages.hardwareError(e))
-        }
-
-    private suspend fun generatePrfKey(
-        credentialId: CredentialId,
-        keystoreAuthenticators: AuthenticatorPolicy,
-        invalidateOnBiometricEnrollment: Boolean,
-        prfRequested: Boolean,
-    ): Outcome<KeySecurityLevel?> {
-        if (!prfRequested) return Outcome.Success(null)
-        return try {
-            Outcome.Success(
-                withContext(dispatcher) {
-                    hmacKeyManager
-                        .generateHmacKey(
-                            credentialId,
-                            keystoreAuthenticators,
-                            invalidateOnBiometricEnrollment,
-                        ).securityLevel
-                },
-            )
-        } catch (e: SecureElementUnavailableException) {
-            Outcome.Failure(e.message)
-        } catch (e: GeneralSecurityException) {
-            log.e(e) { "failed to generate prf key" }
-            Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
-        } catch (e: ProviderException) {
-            log.e(e) { "failed to generate prf key" }
-            Outcome.Failure(ErrorMessages.hardwareError(e))
-        }
-    }
-
-    private suspend fun signFor(
-        credentialId: CredentialId,
-        algorithm: WebAuthnAlgorithm,
-    ): Outcome<Signature> =
-        try {
-            Outcome.Success(withContext(dispatcher) { keyManager.signatureFor(credentialId, algorithm) })
-        } catch (e: KeyPermanentlyInvalidatedException) {
-            log.e(e) { "failed to sign" }
-            Outcome.Failure(ErrorMessages.KEY_INVALIDATED)
-        } catch (e: GeneralSecurityException) {
-            log.e(e) { "failed to sign" }
             Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
         }
 }

@@ -4,10 +4,10 @@ import androidx.biometric.BiometricPrompt
 import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.keystore.deleteCredentialKeys
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.RecordLifecycle
-import app.keyholm.store.deletePasskeyKeys
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
 import kotlinx.coroutines.flow.Flow
@@ -62,5 +62,5 @@ class PasskeyPendingDeletes(
         return DeletePlan.Confirm(cryptoObject, allowedAuthenticators)
     }
 
-    override fun deleteKeyMaterial(record: PasskeyRecord) = deletePasskeyKeys(record, keyManager, hmacKeyManager)
+    override fun deleteKeyMaterial(record: PasskeyRecord) = deleteCredentialKeys(record.credentialId, keyManager, hmacKeyManager)
 }

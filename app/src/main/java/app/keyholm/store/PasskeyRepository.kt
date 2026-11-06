@@ -6,6 +6,7 @@ import app.keyholm.Application
 import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.keystore.deleteCredentialKeys
 import app.keyholm.store.proto.DiscoverabilityProto
 import app.keyholm.store.proto.PasskeyRecordProto
 import app.keyholm.store.proto.PasskeyRecordsProto
@@ -32,15 +33,6 @@ internal fun summarize(records: List<PasskeyRecord>): PasskeySummary =
 
 internal const val PASSKEY_STORE_FILE = "passkeys.pb"
 
-internal fun deletePasskeyKeys(
-    record: PasskeyRecord,
-    keyManager: SecureKeyManager,
-    hmacKeyManager: HmacKeyManager,
-) {
-    keyManager.deleteKey(record.credentialId)
-    if (record.hasPrf) hmacKeyManager.deleteKey(record.credentialId)
-}
-
 class PasskeyRepository internal constructor(
     private val dataStore: DataStore<PasskeyRecordsProto>,
     private val deleteKeyMaterial: (PasskeyRecord) -> Unit,
@@ -52,7 +44,10 @@ class PasskeyRepository internal constructor(
         context: Context,
         keyManager: SecureKeyManager,
         hmacKeyManager: HmacKeyManager,
-    ) : this((context.applicationContext as Application).stores.passkeys, { deletePasskeyKeys(it, keyManager, hmacKeyManager) })
+    ) : this(
+        (context.applicationContext as Application).stores.passkeys,
+        { deleteCredentialKeys(it.credentialId, keyManager, hmacKeyManager) },
+    )
 
     val passkeys: Flow<List<PasskeyRecord>> =
         dataStore.data

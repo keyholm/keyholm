@@ -203,10 +203,7 @@ internal class RegistrationCeremony(
             attestationObject = authorizeAndPersist(registration, material, pending)
         } finally {
             if (attestationObject == null) {
-                withContext(NonCancellable) {
-                    keyMaterial.deleteKey(credentialId)
-                    if (material.prfSecurityLevel != null) keyMaterial.deletePrfKey(credentialId)
-                }
+                withContext(NonCancellable) { keyMaterial.discard(credentialId) }
             }
         }
         attestationObject?.let { evaluatePrfAndRespond(pending, it) }
