@@ -30,8 +30,7 @@ import app.keyholm.ui.common.Outcome
 import app.keyholm.ui.common.PrfPrompt
 import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.appLabel
-import app.keyholm.ui.common.promptContent
-import app.keyholm.ui.common.userLabel
+import app.keyholm.ui.common.prfPromptContent
 import app.keyholm.util.logger
 import app.keyholm.webauthn.AttestationObject
 import app.keyholm.webauthn.AttestationObjects
@@ -338,47 +337,32 @@ internal class RegistrationCeremony(
             return
         }
 
-        val mac =
-            when (val r = keyMaterial.macFor(pending.credentialId)) {
-                is Outcome.Success -> {
-                    r.value
-                }
-
-                is Outcome.Failure -> {
-                    Toast.makeText(activity, ErrorMessages.PRF_UNAVAILABLE_AFTER_CREATE, Toast.LENGTH_LONG).show()
-                    return respondToRegistration(pending, attestationObject, RegistrationPrf.Requested)
-                }
-            }
-        val hmacAuthenticators =
-            when (val r = keyMaterial.hmacAuthenticatorsFor(pending.credentialId)) {
-                is Outcome.Success -> {
-                    r.value
-                }
-
-                is Outcome.Failure -> {
-                    Toast.makeText(activity, ErrorMessages.PRF_UNAVAILABLE_AFTER_CREATE, Toast.LENGTH_LONG).show()
-                    return respondToRegistration(pending, attestationObject, RegistrationPrf.Requested)
-                }
-            }
         val results =
-            prfPrompt.evaluate(
-                mac = mac,
-                nextMac = { keyMaterial.macFor(pending.credentialId) },
-                salts = PrfExtension.salts(inputs),
-                authenticators = hmacAuthenticators,
-                content = { note ->
-                    promptContent(
-                        description =
-                            "${activity.appLabel(pending.info.callingPackage)} wants access to the secret for this passkey.\n" +
-                                "Cancel to decline and create the passkey anyway." +
-                                note?.let { "\n$it" }.orEmpty(),
-                        lastUsedAt = null,
-                        rp = pending.info.rp,
-                        preferRpName = activity.intent.preferRpName(),
-                        userLabel = userLabel(pending.info.user.name, pending.info.user.displayName),
+            when (
+                val r =
+                    prfPrompt.evaluate(
+                        macFor = { keyMaterial.macFor(pending.credentialId) },
+                        authenticatorsFor = { keyMaterial.hmacAuthenticatorsFor(pending.credentialId) },
+                        salts = PrfExtension.salts(inputs),
+                        content =
+                            prfPromptContent(
+                                requester = activity.appLabel(pending.info.callingPackage),
+                                declineAction = "create the passkey anyway",
+                                rp = pending.info.rp,
+                                user = pending.info.user,
+                                preferRpName = activity.intent.preferRpName(),
+                            ),
                     )
-                },
-            )
+            ) {
+                is Outcome.Failure -> {
+                    Toast.makeText(activity, ErrorMessages.PRF_UNAVAILABLE_AFTER_CREATE, Toast.LENGTH_LONG).show()
+                    null
+                }
+
+                is Outcome.Success -> {
+                    r.value
+                }
+            }
         val outcome = results?.let(RegistrationPrf::Evaluated) ?: RegistrationPrf.Requested
         respondToRegistration(pending, attestationObject, outcome)
     }

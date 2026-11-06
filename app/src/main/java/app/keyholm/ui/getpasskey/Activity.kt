@@ -35,8 +35,8 @@ import app.keyholm.ui.common.Outcome
 import app.keyholm.ui.common.PrfPrompt
 import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.appLabel
+import app.keyholm.ui.common.prfPromptContent
 import app.keyholm.ui.common.promptContent
-import app.keyholm.ui.common.userLabel
 import app.keyholm.util.logger
 import app.keyholm.webauthn.AssertionResponse
 import app.keyholm.webauthn.ClientDataJson
@@ -327,43 +327,24 @@ class Activity internal constructor(
                 }
             }
 
-        when (val mac = keyMaterial.macFor(record)) {
-            is Outcome.Failure -> {
-                failGetCredential(GetCredentialUnknownException(), mac.toastMessage)
-            }
-
-            is Outcome.Success -> {
-                when (
-                    val hmac = keyMaterial.hmacAuthenticatorsFor(record.credentialId)
-                ) {
-                    is Outcome.Failure -> {
-                        failGetCredential(GetCredentialUnknownException(), hmac.toastMessage)
-                    }
-
-                    is Outcome.Success -> {
-                        val prfResults =
-                            prfPrompt.evaluate(
-                                mac = mac.value,
-                                nextMac = { keyMaterial.macFor(record) },
-                                salts = PrfExtension.salts(prfInputs),
-                                authenticators = hmac.value,
-                                content = { note ->
-                                    promptContent(
-                                        description =
-                                            "${appLabel(signIn.callingPackage)} wants access to the secret for this passkey.\n" +
-                                                "Cancel to decline and sign in anyway." +
-                                                note?.let { "\n$it" }.orEmpty(),
-                                        lastUsedAt = null,
-                                        rp = record.rp,
-                                        preferRpName = intent.preferRpName(),
-                                        userLabel = userLabel(record.user.name, record.user.displayName),
-                                    )
-                                },
-                            )
-                        respond(signIn, derSignature, prfResults)
-                    }
-                }
-            }
+        when (
+            val r =
+                prfPrompt.evaluate(
+                    macFor = { keyMaterial.macFor(record) },
+                    authenticatorsFor = { keyMaterial.hmacAuthenticatorsFor(record.credentialId) },
+                    salts = PrfExtension.salts(prfInputs),
+                    content =
+                        prfPromptContent(
+                            requester = appLabel(signIn.callingPackage),
+                            declineAction = "sign in anyway",
+                            rp = record.rp,
+                            user = record.user,
+                            preferRpName = intent.preferRpName(),
+                        ),
+                )
+        ) {
+            is Outcome.Failure -> failGetCredential(GetCredentialUnknownException(), r.toastMessage)
+            is Outcome.Success -> respond(signIn, derSignature, r.value)
         }
     }
 

@@ -45,28 +45,29 @@ class PrfPromptTest {
     private fun evaluate(
         authenticator: RecordingAuthenticator,
         salts: PrfSalts,
-        nextMacs: MutableList<Mac>,
+        provided: MutableList<Mac>,
     ): PrfResults? =
         runBlocking {
-            PrfPrompt(authenticator, Dispatchers.Unconfined).evaluate(
-                mac = mac(),
-                nextMac = { Outcome.Success(mac().also { nextMacs += it }) },
-                salts = salts,
-                authenticators = AuthenticatorPolicy.Biometric,
-                content = { content },
-            )
+            val outcome =
+                PrfPrompt(authenticator, Dispatchers.Unconfined).evaluate(
+                    macFor = { Outcome.Success(mac().also { provided += it }) },
+                    authenticatorsFor = { Outcome.Success(AuthenticatorPolicy.Biometric) },
+                    salts = salts,
+                    content = { content },
+                )
+            (outcome as Outcome.Success).value
         }
 
     @Test
     fun `two salts are each authorised on their own Mac`() {
         val authenticator = RecordingAuthenticator()
-        val nextMacs = mutableListOf<Mac>()
+        val provided = mutableListOf<Mac>()
 
-        val results = evaluate(authenticator, PrfSalts(FIRST, SECOND), nextMacs)
+        val results = evaluate(authenticator, PrfSalts(FIRST, SECOND), provided)
 
         assertThat(authenticator.macs).hasSize(2)
         assertThat(authenticator.macs[0]).isNotSameInstanceAs(authenticator.macs[1])
-        assertThat(authenticator.macs[1]).isSameInstanceAs(nextMacs.single())
+        assertThat(authenticator.macs).containsExactlyElementsIn(provided).inOrder()
         assertThat(results?.first?.bytes).isEqualTo(mac().doFinal(FIRST))
         assertThat(results?.second?.bytes).isEqualTo(mac().doFinal(SECOND))
     }
@@ -74,12 +75,12 @@ class PrfPromptTest {
     @Test
     fun `one salt prompts once`() {
         val authenticator = RecordingAuthenticator()
-        val nextMacs = mutableListOf<Mac>()
+        val provided = mutableListOf<Mac>()
 
-        val results = evaluate(authenticator, PrfSalts(FIRST, null), nextMacs)
+        val results = evaluate(authenticator, PrfSalts(FIRST, null), provided)
 
         assertThat(authenticator.macs).hasSize(1)
-        assertThat(nextMacs).isEmpty()
+        assertThat(provided).hasSize(1)
         assertThat(results?.first?.bytes).isEqualTo(mac().doFinal(FIRST))
         assertThat(results?.second).isNull()
     }
