@@ -1,6 +1,7 @@
 package app.keyholm.webauthn
 
 import app.keyholm.ctap.AuthenticatorData
+import app.keyholm.ctap.CANONICAL_CBOR
 import app.keyholm.ctap.ClientDataHash
 import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.PrfResults
@@ -9,12 +10,9 @@ import app.keyholm.ctap.UserHandle
 import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.util.B64
 import app.keyholm.util.sha256
-import com.upokecenter.cbor.CBOREncodeOptions
 import com.upokecenter.cbor.CBORObject
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-
-private val CANONICAL = CBOREncodeOptions("ctap2canonical=true")
 
 private val json = Json { explicitNulls = false }
 
@@ -129,7 +127,7 @@ object AttestationObjects {
             .Add("fmt", NONE_FMT)
             .Add("attStmt", CBORObject.NewMap())
             .Add("authData", authData.bytes)
-            .EncodeToBytes(CANONICAL)
+            .EncodeToBytes(CANONICAL_CBOR)
             .let(::AttestationObject)
 
     fun attestationObjectAndroidKey(
@@ -151,7 +149,7 @@ object AttestationObjects {
             .Add("fmt", ANDROID_KEY_FMT)
             .Add("attStmt", attStmt)
             .Add("authData", authData.bytes)
-            .EncodeToBytes(CANONICAL)
+            .EncodeToBytes(CANONICAL_CBOR)
             .let(::AttestationObject)
     }
 }

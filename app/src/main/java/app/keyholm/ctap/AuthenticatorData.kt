@@ -1,7 +1,6 @@
 package app.keyholm.ctap
 
 import app.keyholm.util.sha256
-import com.upokecenter.cbor.CBOREncodeOptions
 import com.upokecenter.cbor.CBORObject
 import java.io.ByteArrayOutputStream
 import java.math.BigInteger
@@ -29,8 +28,6 @@ private const val COSE_LABEL_Y_COORD = -3
 private const val FLAG_UP = 0x01
 private const val FLAG_UV = 0x04
 private const val FLAG_AT = 0x40
-
-private val CANONICAL = CBOREncodeOptions("ctap2canonical=true")
 
 val KEYHOLM_AAGUID: Uuid = Uuid.parse("69840def-9dcf-4632-bf87-6ac2e451b4f5")
 
@@ -115,7 +112,7 @@ private fun coseKey(
                 .Add(-1, 1) // crv = P-256
                 .Add(COSE_LABEL_X_COORD, ecPub.w.affineX.toFixed32())
                 .Add(COSE_LABEL_Y_COORD, ecPub.w.affineY.toFixed32())
-                .EncodeToBytes(CANONICAL)
+                .EncodeToBytes(CANONICAL_CBOR)
                 .let(::CoseKey)
         }
 
@@ -129,7 +126,7 @@ private fun coseKey(
                 .Add(COSE_LABEL_ALG, ALG_EDDSA)
                 .Add(-1, COSE_CRV_ED25519) // crv = Ed25519
                 .Add(COSE_LABEL_X_COORD, raw)
-                .EncodeToBytes(CANONICAL)
+                .EncodeToBytes(CANONICAL_CBOR)
                 .let(::CoseKey)
         }
 
@@ -153,5 +150,5 @@ private fun akpCoseKey(
         .Add(1, COSE_KTY_AKP) // kty = AKP
         .Add(COSE_LABEL_ALG, coseAlg)
         .Add(COSE_LABEL_AKP_PUB, pub.encoded.copyOfRange(pub.encoded.size - rawKeyBytes, pub.encoded.size))
-        .EncodeToBytes(CANONICAL)
+        .EncodeToBytes(CANONICAL_CBOR)
         .let(::CoseKey)
