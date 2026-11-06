@@ -1,8 +1,8 @@
 package app.keyholm.ui.createpasskey
 
 import android.content.Context
-import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.widget.Toast
+import app.keyholm.authenticator.AssertionKeyMaterial
 import app.keyholm.authenticator.CredentialKeyCreation
 import app.keyholm.authenticator.CredentialKeyMaterial
 import app.keyholm.ctap.AuthenticatorData
@@ -11,29 +11,18 @@ import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.KEYHOLM_AAGUID
 import app.keyholm.ctap.ZERO_AAGUID
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.MigrationRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.ui.common.AuthenticatorsResolution
 import app.keyholm.ui.common.ErrorMessages
-import app.keyholm.ui.common.Outcome
 import app.keyholm.ui.common.resolveCreateAuthenticators
+import app.keyholm.ui.common.toastMessage
 import app.keyholm.util.logger
 import app.keyholm.webauthn.SigningInput
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import java.security.GeneralSecurityException
-import javax.crypto.Mac
-
-private fun CredentialKeyCreation.Failed.toastMessage(): String? =
-    when (this) {
-        is CredentialKeyCreation.SecureElementUnavailable -> message
-        CredentialKeyCreation.KeyInvalidated -> ErrorMessages.KEY_INVALIDATED
-        CredentialKeyCreation.SecurityError -> ErrorMessages.SECURITY_ERROR_CREATE
-        is CredentialKeyCreation.HardwareError -> ErrorMessages.hardwareError(cause)
-    }
 
 internal class RegistrationKeyMaterial(
     private val context: Context,
@@ -42,7 +31,7 @@ internal class RegistrationKeyMaterial(
     private val dispatcher: CoroutineDispatcher,
 ) {
     private val keys = CredentialKeyMaterial(dispatcher)
-    private val hmacKeyManager by lazy { HmacKeyManager() }
+    val assertionKeys = AssertionKeyMaterial(passkeyRepo, dispatcher)
     private val log = logger()
 
     suspend fun discard(credentialId: CredentialId) = keys.discard(credentialId)
@@ -104,7 +93,7 @@ internal class RegistrationKeyMaterial(
             }
 
             is CredentialKeyCreation.Failed -> {
-                Registration.Internal(created.toastMessage())
+                Registration.Internal(created.failure.toastMessage(ErrorMessages.SECURITY_ERROR_CREATE))
             }
         }
     }
@@ -123,23 +112,4 @@ internal class RegistrationKeyMaterial(
                 Registration.Interrupted(ErrorMessages.SAVE_FAILED)
             },
         )
-
-    suspend fun macFor(credentialId: CredentialId): Outcome<Mac> =
-        try {
-            Outcome.Success(withContext(dispatcher) { hmacKeyManager.macFor(credentialId) })
-        } catch (e: KeyPermanentlyInvalidatedException) {
-            log.e(e) { "macFor failed" }
-            Outcome.Failure(ErrorMessages.KEY_INVALIDATED)
-        } catch (e: GeneralSecurityException) {
-            log.e(e) { "macFor failed" }
-            Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
-        }
-
-    suspend fun hmacAuthenticatorsFor(credentialId: CredentialId): Outcome<AuthenticatorPolicy> =
-        try {
-            Outcome.Success(withContext(dispatcher) { hmacKeyManager.allowedAuthenticatorsForHmac(credentialId) })
-        } catch (e: GeneralSecurityException) {
-            log.e(e) { "hmacAuthenticatorsFor failed" }
-            Outcome.Failure(ErrorMessages.SECURITY_ERROR_CREATE)
-        }
 }

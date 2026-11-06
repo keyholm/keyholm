@@ -163,8 +163,7 @@ internal class SignInRequestResolver(
         val authData = AuthenticatorData.forAssertion(record.rp.id, newSignCount)
         val toSign = SigningInput(authData.bytes + clientData.hash.bytes)
 
-        val algorithm = record.keystore.coseAlgorithm
-        val signatureOutcome = existingSignature?.let { Outcome.Success(it) } ?: keyMaterial.signFor(record, algorithm)
+        val signatureOutcome = existingSignature?.let { Outcome.Success(it) } ?: keyMaterial.signFor(record)
         return when (val signature = signatureOutcome) {
             is Outcome.Failure -> {
                 signature
@@ -172,7 +171,7 @@ internal class SignInRequestResolver(
 
             is Outcome.Success -> {
                 when (
-                    val authenticators = keyMaterial.authenticatorsFor(record.credentialId, algorithm)
+                    val authenticators = keyMaterial.authenticatorsFor(record)
                 ) {
                     is Outcome.Failure -> {
                         authenticators

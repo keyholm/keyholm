@@ -2,6 +2,7 @@ package app.keyholm.ui.common
 
 import androidx.biometric.AuthenticationRequest
 import androidx.biometric.BiometricPrompt
+import app.keyholm.authenticator.KeyAccess
 import app.keyholm.ctap.PrfResults
 import app.keyholm.ctap.PrfSalts
 import app.keyholm.ctap.RelyingParty
@@ -50,12 +51,12 @@ class PrfPromptTest {
         runBlocking {
             val outcome =
                 PrfPrompt(authenticator, Dispatchers.Unconfined).evaluate(
-                    macFor = { Outcome.Success(mac().also { provided += it }) },
-                    authenticatorsFor = { Outcome.Success(AuthenticatorPolicy.Biometric) },
+                    macFor = { KeyAccess.Success(mac().also { provided += it }) },
+                    authenticatorsFor = { KeyAccess.Success(AuthenticatorPolicy.Biometric) },
                     salts = salts,
                     content = { content },
                 )
-            (outcome as Outcome.Success).value
+            (outcome as KeyAccess.Success).value
         }
 
     @Test

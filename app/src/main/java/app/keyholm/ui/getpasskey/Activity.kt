@@ -17,6 +17,7 @@ import androidx.credentials.provider.ProviderGetCredentialRequest
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import app.keyholm.Application
+import app.keyholm.authenticator.KeyAccess
 import app.keyholm.ctap.AuthenticatorData
 import app.keyholm.ctap.PrfResults
 import app.keyholm.keystore.AuthenticatorPolicy
@@ -37,6 +38,7 @@ import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.appLabel
 import app.keyholm.ui.common.prfPromptContent
 import app.keyholm.ui.common.promptContent
+import app.keyholm.ui.common.toastMessage
 import app.keyholm.util.logger
 import app.keyholm.webauthn.AssertionResponse
 import app.keyholm.webauthn.ClientDataJson
@@ -330,8 +332,8 @@ class Activity internal constructor(
         when (
             val r =
                 prfPrompt.evaluate(
-                    macFor = { keyMaterial.macFor(record) },
-                    authenticatorsFor = { keyMaterial.hmacAuthenticatorsFor(record.credentialId) },
+                    macFor = { keyMaterial.keys.macFor(record) },
+                    authenticatorsFor = { keyMaterial.keys.hmacAuthenticatorsFor(record) },
                     salts = PrfExtension.salts(prfInputs),
                     content =
                         prfPromptContent(
@@ -343,8 +345,13 @@ class Activity internal constructor(
                         ),
                 )
         ) {
-            is Outcome.Failure -> failGetCredential(GetCredentialUnknownException(), r.toastMessage)
-            is Outcome.Success -> respond(signIn, derSignature, r.value)
+            is KeyAccess.Failure -> {
+                failGetCredential(GetCredentialUnknownException(), r.failure.toastMessage(ErrorMessages.SECURITY_ERROR_GET))
+            }
+
+            is KeyAccess.Success -> {
+                respond(signIn, derSignature, r.value)
+            }
         }
     }
 

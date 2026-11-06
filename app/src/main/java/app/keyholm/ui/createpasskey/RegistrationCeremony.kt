@@ -15,6 +15,7 @@ import androidx.credentials.exceptions.domerrors.InvalidStateError
 import androidx.credentials.exceptions.publickeycredential.CreatePublicKeyCredentialDomException
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.fragment.app.FragmentActivity
+import app.keyholm.authenticator.KeyAccess
 import app.keyholm.ctap.AuthenticatorData
 import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.KeySecurityLevel
@@ -26,7 +27,6 @@ import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.RecordLifecycle
 import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.ErrorMessages
-import app.keyholm.ui.common.Outcome
 import app.keyholm.ui.common.PrfPrompt
 import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.appLabel
@@ -197,26 +197,28 @@ internal class RegistrationCeremony(
             }
 
         val pending = buildPendingRegistration(registration, material, cd.json, credentialId)
+        val record = pending.toPasskeyRecord()
 
         var attestationObject: AttestationObject? = null
         try {
-            attestationObject = authorizeAndPersist(registration, material, pending)
+            attestationObject = authorizeAndPersist(registration, material, pending, record)
         } finally {
             if (attestationObject == null) {
                 withContext(NonCancellable) { keyMaterial.discard(credentialId) }
             }
         }
-        attestationObject?.let { evaluatePrfAndRespond(pending, it) }
+        attestationObject?.let { evaluatePrfAndRespond(pending, record, it) }
     }
 
     private suspend fun authorizeAndPersist(
         registration: RegistrationContext,
         material: KeyMaterial,
         pending: PendingRegistration,
+        record: PasskeyRecord,
     ): AttestationObject? =
         when (val promptResult = promptForRegistration(registration, material)) {
             is PromptResult.Success -> {
-                signAndPersist(pending, promptResult.crypto)
+                signAndPersist(pending, record, promptResult.crypto)
             }
 
             PromptResult.Canceled -> {
@@ -276,6 +278,7 @@ internal class RegistrationCeremony(
 
     private suspend fun signAndPersist(
         pending: PendingRegistration,
+        record: PasskeyRecord,
         crypto: BiometricPrompt.CryptoObject,
     ): AttestationObject? {
         val sig = crypto.signature
@@ -308,7 +311,7 @@ internal class RegistrationCeremony(
                 AttestationObjects.attestationObjectNone(pending.authData)
             }
 
-        return when (val persisted = keyMaterial.persist(pending.toPasskeyRecord())) {
+        return when (val persisted = keyMaterial.persist(record)) {
             is Registration.Failed -> {
                 activity.failCreateCredential(persisted.toException(), persisted.toastMessage)
                 null
@@ -322,6 +325,7 @@ internal class RegistrationCeremony(
 
     private suspend fun evaluatePrfAndRespond(
         pending: PendingRegistration,
+        record: PasskeyRecord,
         attestationObject: AttestationObject,
     ) {
         if (pending.prfSecurityLevel == null) {
@@ -338,8 +342,8 @@ internal class RegistrationCeremony(
             when (
                 val r =
                     prfPrompt.evaluate(
-                        macFor = { keyMaterial.macFor(pending.credentialId) },
-                        authenticatorsFor = { keyMaterial.hmacAuthenticatorsFor(pending.credentialId) },
+                        macFor = { keyMaterial.assertionKeys.macFor(record) },
+                        authenticatorsFor = { keyMaterial.assertionKeys.hmacAuthenticatorsFor(record) },
                         salts = PrfExtension.salts(inputs),
                         content =
                             prfPromptContent(
@@ -351,12 +355,12 @@ internal class RegistrationCeremony(
                             ),
                     )
             ) {
-                is Outcome.Failure -> {
+                is KeyAccess.Failure -> {
                     Toast.makeText(activity, ErrorMessages.PRF_UNAVAILABLE_AFTER_CREATE, Toast.LENGTH_LONG).show()
                     null
                 }
 
-                is Outcome.Success -> {
+                is KeyAccess.Success -> {
                     r.value
                 }
             }

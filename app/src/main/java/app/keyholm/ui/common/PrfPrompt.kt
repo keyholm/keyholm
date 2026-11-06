@@ -2,6 +2,7 @@ package app.keyholm.ui.common
 
 import androidx.biometric.AuthenticationRequest
 import androidx.biometric.BiometricPrompt
+import app.keyholm.authenticator.KeyAccess
 import app.keyholm.ctap.CredentialUser
 import app.keyholm.ctap.PrfOutput
 import app.keyholm.ctap.PrfResults
@@ -39,33 +40,33 @@ internal class PrfPrompt(
     private val dispatcher: CoroutineDispatcher,
 ) {
     suspend fun evaluate(
-        macFor: suspend () -> Outcome<Mac>,
-        authenticatorsFor: suspend () -> Outcome<AuthenticatorPolicy>,
+        macFor: suspend () -> KeyAccess<Mac>,
+        authenticatorsFor: suspend () -> KeyAccess<AuthenticatorPolicy>,
         salts: PrfSalts,
         content: (note: String?) -> AuthenticationRequest.BodyContent,
-    ): Outcome<PrfResults?> {
+    ): KeyAccess<PrfResults?> {
         val mac =
             when (val r = macFor()) {
-                is Outcome.Failure -> return r
-                is Outcome.Success -> r.value
+                is KeyAccess.Failure -> return r
+                is KeyAccess.Success -> r.value
             }
         val authenticators =
             when (val r = authenticatorsFor()) {
-                is Outcome.Failure -> return r
-                is Outcome.Success -> r.value
+                is KeyAccess.Failure -> return r
+                is KeyAccess.Success -> r.value
             }
         val secondSalt = salts.second
         val firstTitle = if (secondSalt == null) PRF_PROMPT_TITLE else "$PRF_PROMPT_TITLE (1 of 2)"
         val first =
             output(mac, salts.first, firstTitle, authenticators, content(secondSalt?.let { TWO_SALTS_NOTE }))
-                ?: return Outcome.Success(null)
-        if (secondSalt == null) return Outcome.Success(PrfResults(first, null))
+                ?: return KeyAccess.Success(null)
+        if (secondSalt == null) return KeyAccess.Success(PrfResults(first, null))
         val second =
             when (val next = macFor()) {
-                is Outcome.Success -> output(next.value, secondSalt, "$PRF_PROMPT_TITLE (2 of 2)", authenticators, content(null))
-                is Outcome.Failure -> null
+                is KeyAccess.Success -> output(next.value, secondSalt, "$PRF_PROMPT_TITLE (2 of 2)", authenticators, content(null))
+                is KeyAccess.Failure -> null
             }
-        return Outcome.Success(second?.let { PrfResults(first, it) })
+        return KeyAccess.Success(second?.let { PrfResults(first, it) })
     }
 
     private suspend fun output(

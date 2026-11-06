@@ -28,19 +28,9 @@ sealed interface CredentialKeyCreation {
 
     data object DevicePropertiesUnavailable : CredentialKeyCreation
 
-    sealed interface Failed : CredentialKeyCreation
-
-    data class SecureElementUnavailable(
-        val message: String?,
-    ) : Failed
-
-    data object KeyInvalidated : Failed
-
-    data object SecurityError : Failed
-
-    data class HardwareError(
-        val cause: ProviderException,
-    ) : Failed
+    data class Failed(
+        val failure: KeyFailure,
+    ) : CredentialKeyCreation
 }
 
 class CredentialKeyMaterial(
@@ -58,13 +48,13 @@ class CredentialKeyMaterial(
             try {
                 withContext(dispatcher) { keyManager.generateCredentialKey(request) }
             } catch (e: SecureElementUnavailableException) {
-                return CredentialKeyCreation.SecureElementUnavailable(e.message)
+                return CredentialKeyCreation.Failed(KeyFailure.SecureElementUnavailable(e.message))
             } catch (e: GeneralSecurityException) {
                 log.e(e) { "failed to generate key" }
-                return CredentialKeyCreation.SecurityError
+                return CredentialKeyCreation.Failed(KeyFailure.SecurityError)
             } catch (e: ProviderException) {
                 log.e(e) { "failed to generate key" }
-                return CredentialKeyCreation.HardwareError(e)
+                return CredentialKeyCreation.Failed(KeyFailure.HardwareError(e))
             }
         return when (generation) {
             is SecureKeyManager.CredentialKeyGeneration.Generated -> {
@@ -96,10 +86,10 @@ class CredentialKeyMaterial(
                 withContext(dispatcher) { keyManager.signatureFor(request.credentialId, request.algorithm) }
             } catch (e: KeyPermanentlyInvalidatedException) {
                 log.e(e) { "failed to sign" }
-                return CredentialKeyCreation.KeyInvalidated
+                return CredentialKeyCreation.Failed(KeyFailure.KeyInvalidated)
             } catch (e: GeneralSecurityException) {
                 log.e(e) { "failed to sign" }
-                return CredentialKeyCreation.SecurityError
+                return CredentialKeyCreation.Failed(KeyFailure.SecurityError)
             }
         val prfSecurityLevel =
             if (prfRequested) {
@@ -110,13 +100,13 @@ class CredentialKeyMaterial(
                             .securityLevel
                     }
                 } catch (e: SecureElementUnavailableException) {
-                    return CredentialKeyCreation.SecureElementUnavailable(e.message)
+                    return CredentialKeyCreation.Failed(KeyFailure.SecureElementUnavailable(e.message))
                 } catch (e: GeneralSecurityException) {
                     log.e(e) { "failed to generate prf key" }
-                    return CredentialKeyCreation.SecurityError
+                    return CredentialKeyCreation.Failed(KeyFailure.SecurityError)
                 } catch (e: ProviderException) {
                     log.e(e) { "failed to generate prf key" }
-                    return CredentialKeyCreation.HardwareError(e)
+                    return CredentialKeyCreation.Failed(KeyFailure.HardwareError(e))
                 }
             } else {
                 null

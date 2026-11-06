@@ -1,6 +1,7 @@
 package app.keyholm.ui.common
 
 import android.security.KeyStoreException
+import app.keyholm.authenticator.KeyFailure
 
 internal object ErrorMessages {
     const val CALLER_UNVERIFIED = "Couldn't verify this app is allowed to create passkeys. Check settings."
@@ -53,3 +54,11 @@ internal object ErrorMessages {
                 else -> ""
             }
 }
+
+internal fun KeyFailure.toastMessage(securityError: String): String? =
+    when (this) {
+        is KeyFailure.SecureElementUnavailable -> message
+        KeyFailure.KeyInvalidated -> ErrorMessages.KEY_INVALIDATED
+        KeyFailure.SecurityError -> securityError
+        is KeyFailure.HardwareError -> ErrorMessages.hardwareError(cause)
+    }
