@@ -3,7 +3,7 @@ package app.keyholm.keystore
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
-import app.keyholm.keystore.SecureKeyManager.Companion.ANDROID_KEYSTORE
+import app.keyholm.keystore.PasskeyKeyManager.Companion.ANDROID_KEYSTORE
 import app.keyholm.util.logger
 import java.security.KeyStore
 import javax.crypto.KeyGenerator

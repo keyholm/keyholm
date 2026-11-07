@@ -1,7 +1,5 @@
 package app.keyholm.keystore
 
-import android.content.Context
-import android.content.pm.PackageManager
 import android.security.KeyStoreException
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyInfo
@@ -23,13 +21,17 @@ import java.security.PublicKey
 import java.security.Signature
 import java.security.UnrecoverableKeyException
 import java.security.spec.ECGenParameterSpec
+import javax.crypto.KeyGenerator
+import javax.crypto.Mac
+import javax.crypto.SecretKey
+import javax.crypto.SecretKeyFactory
 
 class SecureElementUnavailableException(
     message: String,
     cause: Throwable? = null,
 ) : Exception(message, cause)
 
-class SecureKeyManager {
+class PasskeyKeyManager {
     data class GeneratedCredential(
         val publicKey: PublicKey,
         val attestationChain: List<ByteArray>,
@@ -52,6 +54,11 @@ class SecureKeyManager {
         val authenticators: AuthenticatorPolicy,
         val invalidateOnBiometricEnrollment: Boolean,
         val includeDeviceProperties: Boolean,
+    )
+
+    data class GeneratedHmacKey(
+        val key: SecretKey,
+        val securityLevel: KeySecurityLevel,
     )
 
     private val log = logger()
@@ -83,7 +90,7 @@ class SecureKeyManager {
 
         fun fallbackFromStrongBox(e: Exception): CredentialKeyGeneration {
             log.w(e) { "StrongBox can't generate ${algorithm.displayName} keys, falling back to the TEE" }
-            deleteKey(request.credentialId)
+            deleteKeys(request.credentialId)
             return generate(strongBox = false)
         }
 
@@ -99,9 +106,50 @@ class SecureKeyManager {
         }
     }
 
-    private inline fun <reified T : Key> keyFor(alias: String): T =
-        keyStore.getKey(alias, null) as? T
-            ?: throw UnrecoverableKeyException("No key found for alias: $alias")
+    fun generateHmacKey(
+        credentialId: CredentialId,
+        authenticatorTypes: AuthenticatorPolicy,
+        invalidateOnBiometricEnrollment: Boolean,
+    ): GeneratedHmacKey {
+        val alias = hmacAlias(credentialId)
+
+        fun generate(strongBox: Boolean): SecretKey {
+            val spec =
+                KeyGenParameterSpec
+                    .Builder(alias, KeyProperties.PURPOSE_SIGN)
+                    .setUnlockedDeviceRequired(true)
+                    .setUserAuthenticationRequired(true)
+                    .setUserAuthenticationParameters(0, authenticatorTypes.keystoreMask)
+                    .setInvalidatedByBiometricEnrollment(invalidateOnBiometricEnrollment)
+                    .setIsStrongBoxBacked(strongBox)
+                    .build()
+            val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_HMAC_SHA256, ANDROID_KEYSTORE)
+            generator.init(spec)
+            return generator.generateKey()
+        }
+        val key =
+            try {
+                generate(strongBox = true)
+            } catch (e: StrongBoxUnavailableException) {
+                log.w(e) { "StrongBox unavailable for the PRF key, falling back to the TEE" }
+                if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
+                generate(strongBox = false)
+            }
+        val securityLevel = KeySecurityLevel.ofKeyInfo(hmacKeyInfo(key))
+        if (securityLevel == null) {
+            if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
+            throw SecureElementUnavailableException(PRF_NO_SECURE_HARDWARE)
+        }
+        return GeneratedHmacKey(key, securityLevel)
+    }
+
+    fun generateHmacKeyFor(
+        credentialId: CredentialId,
+        algorithm: WebAuthnAlgorithm,
+    ): GeneratedHmacKey {
+        val credentialKey = credentialKeyInfo(keyFor<PrivateKey>(alias(credentialId)), algorithm)
+        return generateHmacKey(credentialId, policyFromKeyInfo(credentialKey), credentialKey.isInvalidatedByBiometricEnrollment)
+    }
 
     fun signatureFor(
         credentialId: CredentialId,
@@ -116,23 +164,16 @@ class SecureKeyManager {
         return Signature.getInstance(jcaAlgorithm).apply { initSign(keyFor<PrivateKey>(alias(credentialId))) }
     }
 
+    fun macFor(credentialId: CredentialId): Mac =
+        Mac.getInstance(MAC_ALGORITHM_HMAC_SHA256).apply { init(keyFor<SecretKey>(hmacAlias(credentialId))) }
+
     fun allowedAuthenticatorsFor(
         credentialId: CredentialId,
         algorithm: WebAuthnAlgorithm,
-    ): AuthenticatorPolicy = policyFromKeyInfo(credentialKeyInfo(credentialId, algorithm))
+    ): AuthenticatorPolicy = policyFromKeyInfo(credentialKeyInfo(keyFor<PrivateKey>(alias(credentialId)), algorithm))
 
-    fun credentialKeyInfo(
-        credentialId: CredentialId,
-        algorithm: WebAuthnAlgorithm,
-    ): KeyInfo =
-        KeyFactory
-            .getInstance(keyAlgorithmFor(algorithm), ANDROID_KEYSTORE)
-            .getKeySpec(keyFor<PrivateKey>(alias(credentialId)), KeyInfo::class.java)
-
-    fun deleteKey(credentialId: CredentialId) {
-        val alias = alias(credentialId)
-        if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
-    }
+    fun allowedAuthenticatorsForHmac(credentialId: CredentialId): AuthenticatorPolicy =
+        policyFromKeyInfo(hmacKeyInfo(keyFor<SecretKey>(hmacAlias(credentialId))))
 
     fun certificateChainPem(credentialId: CredentialId): List<String> =
         keyStore
@@ -142,15 +183,29 @@ class SecureKeyManager {
                 "-----BEGIN CERTIFICATE-----\n$body\n-----END CERTIFICATE-----"
             }.orEmpty()
 
+    fun deleteKeys(credentialId: CredentialId) {
+        for (alias in listOf(alias(credentialId), hmacAlias(credentialId))) {
+            if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
+        }
+    }
+
+    private inline fun <reified T : Key> keyFor(alias: String): T =
+        keyStore.getKey(alias, null) as? T
+            ?: throw UnrecoverableKeyException("No key found for alias: $alias")
+
     companion object {
         internal const val ANDROID_KEYSTORE = "AndroidKeyStore"
         private const val ALIAS_PREFIX = "key_"
+        private const val HMAC_ALIAS_PREFIX = "hmac_"
         private const val KEY_ALGORITHM_ED25519 = "Ed25519"
         private const val KEY_ALGORITHM_ML_DSA_65 = "ML-DSA-65"
         private const val KEY_ALGORITHM_ML_DSA_87 = "ML-DSA-87"
-        private const val KEYSTORE_VERSION_ML_DSA = 500
+        private const val MAC_ALGORITHM_HMAC_SHA256 = "HmacSHA256"
+        private const val PRF_NO_SECURE_HARDWARE = "This device doesn't support PRF keys with secure hardware."
 
         private fun alias(credentialId: CredentialId): String = ALIAS_PREFIX + credentialId.b64
+
+        private fun hmacAlias(credentialId: CredentialId): String = HMAC_ALIAS_PREFIX + credentialId.b64
 
         private fun keyAlgorithmFor(algorithm: WebAuthnAlgorithm): String =
             when (algorithm) {
@@ -205,11 +260,7 @@ class SecureKeyManager {
             generator.initialize(spec)
             val keyPair = generator.generateKeyPair()
 
-            val keyInfo =
-                KeyFactory
-                    .getInstance(keyAlgorithm, ANDROID_KEYSTORE)
-                    .getKeySpec(keyPair.private, KeyInfo::class.java)
-            val securityLevel = KeySecurityLevel.ofKeyInfo(keyInfo)
+            val securityLevel = KeySecurityLevel.ofKeyInfo(credentialKeyInfo(keyPair.private, algorithm))
             if (securityLevel == null) {
                 if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
                 throw SecureElementUnavailableException(
@@ -222,25 +273,21 @@ class SecureKeyManager {
             return GeneratedCredential(publicKey, chain, algorithm, securityLevel)
         }
 
-        internal fun policyFromKeyInfo(keyInfo: KeyInfo): AuthenticatorPolicy =
+        private fun policyFromKeyInfo(keyInfo: KeyInfo): AuthenticatorPolicy =
             AuthenticatorPolicy.ofKeyInfo(keyInfo)
                 ?: throw UnrecoverableKeyException("Key must require authentication")
 
-        fun isSecureElementAvailable(context: Context): Boolean =
-            context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
-
-        fun isTeeAvailable(context: Context): Boolean = context.packageManager.hasSystemFeature(PackageManager.FEATURE_HARDWARE_KEYSTORE)
-
-        fun isAlgorithmAvailable(
-            context: Context,
+        private fun credentialKeyInfo(
+            key: PrivateKey,
             algorithm: WebAuthnAlgorithm,
-        ): Boolean =
-            when (algorithm) {
-                WebAuthnAlgorithm.ES256, WebAuthnAlgorithm.ED25519 -> isTeeAvailable(context)
+        ): KeyInfo =
+            KeyFactory
+                .getInstance(keyAlgorithmFor(algorithm), ANDROID_KEYSTORE)
+                .getKeySpec(key, KeyInfo::class.java)
 
-                WebAuthnAlgorithm.ML_DSA_65,
-                WebAuthnAlgorithm.ML_DSA_87,
-                -> context.packageManager.hasSystemFeature(PackageManager.FEATURE_HARDWARE_KEYSTORE, KEYSTORE_VERSION_ML_DSA)
-            }
+        private fun hmacKeyInfo(key: SecretKey): KeyInfo =
+            SecretKeyFactory
+                .getInstance(KeyProperties.KEY_ALGORITHM_HMAC_SHA256, ANDROID_KEYSTORE)
+                .getKeySpec(key, KeyInfo::class.java) as KeyInfo
     }
 }

@@ -13,7 +13,7 @@ import app.keyholm.R
 import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.RpId
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.util.logger
@@ -24,7 +24,7 @@ import java.security.Signature
 
 internal class GetCredentialEntryBuilder(
     private val context: Context,
-    private val keyManager: SecureKeyManager,
+    private val keyManager: PasskeyKeyManager,
     private val passkeyRepo: PasskeyRepository,
     private val pendingIntent: (CredentialId, preferRpName: Boolean, trust: NativeAppTrust) -> PendingIntent,
 ) {

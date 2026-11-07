@@ -11,7 +11,7 @@ import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.KEYHOLM_AAGUID
 import app.keyholm.ctap.ZERO_AAGUID
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.store.MigrationRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
@@ -55,7 +55,7 @@ internal class RegistrationKeyMaterial(
                 is Registration.Ready -> r.value
             }
         val request =
-            SecureKeyManager.CredentialKeyRequest(
+            PasskeyKeyManager.CredentialKeyRequest(
                 credentialId = credentialId,
                 attestationChallenge = clientDataHash,
                 algorithm = registration.algorithm,

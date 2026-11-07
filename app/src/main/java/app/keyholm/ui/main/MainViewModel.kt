@@ -8,7 +8,9 @@ import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.iconpack.IconPackController
 import app.keyholm.iconpack.IconPackStorage
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.keystore.isAlgorithmAvailable
+import app.keyholm.keystore.isSecureElementAvailable
+import app.keyholm.keystore.isTeeAvailable
 import app.keyholm.provider.isCredentialProviderEnabled
 import app.keyholm.provider.setCredentialProviderComponentEnabled
 import app.keyholm.settings.Settings
@@ -141,12 +143,12 @@ class MainViewModel internal constructor(
         refreshTicks.map {
             withContext(dispatcher) {
                 val context = getApplication<Application>()
-                val tee = SecureKeyManager.isTeeAvailable(context)
+                val tee = isTeeAvailable(context)
                 setCredentialProviderComponentEnabled(context, tee)
                 DeviceStatus(
-                    secureElement = SecureKeyManager.isSecureElementAvailable(context),
+                    secureElement = isSecureElementAvailable(context),
                     tee = tee,
-                    teeMlDsa = SecureKeyManager.isAlgorithmAvailable(context, WebAuthnAlgorithm.ML_DSA_87),
+                    teeMlDsa = isAlgorithmAvailable(context, WebAuthnAlgorithm.ML_DSA_87),
                     providerEnabled = isCredentialProviderEnabled(context),
                     biometricsEnrolled =
                         BiometricManager.from(context).canAuthenticate(AuthenticatorPolicy.Biometric.promptMask) ==

@@ -2,10 +2,9 @@ package app.keyholm.authenticator
 
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.KeySecurityLevel
+import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.keystore.SecureElementUnavailableException
-import app.keyholm.keystore.SecureKeyManager
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.util.logger
@@ -20,8 +19,7 @@ class AssertionKeyMaterial(
     private val passkeyRepo: PasskeyRepository,
     private val dispatcher: CoroutineDispatcher,
 ) {
-    private val keyManager by lazy { SecureKeyManager() }
-    private val hmacKeyManager by lazy { HmacKeyManager() }
+    private val keyManager by lazy { PasskeyKeyManager() }
     private val log = logger()
 
     suspend fun signatureFor(record: PasskeyRecord): KeyAccess<Signature> =
@@ -38,7 +36,7 @@ class AssertionKeyMaterial(
 
     suspend fun macFor(record: PasskeyRecord): KeyAccess<Mac> =
         try {
-            KeyAccess.Success(withContext(dispatcher) { hmacKeyManager.macFor(record.credentialId) })
+            KeyAccess.Success(withContext(dispatcher) { keyManager.macFor(record.credentialId) })
         } catch (e: KeyPermanentlyInvalidatedException) {
             log.e(e) { "macFor failed" }
             markLikelyInvalid(record)
@@ -60,7 +58,7 @@ class AssertionKeyMaterial(
 
     suspend fun hmacAuthenticatorsFor(record: PasskeyRecord): KeyAccess<AuthenticatorPolicy> =
         try {
-            KeyAccess.Success(withContext(dispatcher) { hmacKeyManager.allowedAuthenticatorsForHmac(record.credentialId) })
+            KeyAccess.Success(withContext(dispatcher) { keyManager.allowedAuthenticatorsForHmac(record.credentialId) })
         } catch (e: GeneralSecurityException) {
             log.e(e) { "hmacAuthenticatorsFor failed" }
             KeyAccess.Failure(KeyFailure.SecurityError)
@@ -69,10 +67,7 @@ class AssertionKeyMaterial(
     suspend fun generatePrfKey(record: PasskeyRecord): KeyAccess<KeySecurityLevel> =
         try {
             KeyAccess.Success(
-                withContext(dispatcher) {
-                    val credentialKey = keyManager.credentialKeyInfo(record.credentialId, record.keystore.coseAlgorithm)
-                    hmacKeyManager.generateHmacKeyFor(credentialKey, record.credentialId).securityLevel
-                },
+                withContext(dispatcher) { keyManager.generateHmacKeyFor(record.credentialId, record.keystore.coseAlgorithm).securityLevel },
             )
         } catch (e: SecureElementUnavailableException) {
             log.e(e) { "failed to generate prf key" }

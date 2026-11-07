@@ -4,9 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import app.keyholm.Application
 import app.keyholm.ctap.CredentialId
-import app.keyholm.keystore.HmacKeyManager
-import app.keyholm.keystore.SecureKeyManager
-import app.keyholm.keystore.deleteCredentialKeys
+import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.store.proto.DiscoverabilityProto
 import app.keyholm.store.proto.PasskeyRecordProto
 import app.keyholm.store.proto.PasskeyRecordsProto
@@ -38,15 +36,14 @@ class PasskeyRepository internal constructor(
     private val deleteKeyMaterial: (PasskeyRecord) -> Unit,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
-    constructor(context: Context) : this(context, SecureKeyManager(), HmacKeyManager())
+    constructor(context: Context) : this(context, PasskeyKeyManager())
 
     private constructor(
         context: Context,
-        keyManager: SecureKeyManager,
-        hmacKeyManager: HmacKeyManager,
+        keyManager: PasskeyKeyManager,
     ) : this(
         (context.applicationContext as Application).stores.passkeys,
-        { deleteCredentialKeys(it.credentialId, keyManager, hmacKeyManager) },
+        { keyManager.deleteKeys(it.credentialId) },
     )
 
     val passkeys: Flow<List<PasskeyRecord>> =

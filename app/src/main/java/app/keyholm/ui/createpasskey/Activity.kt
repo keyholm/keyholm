@@ -18,7 +18,7 @@ import app.keyholm.ctap.RelyingParty
 import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.KeySecurityLevel
-import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.MigrationRepository
 import app.keyholm.store.PasskeyRepository
@@ -85,7 +85,7 @@ internal data class CreateRequest(
 
 internal data class KeyMaterial(
     val authenticators: AuthenticatorPolicy,
-    val generated: SecureKeyManager.GeneratedCredential,
+    val generated: PasskeyKeyManager.GeneratedCredential,
     val authData: AuthenticatorData,
     val toSign: SigningInput,
     val signature: Signature,

@@ -4,8 +4,7 @@ import android.content.Context
 import android.content.Intent
 import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.keystore.HmacKeyManager
-import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.util.logger
 import kotlinx.coroutines.CoroutineDispatcher
@@ -58,7 +57,7 @@ class PasskeyDetailsController(
         scope.launch {
             val pem =
                 withContext(dispatcher) {
-                    runCatching { SecureKeyManager().certificateChainPem(record.credentialId) }
+                    runCatching { PasskeyKeyManager().certificateChainPem(record.credentialId) }
                 }
             val attestation: Loadable<AttestationInfo> =
                 pem.fold(
@@ -74,11 +73,11 @@ class PasskeyDetailsController(
             val read =
                 withContext(dispatcher) {
                     runCatching {
-                        val keyManager = SecureKeyManager()
+                        val keyManager = PasskeyKeyManager()
                         val mainKey =
                             keyManager.allowedAuthenticatorsFor(record.credentialId, record.keystore.coseAlgorithm)
                         if (record.hasPrf) {
-                            KeyAuthenticators.WithPrf(mainKey, HmacKeyManager().allowedAuthenticatorsForHmac(record.credentialId))
+                            KeyAuthenticators.WithPrf(mainKey, keyManager.allowedAuthenticatorsForHmac(record.credentialId))
                         } else {
                             KeyAuthenticators.SigningOnly(mainKey)
                         }

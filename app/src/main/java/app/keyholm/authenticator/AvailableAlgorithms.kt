@@ -2,12 +2,12 @@ package app.keyholm.authenticator
 
 import android.content.Context
 import app.keyholm.ctap.AlgorithmFamily
-import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.keystore.isAlgorithmAvailable
 
 private fun isFamilyAvailable(
     context: Context,
     family: AlgorithmFamily,
-): Boolean = family.algorithms.any { SecureKeyManager.isAlgorithmAvailable(context, it) }
+): Boolean = family.algorithms.any { isAlgorithmAvailable(context, it) }
 
 fun availableFamilies(
     context: Context,

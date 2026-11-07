@@ -2,11 +2,9 @@ package app.keyholm.authenticator
 
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import app.keyholm.ctap.CredentialId
-import app.keyholm.keystore.HmacKeyManager
 import app.keyholm.keystore.KeySecurityLevel
+import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.keystore.SecureElementUnavailableException
-import app.keyholm.keystore.SecureKeyManager
-import app.keyholm.keystore.deleteCredentialKeys
 import app.keyholm.util.logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
@@ -16,7 +14,7 @@ import java.security.ProviderException
 import java.security.Signature
 
 class CredentialKeys(
-    val generated: SecureKeyManager.GeneratedCredential,
+    val generated: PasskeyKeyManager.GeneratedCredential,
     val signature: Signature,
     val prfSecurityLevel: KeySecurityLevel?,
 )
@@ -36,12 +34,11 @@ sealed interface CredentialKeyCreation {
 class CredentialKeyMaterial(
     private val dispatcher: CoroutineDispatcher,
 ) {
-    private val keyManager by lazy { SecureKeyManager() }
-    private val hmacKeyManager by lazy { HmacKeyManager() }
+    private val keyManager by lazy { PasskeyKeyManager() }
     private val log = logger()
 
     suspend fun create(
-        request: SecureKeyManager.CredentialKeyRequest,
+        request: PasskeyKeyManager.CredentialKeyRequest,
         prfRequested: Boolean,
     ): CredentialKeyCreation {
         val generation =
@@ -57,7 +54,7 @@ class CredentialKeyMaterial(
                 return CredentialKeyCreation.Failed(KeyFailure.HardwareError(e))
             }
         return when (generation) {
-            is SecureKeyManager.CredentialKeyGeneration.Generated -> {
+            is PasskeyKeyManager.CredentialKeyGeneration.Generated -> {
                 var keys: CredentialKeyCreation? = null
                 try {
                     keys = keysFor(request, generation.credential, prfRequested)
@@ -67,18 +64,17 @@ class CredentialKeyMaterial(
                 keys
             }
 
-            SecureKeyManager.CredentialKeyGeneration.DevicePropertiesUnavailable -> {
+            PasskeyKeyManager.CredentialKeyGeneration.DevicePropertiesUnavailable -> {
                 CredentialKeyCreation.DevicePropertiesUnavailable
             }
         }
     }
 
-    suspend fun discard(credentialId: CredentialId) =
-        withContext(dispatcher) { deleteCredentialKeys(credentialId, keyManager, hmacKeyManager) }
+    suspend fun discard(credentialId: CredentialId) = withContext(dispatcher) { keyManager.deleteKeys(credentialId) }
 
     private suspend fun keysFor(
-        request: SecureKeyManager.CredentialKeyRequest,
-        generated: SecureKeyManager.GeneratedCredential,
+        request: PasskeyKeyManager.CredentialKeyRequest,
+        generated: PasskeyKeyManager.GeneratedCredential,
         prfRequested: Boolean,
     ): CredentialKeyCreation {
         val signature =
@@ -95,7 +91,7 @@ class CredentialKeyMaterial(
             if (prfRequested) {
                 try {
                     withContext(dispatcher) {
-                        hmacKeyManager
+                        keyManager
                             .generateHmacKey(request.credentialId, request.authenticators, request.invalidateOnBiometricEnrollment)
                             .securityLevel
                     }

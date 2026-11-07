@@ -19,7 +19,7 @@ import app.keyholm.authenticator.KeyAccess
 import app.keyholm.ctap.AuthenticatorData
 import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.KeySecurityLevel
-import app.keyholm.keystore.SecureKeyManager
+import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.provider.CreationOffer
 import app.keyholm.provider.creationOffer
 import app.keyholm.provider.preferRpName
@@ -99,7 +99,7 @@ private data class PendingRegistration(
     val clientDataJSON: ClientDataJson,
     val authData: AuthenticatorData,
     val toSign: SigningInput,
-    val generated: SecureKeyManager.GeneratedCredential,
+    val generated: PasskeyKeyManager.GeneratedCredential,
     val includeAttestation: Boolean,
     val prfSecurityLevel: KeySecurityLevel?,
     val prfEvalInputs: PrfExtension.Inputs?,
