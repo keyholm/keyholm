@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import java.security.GeneralSecurityException
 import java.security.ProviderException
 import java.security.Signature
+import java.security.UnrecoverableKeyException
 import javax.crypto.Mac
 
 class AssertionKeyMaterial(
@@ -29,6 +30,9 @@ class AssertionKeyMaterial(
             log.e(e) { "signatureFor failed" }
             markLikelyInvalid(record)
             KeyAccess.Failure(KeyFailure.KeyInvalidated)
+        } catch (e: UnrecoverableKeyException) {
+            log.e(e) { "signatureFor failed" }
+            KeyAccess.Failure(KeyFailure.KeyMissing)
         } catch (e: GeneralSecurityException) {
             log.e(e) { "signatureFor failed" }
             KeyAccess.Failure(KeyFailure.SecurityError)
@@ -41,6 +45,9 @@ class AssertionKeyMaterial(
             log.e(e) { "macFor failed" }
             markLikelyInvalid(record)
             KeyAccess.Failure(KeyFailure.KeyInvalidated)
+        } catch (e: UnrecoverableKeyException) {
+            log.e(e) { "macFor failed" }
+            KeyAccess.Failure(KeyFailure.KeyMissing)
         } catch (e: GeneralSecurityException) {
             log.e(e) { "macFor failed" }
             KeyAccess.Failure(KeyFailure.SecurityError)
@@ -51,14 +58,23 @@ class AssertionKeyMaterial(
             KeyAccess.Success(
                 withContext(dispatcher) { keyManager.allowedAuthenticatorsFor(record.credentialId, record.keystore.coseAlgorithm) },
             )
+        } catch (e: UnrecoverableKeyException) {
+            log.e(e) { "authenticatorsFor failed" }
+            KeyAccess.Failure(KeyFailure.KeyMissing)
         } catch (e: GeneralSecurityException) {
             log.e(e) { "authenticatorsFor failed" }
             KeyAccess.Failure(KeyFailure.SecurityError)
+        } catch (e: ProviderException) {
+            log.e(e) { "authenticatorsFor failed" }
+            KeyAccess.Failure(KeyFailure.HardwareError(e))
         }
 
     suspend fun hmacAuthenticatorsFor(record: PasskeyRecord): KeyAccess<AuthenticatorPolicy> =
         try {
             KeyAccess.Success(withContext(dispatcher) { keyManager.allowedAuthenticatorsForHmac(record.credentialId) })
+        } catch (e: UnrecoverableKeyException) {
+            log.e(e) { "hmacAuthenticatorsFor failed" }
+            KeyAccess.Failure(KeyFailure.KeyMissing)
         } catch (e: GeneralSecurityException) {
             log.e(e) { "hmacAuthenticatorsFor failed" }
             KeyAccess.Failure(KeyFailure.SecurityError)

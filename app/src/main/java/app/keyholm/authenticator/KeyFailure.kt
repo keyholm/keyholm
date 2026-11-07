@@ -9,6 +9,8 @@ sealed interface KeyFailure {
 
     data object KeyInvalidated : KeyFailure
 
+    data object KeyMissing : KeyFailure
+
     data object SecurityError : KeyFailure
 
     data class HardwareError(

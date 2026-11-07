@@ -59,6 +59,6 @@ internal fun KeyFailure.toastMessage(securityError: String): String? =
     when (this) {
         is KeyFailure.SecureElementUnavailable -> message
         KeyFailure.KeyInvalidated -> ErrorMessages.KEY_INVALIDATED
-        KeyFailure.SecurityError -> securityError
+        KeyFailure.KeyMissing, KeyFailure.SecurityError -> securityError
         is KeyFailure.HardwareError -> ErrorMessages.hardwareError(cause)
     }

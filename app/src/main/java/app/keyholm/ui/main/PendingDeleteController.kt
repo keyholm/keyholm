@@ -54,7 +54,7 @@ interface PendingDeleteStore<Id, R> {
 
     suspend fun delete(id: Id): Result<Unit>
 
-    fun planDelete(record: R): DeletePlan
+    suspend fun planDelete(record: R): DeletePlan
 
     fun deleteKeyMaterial(record: R)
 }

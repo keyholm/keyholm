@@ -2,10 +2,13 @@ package app.keyholm.ui.main
 
 import android.content.Context
 import android.content.Intent
+import app.keyholm.authenticator.AssertionKeyMaterial
+import app.keyholm.authenticator.KeyAccess
 import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.store.PasskeyRecord
+import app.keyholm.store.PasskeyRepository
 import app.keyholm.util.logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -45,10 +48,12 @@ sealed interface PasskeyDetails {
 
 class PasskeyDetailsController(
     private val context: Context,
+    passkeyRepo: PasskeyRepository,
     private val scope: CoroutineScope,
     private val dispatcher: CoroutineDispatcher,
 ) {
     private val log = logger()
+    private val keys = AssertionKeyMaterial(passkeyRepo, dispatcher)
     private val details = MutableStateFlow<PasskeyDetails>(PasskeyDetails.Closed)
     val state: StateFlow<PasskeyDetails> = details.asStateFlow()
 
@@ -70,28 +75,23 @@ class PasskeyDetailsController(
             updateOpen(record.credentialId) { it.copy(attestation = attestation) }
         }
         scope.launch {
-            val read =
-                withContext(dispatcher) {
-                    runCatching {
-                        val keyManager = PasskeyKeyManager()
-                        val mainKey =
-                            keyManager.allowedAuthenticatorsFor(record.credentialId, record.keystore.coseAlgorithm)
-                        if (record.hasPrf) {
-                            KeyAuthenticators.WithPrf(mainKey, keyManager.allowedAuthenticatorsForHmac(record.credentialId))
-                        } else {
-                            KeyAuthenticators.SigningOnly(mainKey)
-                        }
-                    }
+            val authenticators =
+                when (val mainKey = keys.authenticatorsFor(record)) {
+                    is KeyAccess.Failure -> Loadable.Failed
+                    is KeyAccess.Success -> authenticatorsFor(record, mainKey.value)
                 }
-            val authenticators: Loadable<KeyAuthenticators> =
-                read.fold(
-                    onSuccess = { Loadable.Loaded(it) },
-                    onFailure = { e ->
-                        log.e(e) { "couldn't read the key authenticators" }
-                        Loadable.Failed
-                    },
-                )
             updateOpen(record.credentialId) { it.copy(authenticators = authenticators) }
+        }
+    }
+
+    private suspend fun authenticatorsFor(
+        record: PasskeyRecord,
+        mainKey: AuthenticatorPolicy,
+    ): Loadable<KeyAuthenticators> {
+        if (!record.hasPrf) return Loadable.Loaded(KeyAuthenticators.SigningOnly(mainKey))
+        return when (val prfKey = keys.hmacAuthenticatorsFor(record)) {
+            is KeyAccess.Failure -> Loadable.Failed
+            is KeyAccess.Success -> Loadable.Loaded(KeyAuthenticators.WithPrf(mainKey, prfKey.value))
         }
     }
 

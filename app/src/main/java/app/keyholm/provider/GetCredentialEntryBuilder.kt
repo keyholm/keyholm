@@ -3,29 +3,26 @@ package app.keyholm.provider
 import android.app.PendingIntent
 import android.content.Context
 import android.graphics.drawable.Icon
-import android.security.keystore.KeyPermanentlyInvalidatedException
 import androidx.biometric.BiometricPrompt
 import androidx.credentials.provider.BeginGetPublicKeyCredentialOption
 import androidx.credentials.provider.BiometricPromptData
 import androidx.credentials.provider.CredentialEntry
 import androidx.credentials.provider.PublicKeyCredentialEntry
 import app.keyholm.R
+import app.keyholm.authenticator.AssertionKeyMaterial
+import app.keyholm.authenticator.KeyAccess
 import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.RpId
 import app.keyholm.keystore.AuthenticatorPolicy
-import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.store.PasskeyRecord
-import app.keyholm.store.PasskeyRepository
 import app.keyholm.util.logger
 import app.keyholm.webauthn.NativeAppTrust
 import app.keyholm.webauthn.RequestOptions
-import java.security.GeneralSecurityException
 import java.security.Signature
 
 internal class GetCredentialEntryBuilder(
     private val context: Context,
-    private val keyManager: PasskeyKeyManager,
-    private val passkeyRepo: PasskeyRepository,
+    private val keys: AssertionKeyMaterial,
     private val pendingIntent: (CredentialId, preferRpName: Boolean, trust: NativeAppTrust) -> PendingIntent,
 ) {
     private val log = logger()
@@ -96,24 +93,17 @@ internal class GetCredentialEntryBuilder(
         val allowedAuthenticators: AuthenticatorPolicy,
     )
 
-    private suspend fun singleTapSignature(record: PasskeyRecord): SingleTapSignature? =
-        try {
-            val algorithm = record.keystore.coseAlgorithm
-            val allowedAuthenticators = keyManager.allowedAuthenticatorsFor(record.credentialId, algorithm)
-            SingleTapSignature(keyManager.signatureFor(record.credentialId, algorithm), allowedAuthenticators)
-        } catch (e: KeyPermanentlyInvalidatedException) {
-            log.e(e) { "key invalidated for ${record.credentialId.b64}" }
-            markLikelyInvalid(record)
-            null
-        } catch (e: GeneralSecurityException) {
-            log.e(e) { "couldn't prepare signature for ${record.credentialId.b64}" }
-            null
-        }
-
-    private suspend fun markLikelyInvalid(record: PasskeyRecord) {
-        if (record.likelyInvalid) return
-        passkeyRepo.update(record.copy(likelyInvalid = true)).onFailure {
-            log.e(it) { "markLikelyInvalid failed for ${record.credentialId.b64}" }
-        }
+    private suspend fun singleTapSignature(record: PasskeyRecord): SingleTapSignature? {
+        val allowedAuthenticators =
+            when (val read = keys.authenticatorsFor(record)) {
+                is KeyAccess.Success -> read.value
+                is KeyAccess.Failure -> return null
+            }
+        val signature =
+            when (val read = keys.signatureFor(record)) {
+                is KeyAccess.Success -> read.value
+                is KeyAccess.Failure -> return null
+            }
+        return SingleTapSignature(signature, allowedAuthenticators)
     }
 }

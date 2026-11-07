@@ -25,7 +25,7 @@ class PlaceholderPendingDeletes(
     override suspend fun delete(id: Pair<RpId, String>) = repo.delete(id.first, id.second)
 
     // Placeholders have no key material, so there's nothing to confirm or clean up
-    override fun planDelete(record: MigrationPlaceholder) = DeletePlan.Orphaned
+    override suspend fun planDelete(record: MigrationPlaceholder) = DeletePlan.Orphaned
 
     override fun deleteKeyMaterial(record: MigrationPlaceholder) = Unit
 }

@@ -7,8 +7,8 @@ import androidx.credentials.provider.BeginGetCredentialRequest
 import androidx.credentials.provider.BeginGetPublicKeyCredentialOption
 import androidx.credentials.provider.CallingAppInfo
 import androidx.credentials.provider.CredentialEntry
+import app.keyholm.authenticator.AssertionKeyMaterial
 import app.keyholm.ctap.RpId
-import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.settings.Settings
 import app.keyholm.settings.SettingsRepository
 import app.keyholm.store.DeniedNativeAppRepository
@@ -32,12 +32,11 @@ internal class GetCredentialEntries(
     private val dispatcher: CoroutineDispatcher,
 ) {
     private val log = logger()
-    private val keyManager = PasskeyKeyManager()
     private val passkeyRepo = PasskeyRepository(context)
     private val settingsRepo = SettingsRepository(context)
     private val deniedAppsRepo = DeniedNativeAppRepository(context)
     private val entryBuilder =
-        GetCredentialEntryBuilder(context, keyManager, passkeyRepo) { credentialId, preferRpName, trust ->
+        GetCredentialEntryBuilder(context, AssertionKeyMaterial(passkeyRepo, dispatcher)) { credentialId, preferRpName, trust ->
             credentialPendingIntent(credentialId.b64.hashCode(), credentialUri(credentialId)) {
                 putPreferRpName(preferRpName)
                 putNativeAppTrust(trust)

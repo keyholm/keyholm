@@ -1,23 +1,24 @@
 package app.keyholm.ui.main
 
 import androidx.biometric.BiometricPrompt
+import app.keyholm.authenticator.AssertionKeyMaterial
+import app.keyholm.authenticator.KeyAccess
+import app.keyholm.authenticator.KeyFailure
 import app.keyholm.ctap.CredentialId
 import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.RecordLifecycle
 import app.keyholm.ui.common.ErrorMessages
-import app.keyholm.util.logger
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
-import java.security.GeneralSecurityException
-import java.security.ProviderException
-import java.security.UnrecoverableKeyException
 
 class PasskeyPendingDeletes(
     private val repo: PasskeyRepository,
+    dispatcher: CoroutineDispatcher,
 ) : PendingDeleteStore<CredentialId, PasskeyRecord> {
-    private val log = logger()
     private val keyManager = PasskeyKeyManager()
+    private val keys = AssertionKeyMaterial(repo, dispatcher)
 
     override val records: Flow<List<PasskeyRecord>> = repo.passkeys
 
@@ -34,27 +35,24 @@ class PasskeyPendingDeletes(
 
     override suspend fun delete(id: CredentialId) = repo.delete(id)
 
-    override fun planDelete(record: PasskeyRecord): DeletePlan {
-        val algorithm = record.keystore.coseAlgorithm
+    override suspend fun planDelete(record: PasskeyRecord): DeletePlan {
         val allowedAuthenticators =
-            try {
-                keyManager.allowedAuthenticatorsFor(record.credentialId, algorithm)
-            } catch (e: UnrecoverableKeyException) {
-                log.e(e) { "no key material for ${record.credentialId.b64}, treating as orphaned" }
-                return DeletePlan.Orphaned
-            } catch (e: GeneralSecurityException) {
-                log.e(e) { "couldn't read authenticators for ${record.credentialId.b64}" }
-                return DeletePlan.Failed(ErrorMessages.DELETE_KEY_UNAVAILABLE)
-            } catch (e: ProviderException) {
-                log.e(e) { "couldn't read authenticators for ${record.credentialId.b64}" }
-                return DeletePlan.Failed(ErrorMessages.DELETE_KEY_UNAVAILABLE)
+            when (val read = keys.authenticatorsFor(record)) {
+                is KeyAccess.Success -> {
+                    read.value
+                }
+
+                is KeyAccess.Failure -> {
+                    return when (read.failure) {
+                        KeyFailure.KeyMissing -> DeletePlan.Orphaned
+                        else -> DeletePlan.Failed(ErrorMessages.DELETE_KEY_UNAVAILABLE)
+                    }
+                }
             }
         val cryptoObject =
-            try {
-                BiometricPrompt.CryptoObject(keyManager.signatureFor(record.credentialId, algorithm))
-            } catch (e: GeneralSecurityException) {
-                log.e(e) { "couldn't create a signature for ${record.credentialId.b64}" }
-                null
+            when (val signature = keys.signatureFor(record)) {
+                is KeyAccess.Success -> BiometricPrompt.CryptoObject(signature.value)
+                is KeyAccess.Failure -> null
             }
         return DeletePlan.Confirm(cryptoObject, allowedAuthenticators)
     }
