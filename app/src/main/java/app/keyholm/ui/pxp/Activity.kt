@@ -52,13 +52,15 @@ class Activity : FragmentActivity() {
             KeyholmTheme {
                 val status by viewModel.status.collectAsStateWithLifecycle()
                 val confirmationCode by viewModel.confirmationCode.collectAsStateWithLifecycle()
+                val internalFailure by viewModel.ui.failure.collectAsStateWithLifecycle()
                 status?.let { current ->
-                    if (current.failure == null && current.stage in setOf(PxpStage.ChannelClosed, PxpStage.ClientShutdown)) {
+                    val failed = current.failure != null || internalFailure != null
+                    if (!failed && current.stage in setOf(PxpStage.ChannelClosed, PxpStage.ClientShutdown)) {
                         LaunchedEffect(Unit) { finish() }
                     }
-                    PxpStatusSheet(current, confirmationCode, cryptoPrompt, viewModel.prompts, onClose = ::finish)
+                    PxpStatusSheet(current, confirmationCode, cryptoPrompt, viewModel.ui, onClose = ::finish)
                 }
-                ChoiceSheets(viewModel.choices)
+                ChoiceSheets(viewModel.ui.choices)
             }
         }
         when {

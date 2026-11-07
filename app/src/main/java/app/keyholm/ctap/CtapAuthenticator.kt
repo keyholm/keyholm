@@ -8,21 +8,18 @@ import app.keyholm.ctap.handlers.authenticatorInfo
 import app.keyholm.pxp.ctap.PxpAuthenticator
 import app.keyholm.settings.Settings
 import app.keyholm.store.PasskeyRepository
-import app.keyholm.ui.common.PromptRelay
-import app.keyholm.ui.pxp.ChoiceRelay
+import app.keyholm.ui.pxp.CtapUi
 import kotlinx.coroutines.CoroutineDispatcher
 
 internal class CtapAuthenticator(
     private val context: Context,
     private val settings: Settings,
     passkeyRepo: PasskeyRepository,
-    prompt: PromptRelay,
-    choices: ChoiceRelay,
+    ui: CtapUi,
     dispatcher: CoroutineDispatcher,
 ) : PxpAuthenticator {
-    private val makeCredential =
-        MakeCredentialHandler(context, settings, passkeyRepo, prompt, choices.creationOptions::ask, dispatcher)
-    private val getAssertion = GetAssertionHandler(settings, passkeyRepo, prompt, choices.accountChoice::ask, dispatcher)
+    private val makeCredential = MakeCredentialHandler(context, settings, passkeyRepo, ui, dispatcher)
+    private val getAssertion = GetAssertionHandler(settings, passkeyRepo, ui, dispatcher)
 
     // Clients time getInfo out quickly, so it can't wait for the user.
     override suspend fun getInfo(): ByteArray =

@@ -17,11 +17,14 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.keyholm.ctap.InternalFailure
 import app.keyholm.pxp.PxpFailure
 import app.keyholm.pxp.PxpStage
 import app.keyholm.pxp.PxpStatus
@@ -29,10 +32,11 @@ import app.keyholm.pxp.ble.AdvertisingFailure
 import app.keyholm.pxp.ble.L2capFailure
 import app.keyholm.pxp.ble.OversizedMessage
 import app.keyholm.ui.common.CryptoPrompt
-import app.keyholm.ui.common.PromptRelay
+import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.RelayedPrompts
 import app.keyholm.ui.common.Sheet
 import app.keyholm.ui.common.SheetHeader
+import app.keyholm.ui.common.message
 import app.keyholm.ui.common.rememberAppIcon
 import app.keyholm.ui.theme.titleColor
 
@@ -50,13 +54,15 @@ internal fun PxpStatusSheet(
     status: PxpStatus,
     confirmationCode: String?,
     cryptoPrompt: CryptoPrompt,
-    prompts: PromptRelay,
+    ui: CtapUi,
     onClose: () -> Unit,
 ) {
     val (stage, failure) = status
+    val internalFailure by ui.failure.collectAsStateWithLifecycle()
+    val failureText = failure?.text() ?: internalFailure?.text()
     val icon = rememberAppIcon()
     Sheet(onDismiss = onClose) {
-        RelayedPrompts(cryptoPrompt, prompts)
+        RelayedPrompts(cryptoPrompt, ui.prompts)
         SheetHeader(icon, stage.label)
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
@@ -70,17 +76,17 @@ internal fun PxpStatusSheet(
                     modifier = Modifier.alpha(if (stage >= PxpStage.ChannelOpen) 1f else 0f),
                 )
             }
-            StatusIndicator(failure)
-            if (failure != null) {
+            StatusIndicator(failed = failureText != null)
+            if (failureText != null) {
                 Text(
-                    failure.text(),
+                    failureText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center,
                 )
             }
         }
-        if (failure != null) {
+        if (failureText != null) {
             Box(
                 Modifier.fillMaxWidth().padding(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 4.dp),
                 contentAlignment = Alignment.CenterEnd,
@@ -94,9 +100,9 @@ internal fun PxpStatusSheet(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun StatusIndicator(failure: PxpFailure?) {
+private fun StatusIndicator(failed: Boolean) {
     when {
-        failure != null -> {
+        failed -> {
             Icon(
                 Icons.Default.Error,
                 contentDescription = null,
@@ -113,6 +119,14 @@ private fun StatusIndicator(failure: PxpFailure?) {
 
 private val INDICATOR_SIZE = 96.dp
 private const val CODE_GROUP = 3
+
+private fun InternalFailure.text(): String =
+    when (this) {
+        InternalFailure.Read -> "Failed to load data."
+        InternalFailure.Write -> "Failed to write data."
+        is InternalFailure.Creating -> failure.message(ErrorMessages.SECURITY_ERROR_CREATE) ?: ErrorMessages.SECURITY_ERROR_CREATE
+        is InternalFailure.Signing -> failure.message(ErrorMessages.SECURITY_ERROR_GET) ?: ErrorMessages.SECURITY_ERROR_GET
+    }
 
 private fun PxpFailure.text(): String =
     when (this) {

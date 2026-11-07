@@ -36,9 +36,9 @@ import app.keyholm.ui.common.Outcome
 import app.keyholm.ui.common.PrfPrompt
 import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.appLabel
+import app.keyholm.ui.common.message
 import app.keyholm.ui.common.prfPromptContent
 import app.keyholm.ui.common.promptContent
-import app.keyholm.ui.common.toastMessage
 import app.keyholm.util.logger
 import app.keyholm.webauthn.AssertionResponse
 import app.keyholm.webauthn.ClientDataJson
@@ -346,7 +346,7 @@ class Activity internal constructor(
                 )
         ) {
             is KeyAccess.Failure -> {
-                failGetCredential(GetCredentialUnknownException(), r.failure.toastMessage(ErrorMessages.SECURITY_ERROR_GET))
+                failGetCredential(GetCredentialUnknownException(), r.failure.message(ErrorMessages.SECURITY_ERROR_GET))
             }
 
             is KeyAccess.Success -> {

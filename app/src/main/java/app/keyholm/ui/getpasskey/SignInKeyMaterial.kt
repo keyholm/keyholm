@@ -8,7 +8,7 @@ import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.Outcome
-import app.keyholm.ui.common.toastMessage
+import app.keyholm.ui.common.message
 import app.keyholm.util.logger
 import kotlinx.coroutines.CoroutineDispatcher
 import java.security.Signature
@@ -16,7 +16,7 @@ import java.security.Signature
 private fun <T> KeyAccess<T>.toOutcome(): Outcome<T> =
     when (this) {
         is KeyAccess.Success -> Outcome.Success(value)
-        is KeyAccess.Failure -> Outcome.Failure(failure.toastMessage(ErrorMessages.SECURITY_ERROR_GET))
+        is KeyAccess.Failure -> Outcome.Failure(failure.message(ErrorMessages.SECURITY_ERROR_GET))
     }
 
 internal class SignInKeyMaterial(

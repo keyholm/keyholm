@@ -55,7 +55,7 @@ internal object ErrorMessages {
             }
 }
 
-internal fun KeyFailure.toastMessage(securityError: String): String? =
+internal fun KeyFailure.message(securityError: String): String? =
     when (this) {
         is KeyFailure.SecureElementUnavailable -> message
         KeyFailure.KeyInvalidated -> ErrorMessages.KEY_INVALIDATED

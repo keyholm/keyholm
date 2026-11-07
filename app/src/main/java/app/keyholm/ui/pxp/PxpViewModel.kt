@@ -14,7 +14,6 @@ import app.keyholm.pxp.crypto.PxpNoise
 import app.keyholm.pxp.qr.PxpQrPayload
 import app.keyholm.settings.SettingsRepository
 import app.keyholm.store.PasskeyRepository
-import app.keyholm.ui.common.PromptRelay
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,8 +33,7 @@ class PxpViewModel internal constructor(
 
     private val settingsRepo = SettingsRepository(application)
     private val passkeyRepo = PasskeyRepository(application)
-    val prompts = PromptRelay()
-    internal val choices = ChoiceRelay()
+    internal val ui = CtapUi()
     private var running: Job? = null
     var intentHandled = false
     private val _status = MutableStateFlow<PxpStatus?>(null)
@@ -52,7 +50,7 @@ class PxpViewModel internal constructor(
             viewModelScope.launch(dispatcher) {
                 val app = getApplication<Application>()
                 val authenticator =
-                    CtapAuthenticator(app, settingsRepo.settings.first(), passkeyRepo, prompts, choices, dispatcher)
+                    CtapAuthenticator(app, settingsRepo.settings.first(), passkeyRepo, ui, dispatcher)
                 val pxp = PxpCeremony(app, payload, authenticator, PxpNoise)
                 _confirmationCode.value = pxp.confirmationCode
                 pxp.status.onEach { _status.value = it }.launchIn(this)
@@ -62,6 +60,7 @@ class PxpViewModel internal constructor(
 
     fun stop() {
         running?.cancel()
+        ui.clear()
         _status.value = null
         _confirmationCode.value = null
     }

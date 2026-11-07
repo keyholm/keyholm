@@ -14,6 +14,7 @@ import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.Ctap2Response
 import app.keyholm.ctap.Ctap2Result
 import app.keyholm.ctap.Ctap2Status
+import app.keyholm.ctap.InternalFailure
 import app.keyholm.ctap.KEYHOLM_AAGUID
 import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.ctap.ZERO_AAGUID
@@ -28,7 +29,6 @@ import app.keyholm.store.RecordLifecycle
 import app.keyholm.store.anyExcluded
 import app.keyholm.store.readStore
 import app.keyholm.ui.common.AuthenticatorsResolution
-import app.keyholm.ui.common.PromptRelay
 import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.resolveCreateAuthenticators
 import app.keyholm.ui.createpasskey.CreationChoice
@@ -39,6 +39,7 @@ import app.keyholm.ui.createpasskey.attestationChoice
 import app.keyholm.ui.createpasskey.chooseIfNeeded
 import app.keyholm.ui.createpasskey.identityChoice
 import app.keyholm.ui.createpasskey.registrationPromptContent
+import app.keyholm.ui.pxp.CtapUi
 import app.keyholm.util.logger
 import com.google.protobuf.ByteString
 import com.upokecenter.cbor.CBORObject
@@ -76,13 +77,13 @@ internal class MakeCredentialHandler(
     private val context: Context,
     private val settings: Settings,
     private val passkeyRepo: PasskeyRepository,
-    private val prompt: PromptRelay,
-    private val chooseCreationOptions: CreationOptionsChooser,
+    private val ui: CtapUi,
     private val dispatcher: CoroutineDispatcher,
 ) {
     private val log = logger()
     private val keys = CredentialKeyMaterial(dispatcher)
-    private val prf = PrfEvaluator(prompt, AssertionKeyMaterial(passkeyRepo, dispatcher), settings.preferRpName, dispatcher)
+    private val chooseCreationOptions: CreationOptionsChooser = ui.choices.creationOptions::ask
+    private val prf = PrfEvaluator(ui.prompts, AssertionKeyMaterial(passkeyRepo, dispatcher), settings.preferRpName, dispatcher)
 
     suspend fun handle(body: ByteArray): Ctap2Response =
         when (val parsed = parseMakeCredential(body)) {
@@ -118,6 +119,7 @@ internal class MakeCredentialHandler(
                 ?: return Ctap2Response(Ctap2Status.OPERATION_DENIED)
         return when (excluded(request)) {
             null -> {
+                ui.report(InternalFailure.Read)
                 Ctap2Response(Ctap2Status.OTHER)
             }
 
@@ -139,7 +141,7 @@ internal class MakeCredentialHandler(
         choice: CreationChoice,
         authenticators: AuthenticatorPolicy,
     ): Ctap2Response {
-        prompt.confirm(
+        ui.prompts.confirm(
             title = "Create passkey",
             allowedAuthenticators = authenticators,
             content = registrationPromptContent(context, request.info, choice.algorithm, choice.includeAttestation, settings.preferRpName),
@@ -209,6 +211,7 @@ internal class MakeCredentialHandler(
             }
 
             is CredentialKeyCreation.Failed -> {
+                ui.report(InternalFailure.Creating(created.failure))
                 Ctap2Result.Rejected(Ctap2Status.OTHER)
             }
         }
@@ -219,7 +222,7 @@ internal class MakeCredentialHandler(
         pending: PendingCredential,
     ): Ctap2Result<SavedCredential> {
         val result =
-            prompt.authenticate(
+            ui.prompts.authenticate(
                 title = "Create passkey",
                 cryptoObject = BiometricPrompt.CryptoObject(pending.keys.signature),
                 allowedAuthenticators = pending.authenticators,
@@ -261,6 +264,7 @@ internal class MakeCredentialHandler(
             onSuccess = { Ctap2Result.Ok(SavedCredential(record, attestation)) },
             onFailure = {
                 log.e(it) { "saving the passkey failed" }
+                ui.report(InternalFailure.Write)
                 Ctap2Result.Rejected(Ctap2Status.OTHER)
             },
         )

@@ -8,6 +8,7 @@ import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.Ctap2Response
 import app.keyholm.ctap.Ctap2Result
 import app.keyholm.ctap.Ctap2Status
+import app.keyholm.ctap.InternalFailure
 import app.keyholm.ctap.PUBLIC_KEY_TYPE
 import app.keyholm.ctap.RpId
 import app.keyholm.ctap.requests.GetAssertionRequest
@@ -17,11 +18,11 @@ import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.readStore
 import app.keyholm.store.writeStore
-import app.keyholm.ui.common.PromptRelay
 import app.keyholm.ui.common.PromptResult
 import app.keyholm.ui.common.promptContent
 import app.keyholm.ui.pxp.AccountChoicePrompt
 import app.keyholm.ui.pxp.AccountChooser
+import app.keyholm.ui.pxp.CtapUi
 import app.keyholm.util.logger
 import com.upokecenter.cbor.CBORObject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -39,13 +40,13 @@ private const val GA_RESPONSE_UNSIGNED_EXTENSION_OUTPUTS = 8
 internal class GetAssertionHandler(
     private val settings: Settings,
     private val passkeyRepo: PasskeyRepository,
-    private val prompt: PromptRelay,
-    private val chooseAccount: AccountChooser,
+    private val ui: CtapUi,
     private val dispatcher: CoroutineDispatcher,
 ) {
     private val log = logger()
     private val keys = AssertionKeyMaterial(passkeyRepo, dispatcher)
-    private val prf = PrfEvaluator(prompt, keys, settings.preferRpName, dispatcher)
+    private val chooseAccount: AccountChooser = ui.choices.accountChoice::ask
+    private val prf = PrfEvaluator(ui.prompts, keys, settings.preferRpName, dispatcher)
 
     suspend fun handle(body: ByteArray): Ctap2Response =
         when (val parsed = parseGetAssertion(body)) {
@@ -58,6 +59,7 @@ internal class GetAssertionHandler(
         val matching = stored?.let { matchingRecords(it, request.rpId, request.allowIds) }
         return when {
             stored == null -> {
+                ui.report(InternalFailure.Read)
                 Ctap2Response(Ctap2Status.OTHER)
             }
 
@@ -94,18 +96,30 @@ internal class GetAssertionHandler(
     ): Ctap2Response {
         val signature =
             when (val r = keys.signatureFor(record)) {
-                is KeyAccess.Failure -> return Ctap2Response(Ctap2Status.OTHER)
-                is KeyAccess.Success -> r.value
+                is KeyAccess.Failure -> {
+                    ui.report(InternalFailure.Signing(r.failure))
+                    return Ctap2Response(Ctap2Status.OTHER)
+                }
+
+                is KeyAccess.Success -> {
+                    r.value
+                }
             }
         val authenticators =
             when (val r = keys.authenticatorsFor(record)) {
-                is KeyAccess.Failure -> return Ctap2Response(Ctap2Status.OTHER)
-                is KeyAccess.Success -> r.value
+                is KeyAccess.Failure -> {
+                    ui.report(InternalFailure.Signing(r.failure))
+                    return Ctap2Response(Ctap2Status.OTHER)
+                }
+
+                is KeyAccess.Success -> {
+                    r.value
+                }
             }
         val authData = AuthenticatorData.forAssertion(request.rpId, record.signCount + 1)
 
         val result =
-            prompt.authenticate(
+            ui.prompts.authenticate(
                 title = "Sign in",
                 cryptoObject = BiometricPrompt.CryptoObject(signature),
                 allowedAuthenticators = authenticators,
@@ -134,17 +148,25 @@ internal class GetAssertionHandler(
             }
 
         val updated = record.copy(signCount = record.signCount + 1, lastUsedAt = Instant.now())
-        if (!writeStore { passkeyRepo.update(updated) }) return Ctap2Response(Ctap2Status.OTHER)
+        if (!writeStore { passkeyRepo.update(updated) }) {
+            ui.report(InternalFailure.Write)
+            return Ctap2Response(Ctap2Status.OTHER)
+        }
 
-        val extensions =
-            request.prf
-                ?.saltsFor(record.credentialId)
-                ?.let { salts ->
-                    val withPrf = if (updated.hasPrf) updated else setUpPrf(updated)
-                    withPrf?.let { prf.evaluate(it, salts) }
-                }?.let { prfOutput(enabled = false, results = it) }
+        val extensions = unsignedExtensions(request, updated)
         return Ctap2Response(assertionObject(updated, authData, derSignature, userSelected, extensions))
     }
+
+    private suspend fun unsignedExtensions(
+        request: GetAssertionRequest,
+        record: PasskeyRecord,
+    ): CBORObject? =
+        request.prf
+            ?.saltsFor(record.credentialId)
+            ?.let { salts ->
+                val withPrf = if (record.hasPrf) record else setUpPrf(record)
+                withPrf?.let { prf.evaluate(it, salts) }
+            }?.let { prfOutput(enabled = false, results = it) }
 
     private suspend fun setUpPrf(record: PasskeyRecord): PasskeyRecord? {
         val securityLevel =
@@ -153,7 +175,11 @@ internal class GetAssertionHandler(
                 is KeyAccess.Success -> generated.value
             }
         val updated = record.copy(keystore = record.keystore.copy(prfSecurityLevel = securityLevel))
-        return if (writeStore { passkeyRepo.update(updated) }) updated else null
+        if (!writeStore { passkeyRepo.update(updated) }) {
+            ui.report(InternalFailure.Write)
+            return null
+        }
+        return updated
     }
 
     private fun assertionObject(

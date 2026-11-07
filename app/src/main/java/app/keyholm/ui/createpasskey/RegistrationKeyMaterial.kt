@@ -17,8 +17,8 @@ import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.ui.common.AuthenticatorsResolution
 import app.keyholm.ui.common.ErrorMessages
+import app.keyholm.ui.common.message
 import app.keyholm.ui.common.resolveCreateAuthenticators
-import app.keyholm.ui.common.toastMessage
 import app.keyholm.util.logger
 import app.keyholm.webauthn.SigningInput
 import kotlinx.coroutines.CoroutineDispatcher
@@ -93,7 +93,7 @@ internal class RegistrationKeyMaterial(
             }
 
             is CredentialKeyCreation.Failed -> {
-                Registration.Internal(created.failure.toastMessage(ErrorMessages.SECURITY_ERROR_CREATE))
+                Registration.Internal(created.failure.message(ErrorMessages.SECURITY_ERROR_CREATE))
             }
         }
     }
