@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import app.keyholm.ctap.RelyingParty
 import app.keyholm.ctap.RpId
+import app.keyholm.store.HybridInitiation
+import app.keyholm.store.Requester
 import app.keyholm.webauthn.PackageName
 import java.text.BreakIterator
 
@@ -44,6 +46,34 @@ internal fun Context.appLabel(packageName: PackageName): String =
             .loadLabel(packageManager)
             .toString()
     }.getOrDefault(packageName.value)
+
+internal fun Context.requesterLabel(requester: Requester): String =
+    when (requester) {
+        is Requester.App -> {
+            appLabel(requester.packageName)
+        }
+
+        is Requester.Hybrid -> {
+            when (requester.initiation) {
+                HybridInitiation.QR_CODE -> "The device whose QR code you scanned"
+                HybridInitiation.NFC -> "The device you tapped"
+            }
+        }
+    }
+
+internal fun requesterText(requester: Requester): String =
+    when (requester) {
+        is Requester.App -> {
+            requester.packageName.value
+        }
+
+        is Requester.Hybrid -> {
+            when (requester.initiation) {
+                HybridInitiation.QR_CODE -> "Via QR code"
+                HybridInitiation.NFC -> "Via NFC"
+            }
+        }
+    }
 
 private val GENERIC_RP_LABELS =
     setOf(

@@ -25,12 +25,13 @@ class PasskeyRecordMappingTest {
         prfSecurityLevel: KeySecurityLevel? = null,
         lifecycle: RecordLifecycle = RecordLifecycle.Active,
         discoverable: Boolean = true,
+        requester: Requester = Requester.App(PackageName("com.example.app")),
     ) = PasskeyRecord(
         credentialId = CredentialId("cred-1"),
         rp = RelyingParty(id = RpId("example.com"), name = "Example"),
         user = CredentialUser(handle = UserHandle("user-1"), name = "alice", displayName = "Alice"),
         signCount = 7,
-        callingPackage = PackageName("com.example.app"),
+        requester = requester,
         createdAt = Instant.ofEpochMilli(1_000),
         keystore =
             PasskeyRecord.Keystore(
@@ -52,6 +53,12 @@ class PasskeyRecordMappingTest {
                 prfSecurityLevel = KeySecurityLevel.TrustedEnvironment,
                 lifecycle = RecordLifecycle.PendingDelete(Instant.ofEpochMilli(9_999)),
             )
+        assertThat(original.toProto().toDomain()).isEqualTo(original)
+    }
+
+    @Test
+    fun `round-trips a hybrid record`() {
+        val original = record(requester = Requester.Hybrid(HybridInitiation.QR_CODE))
         assertThat(original.toProto().toDomain()).isEqualTo(original)
     }
 

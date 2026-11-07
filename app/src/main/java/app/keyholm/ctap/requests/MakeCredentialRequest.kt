@@ -15,8 +15,9 @@ import app.keyholm.ctap.byteStringOrNull
 import app.keyholm.ctap.textOrNull
 import app.keyholm.ctap.then
 import app.keyholm.provider.AttestationOffer
+import app.keyholm.store.HybridInitiation
+import app.keyholm.store.Requester
 import app.keyholm.ui.createpasskey.RegistrantInfo
-import app.keyholm.webauthn.PackageName
 import com.upokecenter.cbor.CBORObject
 import com.upokecenter.cbor.CBORType
 
@@ -80,7 +81,7 @@ private fun fromMap(map: CBORObject): Ctap2Result<MakeCredentialRequest> {
                                             name = user.textOrNull("name").orEmpty(),
                                             displayName = user.textOrNull("displayName").orEmpty(),
                                         ),
-                                    callingPackage = PackageName(""),
+                                    requester = Requester.Hybrid(HybridInitiation.QR_CODE),
                                     credPropsRequested = false,
                                     prfRequested = prf != null,
                                     discoverable = options.rk == true,

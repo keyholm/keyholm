@@ -22,16 +22,16 @@ import app.keyholm.keystore.PasskeyKeyManager
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.MigrationRepository
 import app.keyholm.store.PasskeyRepository
+import app.keyholm.store.Requester
 import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.WorkingIndicator
-import app.keyholm.ui.common.appLabel
 import app.keyholm.ui.common.promptContent
+import app.keyholm.ui.common.requesterLabel
 import app.keyholm.ui.common.userLabel
 import app.keyholm.ui.theme.KeyholmTheme
 import app.keyholm.webauthn.Caller
 import app.keyholm.webauthn.CreationOptions
-import app.keyholm.webauthn.PackageName
 import app.keyholm.webauthn.PrfExtension
 import app.keyholm.webauthn.SigningInput
 import kotlinx.coroutines.CoroutineDispatcher
@@ -103,7 +103,7 @@ internal sealed interface KeyCreation {
 internal data class RegistrantInfo(
     val rp: RelyingParty,
     val user: CredentialUser,
-    val callingPackage: PackageName,
+    val requester: Requester,
     val credPropsRequested: Boolean,
     val prfRequested: Boolean,
     val discoverable: Boolean,
@@ -143,7 +143,7 @@ internal fun registrationPromptContent(
     promptContent(
         description =
             registrationDescription(
-                context.appLabel(info.callingPackage),
+                context.requesterLabel(info.requester),
                 algorithm,
                 includeAttestation,
             ),

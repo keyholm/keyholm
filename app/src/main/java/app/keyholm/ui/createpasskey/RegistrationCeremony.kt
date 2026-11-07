@@ -29,8 +29,8 @@ import app.keyholm.ui.common.CryptoPrompt
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.ui.common.PrfPrompt
 import app.keyholm.ui.common.PromptResult
-import app.keyholm.ui.common.appLabel
 import app.keyholm.ui.common.prfPromptContent
+import app.keyholm.ui.common.requesterLabel
 import app.keyholm.util.logger
 import app.keyholm.webauthn.AttestationObject
 import app.keyholm.webauthn.AttestationObjects
@@ -111,7 +111,7 @@ private data class PendingRegistration(
             rp = info.rp,
             user = info.user,
             signCount = 0,
-            callingPackage = info.callingPackage,
+            requester = info.requester,
             createdAt = now,
             keystore =
                 PasskeyRecord.Keystore(
@@ -347,7 +347,7 @@ internal class RegistrationCeremony(
                         salts = PrfExtension.salts(inputs),
                         content =
                             prfPromptContent(
-                                requester = activity.appLabel(pending.info.callingPackage),
+                                requester = activity.requesterLabel(pending.info.requester),
                                 declineAction = "create the passkey anyway",
                                 rp = pending.info.rp,
                                 user = pending.info.user,

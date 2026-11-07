@@ -17,6 +17,7 @@ import app.keyholm.provider.CreationOffer
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
+import app.keyholm.store.Requester
 import app.keyholm.store.anyExcluded
 import app.keyholm.store.readStore
 import app.keyholm.ui.common.ErrorMessages
@@ -103,7 +104,7 @@ internal class RegistrationRequestResolver(
                         name = options.user.name,
                         displayName = options.user.displayName,
                     ),
-                callingPackage = PackageName(request.providerRequest.callingAppInfo.packageName),
+                requester = Requester.App(PackageName(request.providerRequest.callingAppInfo.packageName)),
                 credPropsRequested = options.extensions?.credProps == true,
                 prfRequested = PrfExtension.requestedAtCreation(options),
                 discoverable = discoverableRequested(options.authenticatorSelection),

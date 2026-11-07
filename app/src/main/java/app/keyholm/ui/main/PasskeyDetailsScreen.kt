@@ -50,6 +50,7 @@ import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.Section
+import app.keyholm.ui.common.requesterText
 import app.keyholm.ui.common.truncated
 import app.keyholm.util.sha256
 import com.google.protobuf.ByteString
@@ -186,7 +187,7 @@ private fun DetailsSection(
         item { shape -> DetailRow("Last used", df.format(Date.from(record.lastUsedAt)), shape) }
         item { shape -> DetailRow("Created", df.format(Date.from(record.createdAt)), shape) }
         item { shape -> DetailRow("Sign count", record.signCount.toString(), shape) }
-        item { shape -> DetailRow("Requesting app", record.callingPackage.value.ifBlank { "(unknown)" }, shape) }
+        item { shape -> DetailRow("Requesting app", requesterText(record.requester), shape) }
         item { shape -> DetailRow("Credential ID", record.credentialId.b64, shape) }
         item { shape ->
             DetailRow("Public key fingerprint", credentialKeyFingerprint(record.keystore.publicKeySpki), shape)

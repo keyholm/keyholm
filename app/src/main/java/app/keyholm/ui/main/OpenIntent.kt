@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import androidx.core.net.toUri
 import androidx.credentials.provider.CallingAppInfo
 import app.keyholm.store.PasskeyRecord
+import app.keyholm.store.Requester
 import app.keyholm.webauthn.PrivilegedAllowlist
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.CoroutineDispatcher
@@ -19,7 +20,11 @@ internal suspend fun openPasskeyCallerIntent(
 ): Intent {
     val origin = "https://${record.rp.id.value}"
     val web = Intent(Intent.ACTION_VIEW, origin.toUri())
-    val pkg = record.callingPackage.value
+    val pkg =
+        when (val requester = record.requester) {
+            is Requester.App -> requester.packageName.value
+            is Requester.Hybrid -> return web
+        }
     val signingInfo =
         try {
             context.packageManager

@@ -30,9 +30,7 @@ import app.keyholm.store.readStore
 import app.keyholm.ui.common.AuthenticatorsResolution
 import app.keyholm.ui.common.PromptRelay
 import app.keyholm.ui.common.PromptResult
-import app.keyholm.ui.common.promptContent
 import app.keyholm.ui.common.resolveCreateAuthenticators
-import app.keyholm.ui.common.userLabel
 import app.keyholm.ui.createpasskey.CreationChoice
 import app.keyholm.ui.createpasskey.CreationOptionsChooser
 import app.keyholm.ui.createpasskey.CreationOptionsPrompt
@@ -40,7 +38,7 @@ import app.keyholm.ui.createpasskey.OptionChoice
 import app.keyholm.ui.createpasskey.attestationChoice
 import app.keyholm.ui.createpasskey.chooseIfNeeded
 import app.keyholm.ui.createpasskey.identityChoice
-import app.keyholm.ui.createpasskey.registrationDescription
+import app.keyholm.ui.createpasskey.registrationPromptContent
 import app.keyholm.util.logger
 import com.google.protobuf.ByteString
 import com.upokecenter.cbor.CBORObject
@@ -144,7 +142,7 @@ internal class MakeCredentialHandler(
         prompt.confirm(
             title = "Create passkey",
             allowedAuthenticators = authenticators,
-            content = registrationContent(request, choice),
+            content = registrationPromptContent(context, request.info, choice.algorithm, choice.includeAttestation, settings.preferRpName),
         )
         return Ctap2Response(Ctap2Status.CREDENTIAL_EXCLUDED)
     }
@@ -225,7 +223,14 @@ internal class MakeCredentialHandler(
                 title = "Create passkey",
                 cryptoObject = BiometricPrompt.CryptoObject(pending.keys.signature),
                 allowedAuthenticators = pending.authenticators,
-                content = registrationContent(request, pending.choice),
+                content =
+                    registrationPromptContent(
+                        context,
+                        request.info,
+                        pending.choice.algorithm,
+                        pending.choice.includeAttestation,
+                        settings.preferRpName,
+                    ),
             )
         val signature = (result as? PromptResult.Success)?.crypto?.signature
         return if (signature == null) {
@@ -235,22 +240,6 @@ internal class MakeCredentialHandler(
             save(request, pending, signature)
         }
     }
-
-    private fun registrationContent(
-        request: MakeCredentialRequest,
-        choice: CreationChoice,
-    ) = promptContent(
-        description =
-            registrationDescription(
-                "The device whose QR code you scanned",
-                choice.algorithm,
-                choice.includeAttestation,
-            ),
-        lastUsedAt = null,
-        rp = request.info.rp,
-        preferRpName = settings.preferRpName,
-        userLabel = userLabel(request.info.user.name, request.info.user.displayName),
-    )
 
     private suspend fun save(
         request: MakeCredentialRequest,
@@ -346,7 +335,7 @@ private fun record(
         rp = request.info.rp,
         user = request.info.user,
         signCount = 0,
-        callingPackage = request.info.callingPackage,
+        requester = request.info.requester,
         createdAt = now,
         keystore =
             PasskeyRecord.Keystore(

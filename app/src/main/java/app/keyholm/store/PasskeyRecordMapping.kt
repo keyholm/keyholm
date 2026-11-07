@@ -9,6 +9,7 @@ import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.keystore.KeySecurityLevel
 import app.keyholm.store.proto.CoseAlgorithmProto
 import app.keyholm.store.proto.DiscoverabilityProto
+import app.keyholm.store.proto.HybridRequesterProto
 import app.keyholm.store.proto.KeySecurityLevelProto
 import app.keyholm.store.proto.KeystoreProto
 import app.keyholm.store.proto.PasskeyRecordProto
@@ -89,6 +90,25 @@ private fun DiscoverabilityProto.isDiscoverable(): Boolean =
         }
     }
 
+private fun HybridRequesterProto.Initiation.toDomain(): HybridInitiation =
+    when (this) {
+        HybridRequesterProto.Initiation.QR_CODE -> HybridInitiation.QR_CODE
+        HybridRequesterProto.Initiation.NFC -> HybridInitiation.NFC
+        HybridRequesterProto.Initiation.UNRECOGNIZED -> throw StoredRecordException("unrecognized hybrid initiation in stored passkey")
+    }
+
+private fun HybridInitiation.toProto(): HybridRequesterProto.Initiation =
+    when (this) {
+        HybridInitiation.QR_CODE -> HybridRequesterProto.Initiation.QR_CODE
+        HybridInitiation.NFC -> HybridRequesterProto.Initiation.NFC
+    }
+
+private fun PasskeyRecordProto.Builder.setRequester(requester: Requester): PasskeyRecordProto.Builder =
+    when (requester) {
+        is Requester.App -> setCallingPackage(requester.packageName.value)
+        is Requester.Hybrid -> setHybrid(HybridRequesterProto.newBuilder().setInitiation(requester.initiation.toProto()))
+    }
+
 internal fun RelyingPartyProto.toDomain(): RelyingParty = RelyingParty(id = RpId(id), name = name.takeUnless { it == id }.orEmpty())
 
 internal fun PasskeyRecordProto.toDomain(): PasskeyRecord =
@@ -102,7 +122,12 @@ internal fun PasskeyRecordProto.toDomain(): PasskeyRecord =
                 displayName = user.displayName,
             ),
         signCount = signCount,
-        callingPackage = PackageName(callingPackage),
+        requester =
+            when (requesterCase) {
+                PasskeyRecordProto.RequesterCase.CALLING_PACKAGE -> Requester.App(PackageName(callingPackage))
+                PasskeyRecordProto.RequesterCase.HYBRID -> Requester.Hybrid(hybrid.initiation.toDomain())
+                PasskeyRecordProto.RequesterCase.REQUESTER_NOT_SET -> throw StoredRecordException("missing requester in stored passkey")
+            },
         createdAt = createdAt.toInstant(),
         keystore =
             PasskeyRecord.Keystore(
@@ -146,7 +171,7 @@ internal fun PasskeyRecord.toProto(): PasskeyRecordProto {
                     .setName(user.name)
                     .setDisplayName(user.displayName),
             ).setSignCount(signCount)
-            .setCallingPackage(callingPackage.value)
+            .setRequester(requester)
             .setCreatedAt(createdAt.toTimestamp())
             .setKeystore(keystoreBuilder)
             .setLastUsedAt(lastUsedAt.toTimestamp())

@@ -70,7 +70,7 @@ class PasskeyRepositoryTest {
         rp = RelyingParty(id = rpId, name = "Example"),
         user = CredentialUser(handle = userHandle, name = "alice", displayName = "Alice"),
         signCount = 0,
-        callingPackage = PackageName("com.example.app"),
+        requester = Requester.App(PackageName("com.example.app")),
         createdAt = createdAt,
         keystore =
             PasskeyRecord.Keystore(

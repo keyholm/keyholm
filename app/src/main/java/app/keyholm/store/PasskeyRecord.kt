@@ -24,7 +24,7 @@ data class PasskeyRecord(
     val rp: RelyingParty,
     val user: CredentialUser,
     val signCount: Int,
-    val callingPackage: PackageName,
+    val requester: Requester,
     val createdAt: Instant,
     val keystore: Keystore,
     val lifecycle: RecordLifecycle,
@@ -41,6 +41,18 @@ data class PasskeyRecord(
 
     val hasPrf: Boolean get() = keystore.prfSecurityLevel != null
 }
+
+sealed interface Requester {
+    data class App(
+        val packageName: PackageName,
+    ) : Requester
+
+    data class Hybrid(
+        val initiation: HybridInitiation,
+    ) : Requester
+}
+
+enum class HybridInitiation { QR_CODE, NFC }
 
 fun List<PasskeyRecord>.anyExcluded(
     rpId: RpId,
