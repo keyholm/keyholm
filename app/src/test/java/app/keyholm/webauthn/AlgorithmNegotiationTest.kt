@@ -298,4 +298,74 @@ class AlgorithmNegotiationTest {
 
         assertThat(allowed).containsExactly(ES256, ED25519).inOrder()
     }
+
+    @Test
+    fun `first-offered takes the algorithm the relying party listed first`() {
+        val offered =
+            AlgorithmNegotiation.offeredAlgorithms(
+                options(ED25519, ES256),
+                setOf(ES256.family, ED25519.family),
+                AlgorithmPreference.FirstOffered,
+                AlgorithmPreference.FirstOffered,
+                MlDsaSupport.OFF,
+            )
+
+        assertThat(offered).containsExactly(ED25519)
+    }
+
+    @Test
+    fun `always-ask offers the algorithms in the relying party's order`() {
+        val offered =
+            AlgorithmNegotiation.offeredAlgorithms(
+                options(ML_DSA_87, ED25519, ES256),
+                setOf(ES256.family, ED25519.family),
+                AlgorithmPreference.AlwaysAsk,
+                AlgorithmPreference.AlwaysAsk,
+                MlDsaSupport.PREFER_STRONGEST,
+            )
+
+        assertThat(offered).containsExactly(ML_DSA_87, ED25519, ES256).inOrder()
+    }
+
+    @Test
+    fun `first-offered fallback takes the remaining algorithm the relying party listed first`() {
+        val offered =
+            AlgorithmNegotiation.offeredAlgorithms(
+                options(ED25519, ES256),
+                setOf(ES256.family, ED25519.family),
+                AlgorithmPreference.Prefer(ML_DSA_87.family),
+                AlgorithmPreference.FirstOffered,
+                MlDsaSupport.OFF,
+            )
+
+        assertThat(offered).containsExactly(ED25519)
+    }
+
+    @Test
+    fun `preferred algorithm wins over the relying party's order`() {
+        val offered =
+            AlgorithmNegotiation.offeredAlgorithms(
+                options(ES256, ED25519),
+                setOf(ES256.family, ED25519.family),
+                AlgorithmPreference.Prefer(ED25519.family),
+                AlgorithmPreference.FirstOffered,
+                MlDsaSupport.OFF,
+            )
+
+        assertThat(offered).containsExactly(ED25519)
+    }
+
+    @Test
+    fun `fallback algorithm wins over the relying party's order`() {
+        val offered =
+            AlgorithmNegotiation.offeredAlgorithms(
+                options(ES256, ED25519),
+                setOf(ES256.family, ED25519.family),
+                AlgorithmPreference.Prefer(ML_DSA_87.family),
+                AlgorithmPreference.Prefer(ED25519.family),
+                MlDsaSupport.OFF,
+            )
+
+        assertThat(offered).containsExactly(ED25519)
+    }
 }

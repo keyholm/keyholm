@@ -359,9 +359,12 @@ object AlgorithmNegotiation {
         mlDsa: MlDsaSupport,
     ): List<WebAuthnAlgorithm> {
         val candidates = candidates(requested, enabled, mlDsa)
-        val matching = if (requested == null) candidates else candidates.filter { it in requested }
+        if (requested == null) return candidates.distinctBy { it.family }
         // The ML-DSA setting already picked the parameter set, so a family is never offered twice.
-        return matching.distinctBy { it.family }
+        return candidates
+            .filter { it in requested }
+            .distinctBy { it.family }
+            .sortedBy { algorithm -> requested.indexOfFirst { it.family == algorithm.family } }
     }
 
     fun offeredAlgorithms(
