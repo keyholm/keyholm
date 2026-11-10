@@ -12,15 +12,15 @@ checksum = "sha256:0877a1d048fe4a24efe2eff536ca4223f7adeb58648bb81909d33c446918c
 url = "https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip"
 
 [[tools.gradle]]
-version = "9.9.0"
+version = "9.9.1"
 backend = "aqua:gradle/gradle-distributions"
-specifiers = ["9.9.0"]
+specifiers = ["9.9.1"]
 
 [tools.gradle."platforms.linux-x64"]
-checksum = "sha256:0b00b0ffe07c4d4789c12d4935a44a7057d55774b7540bd4a3f76f336deb177a"
+checksum = "sha256:d8a18a7a841dd5df825d35a685fad6f2d7f12ac0c280e57b67c27b4a520ba228"
 checksum_source = "mise-versions"
-url = "https://github.com/gradle/gradle-distributions/releases/download/v9.9.0/gradle-9.9.0-bin.zip"
-url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/717698303"
+url = "https://github.com/gradle/gradle-distributions/releases/download/v9.9.1/gradle-9.9.1-bin.zip"
+url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/732145113"
 
 [[tools.java]]
 version = "temurin-25.0.5+8.0.LTS"
