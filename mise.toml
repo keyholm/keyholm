@@ -4,7 +4,7 @@ shell = "bash -c -o errexit"
 
 [tools]
 android-sdk = "latest"
-gradle = "9.9.0"
+gradle = "9.9.1"
 java = "temurin-25"
 uv = "latest"
 "pypi:apksigcopier" = "latest"
