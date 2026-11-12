@@ -254,6 +254,19 @@
       ],
       "target": {
         "namespace": "android_app",
+        "package_name": "com.amazon.kuiper.app.beta",
+        "sha256_cert_fingerprints": [
+          "88:7D:D3:85:D8:FC:53:8B:3A:3F:64:B9:F8:22:C6:81:13:9C:A7:30:9B:A0:57:ED:9F:F6:87:4D:D5:DA:62:96"
+        ]
+      }
+    },
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls",
+        "delegate_permission/common.get_login_creds"
+      ],
+      "target": {
+        "namespace": "android_app",
         "package_name": "com.amazon.dee.app",
         "sha256_cert_fingerprints": [
           "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
