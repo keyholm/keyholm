@@ -28,13 +28,13 @@ url = "https://github.com/gradle/gradle-distributions/releases/download/v9.9.1/g
 url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/732145113"
 
 [[tools.java]]
-version = "openjdk-25.0.2"
+version = "temurin-25.0.5+8.0.LTS"
 backend = "core:java"
-specifiers = ["openjdk-25"]
+specifiers = ["temurin-25"]
 
 [tools.java."platforms.linux-x64"]
-checksum = "sha256:555ce0821e4fe175ea50d54518cd6fbece9663c1998de529bc6ce429534457df"
-url = "https://download.java.net/java/GA/jdk25.0.2/b1e0dfa218384cb9959bdcb897162d4e/10/GPL/openjdk-25.0.2_linux-x64_bin.tar.gz"
+checksum = "sha256:68982529869257d0ee6b824ec5aa270ff8b118bb438670da0b97ebdab178d7fb"
+url = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_linux_hotspot_25.0.5_8.tar.gz"
 
 [[tools.jq]]
 version = "1.8.2"
