@@ -192,7 +192,11 @@ I'm planning one more big feature before v1.
   `root` access will ALWAYS remove any password protection to use of the keys
   themselves.
 
-### Other stuff
+#### NFC PXP initiation
+
+I don't know of a client that implements it but it's possible to use NFC instead
+of scanning a QR code to authenticate on another machine. I'd like to support
+this.
 
 ### `age` keys over PXP
 
