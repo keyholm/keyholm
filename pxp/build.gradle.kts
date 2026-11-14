@@ -172,5 +172,5 @@ dependencies {
     // Robolectric tests run on JUnit 4 via the vintage engine, alongside the Jupiter tests.
     testImplementation("junit:junit:4.13.2")
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
-    testImplementation("org.robolectric:robolectric:4.17")
+    testImplementation("org.robolectric:robolectric:4.18")
 }
