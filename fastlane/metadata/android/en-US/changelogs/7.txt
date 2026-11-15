@@ -2,7 +2,7 @@
 - New androidx.biometric library version fixes some potential flakiness with prompts
 - Experimental support for cross-platform authentication using CTAP 2.3's PXP over Bluetooth!
 
-  Enable it in Settings and use an appropriate camera app to open a QR code with Keyholm.
+  Enable it in Settings and use your camera app to open the QR code with Keyholm.
 
-  I've been personally using it with the latest release of https://github.com/linux-credentials/credentialsd and haven't run into any bugs yet.
+  I've been using it with the latest release of https://github.com/linux-credentials/credentialsd and haven't run into any bugs yet.
   I need your help, so please test it with any client you can!
