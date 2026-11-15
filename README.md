@@ -58,15 +58,20 @@ Think of Keyholm as a way to activate the built-in security key on your phone.
   - Android Keystore
   - Tink for encrypting stores
   - `snow` and otherwise Rust for PXP crypto/noise channel
-- Scan a QR code to authenticate on other machines
-  - CTAP 2.3 BLE-only hybrid transport support
-  - Only requires Nearby devices aka Bluetooth permissions.
+- Scan a QR code to authenticate on other machines (experimental)
+  - CTAP 2.3 **BLE-only** hybrid support (now known as PXP)
+    - Only requires Nearby devices aka Bluetooth permissions.
+    - BLE is the only option, without `INTERNET` we can't use the websocket tunnel
+  - Note that BLE transport is rather new so client support is still
+    incomplete
+    - Android to Android should work
+    - [Chrome on desktop doesn't support it yet](https://issues.chromium.org/issues/493286564)
+    - Supported by and tested with [linux-credentials/credentialsd](https://github.com/linux-credentials/credentialsd)
   - Claims `FIDO_2_1` and `FIDO_2_3` but just like Chromium's hybrid authenticator without:
     - `pinUvAuthToken` (PIN/UV auth protocol) - already protected by Noise channel
     - `hmac-secret` - needs above so we use Chromium's `prf` extension instead
     - `authenticatorSelection` - the QR scan already selects the device.
-  - Experimental and must be enabled in settings
-  - Tested with [linux-credentials/credentialsd](https://github.com/linux-credentials/credentialsd)
+  - Must be enabled in settings
 
 ## Releases
 
