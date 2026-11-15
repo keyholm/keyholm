@@ -17,7 +17,7 @@ aes = { version = "0.8", features = ["zeroize"] }
 snow = { version = "0.10", default-features = false, features = ["default-resolver-crypto", "use-p256"] }
 hkdf = "0.12.4"
 hmac = "0.12.1"
-sha2 = "0.10.9"
+sha2 = "0.11.0"
 zeroize = "1.9.1"
 
 [profile.release]
