@@ -2,8 +2,6 @@ package app.keyholm.settings
 
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.edit
-import app.keyholm.authenticator.IdentityPreference
-import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.store.DeniedNativeAppRepository
 import app.keyholm.ui.common.ErrorMessages
 import app.keyholm.util.logger
@@ -21,6 +19,8 @@ class SettingsController(
     private val log = logger()
 
     val algorithms = AlgorithmSettingsController(::launchEdit)
+
+    val keyCreation = KeyCreationSettingsController(::launchEdit)
 
     private fun launchEdit(transform: suspend (MutablePreferences) -> Unit) {
         scope.launch {
@@ -44,20 +44,6 @@ class SettingsController(
             }
         }
     }
-
-    fun setIdentityPreference(preference: IdentityPreference) =
-        launchEdit {
-            it[SettingsKeys.identityPreference] =
-                encodeIdentityPreference(preference)
-        }
-
-    fun setCreateAuthenticators(policy: AuthenticatorPolicy) =
-        launchEdit {
-            it[SettingsKeys.createAuthenticators] =
-                encodeAuthenticatorPolicy(policy)
-        }
-
-    fun setInvalidateOnBiometricEnrollment(value: Boolean) = launchEdit { it[SettingsKeys.invalidateOnBiometricEnrollment] = value }
 
     fun setCompactView(value: Boolean) = launchEdit { it[SettingsKeys.compactView] = value }
 

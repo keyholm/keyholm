@@ -81,21 +81,21 @@ private fun AuthenticatorIdentityRow(
                     DropdownMenuItem(
                         text = { Text(LABEL_IDENTITY_ALWAYS) },
                         onClick = {
-                            viewModel.settings.setIdentityPreference(IdentityPreference.ENABLED)
+                            viewModel.settings.keyCreation.setIdentityPreference(IdentityPreference.ENABLED)
                             expanded = false
                         },
                     )
                     DropdownMenuItem(
                         text = { Text(LABEL_IDENTITY_NEVER) },
                         onClick = {
-                            viewModel.settings.setIdentityPreference(IdentityPreference.DISABLED)
+                            viewModel.settings.keyCreation.setIdentityPreference(IdentityPreference.DISABLED)
                             expanded = false
                         },
                     )
                     DropdownMenuItem(
                         text = { Text(LABEL_IDENTITY_ALWAYS_ASK) },
                         onClick = {
-                            viewModel.settings.setIdentityPreference(IdentityPreference.ALWAYS_ASK)
+                            viewModel.settings.keyCreation.setIdentityPreference(IdentityPreference.ALWAYS_ASK)
                             expanded = false
                         },
                     )
@@ -132,7 +132,7 @@ private fun BiometricsRow(
             Switch(
                 checked = uiState.settings.createAuthenticators != AuthenticatorPolicy.DeviceCredential,
                 onCheckedChange = { on ->
-                    viewModel.settings.setCreateAuthenticators(
+                    viewModel.settings.keyCreation.setCreateAuthenticators(
                         if (on) AuthenticatorPolicy.Either else AuthenticatorPolicy.DeviceCredential,
                     )
                 },
@@ -169,7 +169,7 @@ private fun DeviceCredentialRow(
             Switch(
                 checked = uiState.settings.createAuthenticators != AuthenticatorPolicy.Biometric,
                 onCheckedChange = { on ->
-                    viewModel.settings.setCreateAuthenticators(
+                    viewModel.settings.keyCreation.setCreateAuthenticators(
                         if (on) AuthenticatorPolicy.Either else AuthenticatorPolicy.Biometric,
                     )
                 },
@@ -201,7 +201,7 @@ private fun InvalidateOnEnrollmentRow(
         trailingContent = {
             Switch(
                 checked = uiState.settings.invalidateOnBiometricEnrollment,
-                onCheckedChange = viewModel.settings::setInvalidateOnBiometricEnrollment,
+                onCheckedChange = viewModel.settings.keyCreation::setInvalidateOnBiometricEnrollment,
             )
         },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
