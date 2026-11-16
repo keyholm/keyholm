@@ -109,7 +109,6 @@ class PxpCeremonyTest {
             qrSecret = ByteArray(16),
             hint = PxpFlowHint.GET_ASSERTION,
             channels = setOf(PxpChannel.BLE),
-            confirmationCodeSupported = false,
         )
 
     // Advertising starts once the ceremony is accepting.

@@ -13,7 +13,6 @@ import app.keyholm.pxp.crypto.PxpCrypto
 import app.keyholm.pxp.ctap.PxpAuthenticator
 import app.keyholm.pxp.ctap.postHandshakeMessage
 import app.keyholm.pxp.qr.PxpQrPayload
-import app.keyholm.pxp.qr.confirmationCode
 import app.keyholm.pxp.util.logger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelChildren
@@ -80,7 +79,6 @@ class PxpCeremony(
     private val log = logger()
     private val _status = MutableStateFlow(PxpStatus(PxpStage.EstablishingProximity, failure = null))
     val status: StateFlow<PxpStatus> = _status.asStateFlow()
-    val confirmationCode: String? = if (payload.confirmationCodeSupported) payload.confirmationCode() else null
 
     // Keeps the first failure.
     private fun fail(failure: PxpFailure) {

@@ -38,8 +38,6 @@ class PxpViewModel internal constructor(
     var intentHandled = false
     private val _status = MutableStateFlow<PxpStatus?>(null)
     val status: StateFlow<PxpStatus?> = _status.asStateFlow()
-    private val _confirmationCode = MutableStateFlow<String?>(null)
-    val confirmationCode: StateFlow<String?> = _confirmationCode.asStateFlow()
 
     @RequiresPermission(
         allOf = [Manifest.permission.BLUETOOTH_ADVERTISE, Manifest.permission.BLUETOOTH_CONNECT],
@@ -52,7 +50,6 @@ class PxpViewModel internal constructor(
                 val authenticator =
                     CtapAuthenticator(app, settingsRepo.settings.first(), passkeyRepo, ui, dispatcher)
                 val pxp = PxpCeremony(app, payload, authenticator, PxpNoise)
-                _confirmationCode.value = pxp.confirmationCode
                 pxp.status.onEach { _status.value = it }.launchIn(this)
                 pxp.run()
             }
@@ -62,7 +59,6 @@ class PxpViewModel internal constructor(
         running?.cancel()
         ui.clear()
         _status.value = null
-        _confirmationCode.value = null
     }
 
     fun setupFailed(failure: PxpFailure) {

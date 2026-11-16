@@ -17,7 +17,6 @@ private const val KEY_SECRET = 1
 private const val KEY_TUNNEL_DOMAINS = 2
 private const val KEY_HINT = 5
 private const val KEY_CHANNELS = 6
-private const val KEY_CONFIRMATION_CODE = -21
 
 private const val PUBLIC_KEY_BYTES = 33
 private const val SECRET_BYTES = 16
@@ -58,7 +57,6 @@ class PxpQrPayload(
     val qrSecret: ByteArray,
     val hint: PxpFlowHint,
     val channels: Set<PxpChannel>,
-    val confirmationCodeSupported: Boolean,
 ) {
     companion object {
         fun decode(uri: String): Result<PxpQrPayload> {
@@ -180,7 +178,6 @@ private fun fromCbor(bytes: ByteArray): Result<PxpQrPayload> {
                 hint?.takeIf { it.type == CBORType.TextString }?.let { PxpFlowHint.fromToken(it.AsString()) }
                     ?: PxpFlowHint.GET_ASSERTION,
             channels = decodeChannels(map),
-            confirmationCodeSupported = map.GetOrDefault(KEY_CONFIRMATION_CODE, CBORObject.False).isTrue,
         ),
     )
 }

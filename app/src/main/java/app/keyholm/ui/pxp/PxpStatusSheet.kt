@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,7 +51,6 @@ private val PxpStage.label: String
 @Composable
 internal fun PxpStatusSheet(
     status: PxpStatus,
-    confirmationCode: String?,
     cryptoPrompt: CryptoPrompt,
     ui: CtapUi,
     onClose: () -> Unit,
@@ -69,13 +67,6 @@ internal fun PxpStatusSheet(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            confirmationCode?.let { code ->
-                Text(
-                    code.chunked(CODE_GROUP).joinToString(" "),
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.alpha(if (stage >= PxpStage.ChannelOpen) 1f else 0f),
-                )
-            }
             StatusIndicator(failed = failureText != null)
             if (failureText != null) {
                 Text(
@@ -118,7 +109,6 @@ private fun StatusIndicator(failed: Boolean) {
 }
 
 private val INDICATOR_SIZE = 96.dp
-private const val CODE_GROUP = 3
 
 private fun InternalFailure.text(): String =
     when (this) {
