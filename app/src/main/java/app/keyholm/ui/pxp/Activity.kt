@@ -15,6 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.keyholm.iconpack.IconPack
 import app.keyholm.pxp.PxpFailure
 import app.keyholm.pxp.PxpStage
 import app.keyholm.pxp.qr.PxpChannel
@@ -59,7 +60,8 @@ class Activity : FragmentActivity() {
                     }
                     PxpStatusSheet(current, cryptoPrompt, viewModel.ui, onClose = ::finish)
                 }
-                ChoiceSheets(viewModel.ui.choices)
+                val iconPack by viewModel.iconPacks.pack.collectAsStateWithLifecycle()
+                ChoiceSheets(viewModel.ui.choices, iconPack)
             }
         }
         when {
@@ -111,7 +113,10 @@ class Activity : FragmentActivity() {
 }
 
 @Composable
-private fun ChoiceSheets(choices: ChoiceRelay) {
+private fun ChoiceSheets(
+    choices: ChoiceRelay,
+    iconPack: IconPack?,
+) {
     val creationOptions by choices.creationOptions.pending.collectAsStateWithLifecycle()
     creationOptions?.let { pending ->
         CreationOptionsSheet(
@@ -124,6 +129,7 @@ private fun ChoiceSheets(choices: ChoiceRelay) {
     accountChoice?.let { pending ->
         AccountPickerSheet(
             pending.request,
+            iconPack,
             onChoice = { pending.response.complete(it) },
             onDismiss = { pending.response.complete(null) },
         )

@@ -104,9 +104,9 @@ internal fun SheetSection(content: SectionScope.() -> Unit) {
 internal fun SheetRow(
     title: String,
     supporting: String?,
-    icon: ImageBitmap,
     shape: Shape,
     onClick: () -> Unit,
+    leadingContent: @Composable () -> Unit,
 ) {
     ListItem(
         selected = false,
@@ -121,13 +121,7 @@ internal fun SheetRow(
                     )
                 }
             },
-        leadingContent = {
-            Image(
-                bitmap = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp).clip(CircleShape),
-            )
-        },
+        leadingContent = leadingContent,
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,

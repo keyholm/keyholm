@@ -6,6 +6,8 @@ import androidx.annotation.RequiresPermission
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.keyholm.ctap.CtapAuthenticator
+import app.keyholm.iconpack.IconPackController
+import app.keyholm.iconpack.IconPackStorage
 import app.keyholm.pxp.PxpCeremony
 import app.keyholm.pxp.PxpFailure
 import app.keyholm.pxp.PxpStage
@@ -28,12 +30,16 @@ import kotlinx.coroutines.launch
 class PxpViewModel internal constructor(
     application: Application,
     private val dispatcher: CoroutineDispatcher,
+    renderDispatcher: CoroutineDispatcher,
 ) : AndroidViewModel(application) {
-    constructor(application: Application) : this(application, Dispatchers.IO)
+    constructor(application: Application) : this(application, Dispatchers.IO, Dispatchers.Default)
 
     private val settingsRepo = SettingsRepository(application)
     private val passkeyRepo = PasskeyRepository(application)
     internal val ui = CtapUi()
+    val iconPacks =
+        IconPackController(IconPackStorage(application, dispatcher, renderDispatcher), viewModelScope) {}
+            .also(::addCloseable)
     private var running: Job? = null
     var intentHandled = false
     private val _status = MutableStateFlow<PxpStatus?>(null)

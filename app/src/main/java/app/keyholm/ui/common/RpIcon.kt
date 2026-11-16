@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.keyholm.ctap.RelyingParty
 import app.keyholm.ctap.RpId
@@ -70,17 +71,17 @@ private fun RpPackIcon(
     pack: IconPack,
     rp: RelyingParty,
     preferRpName: Boolean,
-    letter: Char?,
+    size: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val sizePx = with(LocalDensity.current) { RP_ICON_SIZE.roundToPx() }
+    val sizePx = with(LocalDensity.current) { size.roundToPx() }
     val icon by produceState(pack.cachedIcon(rp, preferRpName, sizePx), pack, rp, preferRpName, sizePx) {
         value = pack.icon(rp, preferRpName, sizePx)
     }
     when (val rendered = icon) {
-        null -> Spacer(modifier.size(RP_ICON_SIZE))
-        is RenderedIcon.Drawn -> Image(rendered.bitmap, contentDescription = null, modifier = modifier.size(RP_ICON_SIZE))
-        RenderedIcon.NotInPack -> RpLetterIcon(letter, rp.id, modifier)
+        null -> Spacer(modifier.size(size))
+        is RenderedIcon.Drawn -> Image(rendered.bitmap, contentDescription = null, modifier = modifier.size(size))
+        RenderedIcon.NotInPack -> RpLetterIcon(rpInitial(rp, preferRpName), rp.id, size, modifier)
     }
 }
 
@@ -90,12 +91,12 @@ internal fun RpIcon(
     rp: RelyingParty,
     preferRpName: Boolean,
     modifier: Modifier = Modifier,
+    size: Dp = RP_ICON_SIZE,
 ) {
-    val letter = rpInitial(rp, preferRpName)
     if (iconPack == null) {
-        RpLetterIcon(letter, rp.id, modifier)
+        RpLetterIcon(rpInitial(rp, preferRpName), rp.id, size, modifier)
     } else {
-        RpPackIcon(iconPack, rp, preferRpName, letter, modifier)
+        RpPackIcon(iconPack, rp, preferRpName, size, modifier)
     }
 }
 
@@ -103,6 +104,7 @@ internal fun RpIcon(
 internal fun RpLetterIcon(
     letter: Char?,
     rpId: RpId,
+    size: Dp,
     modifier: Modifier = Modifier,
 ) {
     val hue = rpId.value.hashCode().mod(LETTER_ICON_HUE_SLOTS) * (FULL_TURN_DEGREES / LETTER_ICON_HUE_SLOTS)
@@ -111,7 +113,7 @@ internal fun RpLetterIcon(
     val foreground = if (dark) LETTER_LIGHTNESS_DARK else LETTER_LIGHTNESS_LIGHT
     Box(
         modifier
-            .size(RP_ICON_SIZE)
+            .size(size)
             .clip(CircleShape)
             .background(oklch(background, hue)),
         contentAlignment = Alignment.Center,
@@ -120,7 +122,10 @@ internal fun RpLetterIcon(
             Text(
                 letter.toString(),
                 color = oklch(foreground, hue),
-                style = MaterialTheme.typography.titleLarge,
+                style =
+                    MaterialTheme.typography.titleLarge.let {
+                        it.copy(fontSize = it.fontSize * (size / RP_ICON_SIZE), lineHeight = it.lineHeight * (size / RP_ICON_SIZE))
+                    },
             )
         }
     }

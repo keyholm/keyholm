@@ -6,7 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import app.keyholm.iconpack.IconPack
 import app.keyholm.store.PasskeyRecord
+import app.keyholm.ui.common.RpIcon
 import app.keyholm.ui.common.Sheet
 import app.keyholm.ui.common.SheetHeader
 import app.keyholm.ui.common.SheetRow
@@ -20,6 +22,7 @@ import java.util.Date
 @Composable
 internal fun AccountPickerSheet(
     prompt: AccountChoicePrompt,
+    iconPack: IconPack?,
     onChoice: (PasskeyRecord) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -33,10 +36,11 @@ internal fun AccountPickerSheet(
                     SheetRow(
                         title = userLabel(record.user.name, record.user.displayName),
                         supporting = "Last used ${dateFormat.format(Date.from(record.lastUsedAt))}",
-                        icon = icon,
                         shape = rowShape,
                         onClick = { onChoice(record) },
-                    )
+                    ) {
+                        RpIcon(iconPack, prompt.rp, prompt.preferRpName, size = 24.dp)
+                    }
                 }
             }
         }
