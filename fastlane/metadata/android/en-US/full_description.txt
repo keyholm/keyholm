@@ -16,6 +16,32 @@
 </li>
 <li>supports android-key attestation</li>
 <li>supports PRF extension</li>
+<li>metadata/state encrypted at rest</li>
 <li>uses QUERY_ALL_PACKAGES in order to display icons for apps that were denied passkey usage</li>
 <li>account list export/import for making it marginally easier to switch devices. All keys still need to be manually recreated on the new device!</li>
+<li>Scan a QR code to authenticate on other machines (experimental)
+<ul>
+<li>CTAP 2.3 <b>BLE-only</b> hybrid support (now known as PXP)
+<ul>
+<li>Only requires Nearby devices aka Bluetooth permissions.</li>
+<li>BLE is the only option, without INTERNET we can't use the websocket tunnel</li>
+</ul>
+</li>
+<li>Note that BLE transport is rather new so client support is still incomplete
+<ul>
+<li>Android to Android should work</li>
+<li><a href="https://issues.chromium.org/issues/493286564">Chrome on desktop doesn't support it yet</a></li>
+<li>Supported by and tested with <a href="https://github.com/linux-credentials/credentialsd">linux-credentials/credentialsd</a></li>
+</ul>
+</li>
+<li>Claims FIDO_2_1 and FIDO_2_3 but just like Chromium's hybrid authenticator without:
+<ul>
+<li>pinUvAuthToken (PIN/UV auth protocol) - already protected by Noise channel</li>
+<li>hmac-secret - needs above so we use Chromium's prf extension instead</li>
+<li>authenticatorSelection - the QR scan already selects the device.</li>
+</ul>
+</li>
+<li>Must be enabled in settings</li>
+</ul>
+</li>
 </ul>
