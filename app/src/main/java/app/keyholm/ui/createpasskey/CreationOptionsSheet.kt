@@ -1,6 +1,5 @@
 package app.keyholm.ui.createpasskey
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -8,10 +7,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -24,11 +24,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import app.keyholm.R
 import app.keyholm.ctap.RpId
 import app.keyholm.ctap.WebAuthnAlgorithm
 import app.keyholm.ui.common.Sheet
@@ -204,7 +206,6 @@ private fun CreationOptionsSheetContent(
     if (algorithm == null) {
         AlgorithmSection(
             algorithms = prompt.algorithms,
-            icon = icon,
             onSelect = onSelectAlgorithm,
         )
     } else {
@@ -269,7 +270,6 @@ private fun CreationTogglesSection(toggles: CreationToggles) {
 @Composable
 private fun AlgorithmSection(
     algorithms: List<WebAuthnAlgorithm>,
-    icon: ImageBitmap,
     onSelect: (WebAuthnAlgorithm) -> Unit,
 ) {
     Text(
@@ -283,15 +283,38 @@ private fun AlgorithmSection(
             item { rowShape ->
                 SheetRow(
                     title = algorithm.displayName,
-                    supporting = if (algorithm == WebAuthnAlgorithm.ES256) "Uses dedicated hardware" else null,
+                    supporting =
+                        when (algorithm) {
+                            WebAuthnAlgorithm.ES256 -> "Uses dedicated hardware"
+                            WebAuthnAlgorithm.ED25519 -> null
+                            WebAuthnAlgorithm.ML_DSA_87, WebAuthnAlgorithm.ML_DSA_65 -> "Post-quantum algorithm"
+                        },
                     shape = rowShape,
                     onClick = { onSelect(algorithm) },
                 ) {
-                    Image(
-                        bitmap = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp).clip(CircleShape),
-                    )
+                    when (algorithm) {
+                        WebAuthnAlgorithm.ES256 -> {
+                            Icon(painterResource(R.drawable.ic_enhanced_encryption_24dp), contentDescription = null)
+                        }
+
+                        WebAuthnAlgorithm.ED25519 -> {
+                            Icon(painterResource(R.drawable.ic_lock_24dp), contentDescription = null)
+                        }
+
+                        WebAuthnAlgorithm.ML_DSA_87, WebAuthnAlgorithm.ML_DSA_65 -> {
+                            BadgedBox(
+                                badge = {
+                                    Badge(
+                                        modifier = Modifier.height(12.dp),
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    ) { Text("PQ", Modifier.clearAndSetSemantics {}, fontSize = 8.sp, lineHeight = 8.sp) }
+                                },
+                            ) {
+                                Icon(painterResource(R.drawable.ic_lock_24dp), contentDescription = null)
+                            }
+                        }
+                    }
                 }
             }
         }
