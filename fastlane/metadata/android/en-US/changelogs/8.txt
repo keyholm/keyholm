@@ -1,3 +1,4 @@
 - Tweak various icons
 - Change icons used in algorithm selection and hybrid flow account picker rows to be more useful
+- Tried to clarify hybrid/QR code support level in ecosystem
 - Biometric prompt stability improvements

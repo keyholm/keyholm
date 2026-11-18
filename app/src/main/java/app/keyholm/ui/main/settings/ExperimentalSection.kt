@@ -13,7 +13,9 @@ import app.keyholm.ui.main.MainUiState
 import app.keyholm.ui.main.MainViewModel
 
 private const val LABEL_PXP = "Scan QR code to login"
-private const val DESCRIPTION_PXP = "Support using Keyholm with a different device by scanning a QR code with your camera app."
+private const val DESCRIPTION_PXP =
+    "Support using Keyholm with a different client device by scanning a QR code with your " +
+        "camera app. The BLE transport may not be supported by all clients."
 
 @Composable
 private fun PxpRow(

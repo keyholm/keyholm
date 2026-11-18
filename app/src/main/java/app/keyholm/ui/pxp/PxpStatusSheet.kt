@@ -123,7 +123,7 @@ private fun PxpFailure.text(): String =
         is PxpFailure.PermissionsDenied -> "Permission not granted: ${permissions.joinToString { it.substringAfterLast('.') }}"
         PxpFailure.BluetoothNotEnabled -> "Bluetooth is off."
         is PxpFailure.InvalidQrCode -> "Unable to parse QR code."
-        PxpFailure.NoBleChannel -> "Client didn't offer BLE transport."
+        PxpFailure.NoBleChannel -> "That client doesn't support BLE transport."
         is PxpFailure.Listening -> failure.reason()
         is PxpFailure.Advertising -> failure.reason()
         is PxpFailure.Accepting -> "Failed to accept a connection."
