@@ -9,6 +9,7 @@ import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import app.keyholm.Application
 import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.provider.GetCredentialEntries
 import app.keyholm.store.PasskeyRepository
@@ -72,6 +73,7 @@ class UnlockActivity internal constructor(
                         readStore { passkeyRepo.activePasskeys.first() }?.let { entries.of(request, it) }
                     } finally {
                         working.value = false
+                        (applicationContext as Application).stores.close()
                     }
                 } else {
                     null

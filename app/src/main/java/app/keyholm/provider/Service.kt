@@ -23,6 +23,7 @@ import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.CreateEntry
 import androidx.credentials.provider.CredentialProviderService
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
+import app.keyholm.Application
 import app.keyholm.R
 import app.keyholm.authenticator.AlgorithmNegotiation
 import app.keyholm.authenticator.availableFamilies
@@ -101,6 +102,7 @@ class Service internal constructor(
     private val passkeyRepo by lazy { PasskeyRepository(applicationContext) }
     private val getEntries by lazy { GetCredentialEntries(applicationContext, dispatcher) }
     private val settingsRepo by lazy { SettingsRepository(applicationContext) }
+    private val stores by lazy { (applicationContext as Application).stores }
     private val log = logger()
 
     override fun onDestroy() {
@@ -148,7 +150,11 @@ class Service internal constructor(
                         nativeAppTrust = settings.nativeAppTrust,
                     )
                 val summary =
-                    readStore { passkeyRepo.summary() } ?: run {
+                    try {
+                        readStore { passkeyRepo.summary() }
+                    } finally {
+                        stores.close()
+                    } ?: run {
                         callback.onResult(BeginCreateCredentialResponse(emptyList()))
                         return@launch
                     }
@@ -219,12 +225,17 @@ class Service internal constructor(
                     )
                     return@launch
                 }
-                val records =
-                    readStore { passkeyRepo.activePasskeys.first() } ?: run {
-                        callback.onError(GetCredentialInterruptedException())
-                        return@launch
+                val entries =
+                    try {
+                        val records =
+                            readStore { passkeyRepo.activePasskeys.first() } ?: run {
+                                callback.onError(GetCredentialInterruptedException())
+                                return@launch
+                            }
+                        getEntries.of(request, records)
+                    } finally {
+                        stores.close()
                     }
-                val entries = getEntries.of(request, records)
                 if (entries == null) {
                     callback.onError(
                         GetPublicKeyCredentialDomException(
