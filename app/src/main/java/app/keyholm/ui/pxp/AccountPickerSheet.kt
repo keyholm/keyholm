@@ -29,7 +29,7 @@ internal fun AccountPickerSheet(
     val icon = rememberAppIcon(badged = true)
     val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
     Sheet(onDismiss) {
-        SheetHeader(icon, "Sign in to ${rpLabel(prompt.rp, prompt.preferRpName)}")
+        SheetHeader(icon, "Pick a user to sign in to ${rpLabel(prompt.rp, prompt.preferRpName)} as:")
         SheetSection {
             prompt.passkeys.forEach { record ->
                 item { rowShape ->

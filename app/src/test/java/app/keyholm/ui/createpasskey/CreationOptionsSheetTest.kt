@@ -61,7 +61,7 @@ class CreationOptionsSheetTest {
     fun showsTheRequestAndEveryOfferedAlgorithm() {
         showSheet(algorithms = listOf(WebAuthnAlgorithm.ES256, WebAuthnAlgorithm.ML_DSA_65))
 
-        compose.onNodeWithText("Create passkey to sign in as alice to example.com?").assertIsDisplayed()
+        compose.onNodeWithText("Create passkey for alice at example.com:").assertIsDisplayed()
         compose.onNodeWithText("ES256").assertIsDisplayed()
         compose.onNodeWithText("ML-DSA-65").assertIsDisplayed()
     }

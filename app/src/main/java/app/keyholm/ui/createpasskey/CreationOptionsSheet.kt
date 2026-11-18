@@ -197,7 +197,7 @@ private fun CreationOptionsSheetContent(
     val icon = rememberAppIcon(badged = true)
     SheetHeader(
         icon,
-        "Create passkey to sign in as ${prompt.userName} to ${prompt.rpId.value}?",
+        "Create passkey for ${prompt.userName} at ${prompt.rpId.value}:",
     )
     if (toggles.attestation != null || toggles.identity != null) {
         CreationTogglesSection(toggles)
