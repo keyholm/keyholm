@@ -25,8 +25,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -49,12 +47,14 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import app.keyholm.R
 import app.keyholm.store.RecordLifecycle
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -113,7 +113,7 @@ internal fun SwipeToDeleteBackground(dismissState: SwipeToDismissBoxState) {
         arrangement = Arrangement.End,
         containerColor = MaterialTheme.colorScheme.error,
         contentColor = MaterialTheme.colorScheme.onError,
-        icon = Icons.Default.Delete,
+        icon = painterResource(R.drawable.ic_delete_24dp),
     )
 }
 
@@ -123,7 +123,7 @@ internal fun SwipeActionBackground(
     arrangement: Arrangement.Horizontal,
     containerColor: Color,
     contentColor: Color,
-    icon: ImageVector,
+    icon: Painter,
 ) {
     val revealedWidth =
         with(LocalDensity.current) {

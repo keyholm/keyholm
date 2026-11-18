@@ -7,9 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,8 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.keyholm.R
 import app.keyholm.iconpack.IconPack
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.RecordLifecycle
@@ -86,7 +85,7 @@ private fun BoxScope.PasskeyListItemTrailingIcon(
             CancelDeleteButton(onCancelDelete, contentColor ?: LocalContentColor.current)
         } else if (likelyInvalid) {
             Icon(
-                Icons.Default.Warning,
+                painterResource(R.drawable.ic_warning_24dp),
                 contentDescription = "Permanently invalidated",
                 tint = contentColor ?: MaterialTheme.colorScheme.error,
             )
@@ -101,7 +100,7 @@ internal fun CancelDeleteButton(
 ) {
     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
         IconButton(onClick = onClick) {
-            Icon(Icons.Default.Replay, contentDescription = "Cancel delete", tint = tint)
+            Icon(painterResource(R.drawable.ic_replay_24dp), contentDescription = "Cancel delete", tint = tint)
         }
     }
 }

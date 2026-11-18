@@ -13,10 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,9 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.keyholm.R
 import app.keyholm.ctap.CredentialId
 import app.keyholm.ctap.RelyingParty
 import app.keyholm.keystore.KeySecurityLevel
@@ -100,7 +98,7 @@ private fun DetailRow(
 @Composable
 private fun NonDiscoverableNotice() {
     ListItem(
-        leadingContent = { Icon(Icons.Outlined.Info, contentDescription = null) },
+        leadingContent = { Icon(painterResource(R.drawable.ic_info_24dp), contentDescription = null) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     ) {
         Text("Non-discoverable passkey")
@@ -117,7 +115,7 @@ private fun LikelyInvalidWarning() {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
     ) {
         ListItem(
-            leadingContent = { Icon(Icons.Default.Warning, contentDescription = null) },
+            leadingContent = { Icon(painterResource(R.drawable.ic_warning_24dp), contentDescription = null) },
             colors =
                 ListItemDefaults.colors(
                     containerColor = Color.Transparent,
@@ -238,7 +236,7 @@ private fun PasskeyDetailsTopBar(
         },
         actions = {
             IconButton(onClick = onOpen) {
-                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open RP or app")
+                Icon(painterResource(R.drawable.ic_open_in_new_24dp), contentDescription = "Open RP or app")
             }
         },
     )

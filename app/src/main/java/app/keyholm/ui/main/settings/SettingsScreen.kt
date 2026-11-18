@@ -11,11 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.Badge
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -39,9 +34,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.keyholm.R
 import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.main.DeviceStatusRows
@@ -68,7 +65,7 @@ private fun SettingsTopBar(
         },
         actions = {
             IconButton(onClick = onOpenHelp) {
-                Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = CONTENT_DESCRIPTION_HELP)
+                Icon(painterResource(R.drawable.ic_help_24dp), contentDescription = CONTENT_DESCRIPTION_HELP)
             }
         },
     )
@@ -117,7 +114,7 @@ private fun NativeAppTrustSection(
                                 Badge { Text(undecided.toString()) }
                                 Spacer(Modifier.width(8.dp))
                             }
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            Icon(painterResource(R.drawable.ic_keyboard_arrow_right_24dp), contentDescription = null)
                         }
                     },
                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -149,7 +146,7 @@ private fun NativeAppTrustMenu(
     Box {
         TextButton(onClick = { expanded = true }) {
             Text(currentLabel)
-            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+            Icon(painterResource(R.drawable.ic_arrow_drop_down_24dp), contentDescription = null)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
@@ -218,7 +215,7 @@ private fun ResetSection(viewModel: MainViewModel) {
             ListItem(
                 selected = false,
                 onClick = { viewModel.settings.resetSettings() },
-                leadingContent = { Icon(Icons.Default.Replay, contentDescription = null) },
+                leadingContent = { Icon(painterResource(R.drawable.ic_replay_24dp), contentDescription = null) },
                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                 verticalAlignment = Alignment.CenterVertically,
                 shapes = ListItemDefaults.shapes(shape = shape),

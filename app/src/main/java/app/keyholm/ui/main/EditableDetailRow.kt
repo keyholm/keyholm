@@ -8,9 +8,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -39,9 +36,11 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import app.keyholm.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -103,14 +102,14 @@ internal fun EditableDetailRow(
         trailingContent = {
             if (editing) {
                 IconButton(onClick = { editing = false }) {
-                    Icon(Icons.Default.Close, contentDescription = "Cancel rename")
+                    Icon(painterResource(R.drawable.ic_close_24dp), contentDescription = "Cancel rename")
                 }
             } else {
                 IconButton(onClick = {
                     cursor = null
                     editing = true
                 }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Rename")
+                    Icon(painterResource(R.drawable.ic_edit_24dp), contentDescription = "Rename")
                 }
             }
         },

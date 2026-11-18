@@ -1,8 +1,6 @@
 package app.keyholm.ui.main.settings
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -21,6 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.painterResource
+import app.keyholm.R
 import app.keyholm.authenticator.AlgorithmNegotiation
 import app.keyholm.authenticator.AlgorithmPreference
 import app.keyholm.ctap.AlgorithmFamily
@@ -135,7 +135,7 @@ private fun AlgorithmPreferenceDropdown(selection: AlgorithmSelection) {
     Box {
         TextButton(onClick = { expanded = true }, enabled = selection.canChoose) {
             Text(currentLabel)
-            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+            Icon(painterResource(R.drawable.ic_arrow_drop_down_24dp), contentDescription = null)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(

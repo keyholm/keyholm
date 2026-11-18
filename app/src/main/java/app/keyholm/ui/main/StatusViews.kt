@@ -9,12 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.SearchOff
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,7 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import app.keyholm.R
 
 @Composable
 internal fun WarningCard(
@@ -54,7 +50,7 @@ internal fun WarningCard(
                     }
                 },
                 leadingContent = {
-                    Icon(imageVector = Icons.Default.Warning, contentDescription = null)
+                    Icon(painter = painterResource(R.drawable.ic_warning_24dp), contentDescription = null)
                 },
                 colors =
                     ListItemDefaults.colors(
@@ -92,7 +88,7 @@ internal fun EmptyPasskeysMessage(modifier: Modifier = Modifier) {
     ) {
         Spacer(Modifier.weight(1f))
         Icon(
-            imageVector = Icons.Default.SearchOff,
+            painter = painterResource(R.drawable.ic_search_off_24dp),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.height(48.dp).width(48.dp),
@@ -129,7 +125,7 @@ internal fun LoadErrorCard(
     ) {
         Spacer(Modifier.weight(1f))
         Icon(
-            imageVector = Icons.Default.Error,
+            painter = painterResource(R.drawable.ic_error_24dp),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.height(48.dp).width(48.dp),
@@ -152,7 +148,12 @@ internal fun StatusRow(
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
-            imageVector = if (isOk) Icons.Default.CheckCircle else Icons.Default.Error,
+            painter =
+                if (isOk) {
+                    painterResource(R.drawable.ic_check_circle_24dp)
+                } else {
+                    painterResource(R.drawable.ic_error_24dp)
+                },
             contentDescription = null,
             tint = if (isOk) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             modifier = Modifier.size(24.dp),
@@ -176,7 +177,7 @@ private const val STATUS_PROVIDER_NOT_OK = "Keyholm is not enabled as a passkey 
 internal fun InfoRow(text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
-            imageVector = Icons.Default.Info,
+            painter = painterResource(R.drawable.ic_info_24dp),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(24.dp),

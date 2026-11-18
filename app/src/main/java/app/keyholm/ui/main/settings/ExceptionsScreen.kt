@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,10 +32,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.keyholm.R
 import app.keyholm.store.DeniedNativeAppInfo
 import app.keyholm.store.DeniedNativeAppKey
 import app.keyholm.store.exceptionKeys
@@ -294,7 +293,7 @@ private fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
                 arrangement = Arrangement.End,
                 containerColor = MaterialTheme.colorScheme.error,
                 contentColor = MaterialTheme.colorScheme.onError,
-                icon = Icons.Default.Delete,
+                icon = painterResource(R.drawable.ic_delete_24dp),
             )
         }
 
@@ -304,7 +303,7 @@ private fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
                 arrangement = Arrangement.Start,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                icon = Icons.Default.Add,
+                icon = painterResource(R.drawable.ic_add_24dp),
             )
         }
 

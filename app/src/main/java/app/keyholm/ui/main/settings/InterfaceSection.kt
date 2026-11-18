@@ -2,8 +2,6 @@ package app.keyholm.ui.main.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -15,7 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.keyholm.R
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.main.MainUiState
 import app.keyholm.ui.main.MainViewModel
@@ -99,7 +99,7 @@ private fun IconPackRow(
                 {
                     IconButton(onClick = viewModel.iconPacks::remove) {
                         Icon(
-                            Icons.Default.Delete,
+                            painterResource(R.drawable.ic_delete_24dp),
                             contentDescription = CONTENT_DESCRIPTION_REMOVE_ICON_PACK,
                             tint = MaterialTheme.colorScheme.error,
                         )

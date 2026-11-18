@@ -6,10 +6,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -26,7 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
+import app.keyholm.R
 import app.keyholm.store.MigrationExportEntry
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.migrationExportUri
@@ -113,7 +111,7 @@ private fun QrExportDialog(
 @Composable
 private fun MigrationItem(
     label: String,
-    icon: ImageVector,
+    icon: Painter,
     shape: Shape,
     onClick: () -> Unit,
 ) {
@@ -158,18 +156,18 @@ internal fun AccountMigrationSection(
         val passkeys = uiState.passkeys
         if (passkeys is Stored.Available) {
             item { shape ->
-                MigrationItem("Export QR code", Icons.Default.QrCode, shape) {
+                MigrationItem("Export QR code", painterResource(R.drawable.ic_qr_code_24dp), shape) {
                     qrBitmap = qrExportBitmap(passkeys.value, viewModel.reportError)
                 }
             }
             item { shape ->
-                MigrationItem("Export", Icons.Default.Share, shape) {
+                MigrationItem("Export", painterResource(R.drawable.ic_share_24dp), shape) {
                     exportMigrationList(context, passkeys.value, viewModel.reportError)
                 }
             }
         }
         item { shape ->
-            MigrationItem("Import from clipboard", Icons.Default.Download, shape) {
+            MigrationItem("Import from clipboard", painterResource(R.drawable.ic_download_24dp), shape) {
                 importMigrationList(context, viewModel)
             }
         }

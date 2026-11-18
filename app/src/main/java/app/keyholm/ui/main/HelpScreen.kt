@@ -20,11 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.OpenInNew
-import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -38,8 +33,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -50,6 +46,7 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import app.keyholm.R
 import app.keyholm.ui.common.BackButton
 import app.keyholm.ui.common.Section
 import app.keyholm.ui.common.rememberAppIcon
@@ -287,7 +284,7 @@ private fun appVersion(): String {
 
 @Composable
 private fun AboutRow(
-    icon: ImageVector,
+    icon: Painter,
     label: String,
     detail: String,
     external: Boolean = false,
@@ -306,7 +303,7 @@ private fun AboutRow(
             Text(detail, style = MaterialTheme.typography.bodySmall)
         }
         if (external) {
-            Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null)
+            Icon(painterResource(R.drawable.ic_open_in_new_24dp), contentDescription = null)
         }
     }
 }
@@ -334,16 +331,16 @@ private fun AboutSection() {
                     )
                 }
                 Spacer(Modifier.height(8.dp))
-                AboutRow(Icons.Outlined.Info, LABEL_VERSION, version) {
+                AboutRow(painterResource(R.drawable.ic_info_24dp), LABEL_VERSION, version) {
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     clipboard.setPrimaryClip(ClipData.newPlainText(LABEL_VERSION, version))
                 }
                 Spacer(Modifier.height(8.dp))
-                AboutRow(Icons.Outlined.Code, LABEL_GITHUB, DESCRIPTION_GITHUB, external = true) {
+                AboutRow(painterResource(R.drawable.ic_code_24dp), LABEL_GITHUB, DESCRIPTION_GITHUB, external = true) {
                     context.startActivity(Intent(Intent.ACTION_VIEW, GITHUB_URL.toUri()))
                 }
                 Spacer(Modifier.height(8.dp))
-                AboutRow(Icons.Outlined.Description, LABEL_LICENSE, DESCRIPTION_LICENSE, external = true) {
+                AboutRow(painterResource(R.drawable.ic_description_24dp), LABEL_LICENSE, DESCRIPTION_LICENSE, external = true) {
                     context.startActivity(Intent(Intent.ACTION_VIEW, LICENSE_URL.toUri()))
                 }
             }
