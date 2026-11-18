@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#MISE description="Download a Material Symbols icon from Google Fonts as a vector drawable into app/src/main/res/drawable"
+#USAGE arg "<name>" help="Icon name as shown on fonts.google.com/icons, e.g. encrypted"
+#USAGE flag "--fill" help="Filled variant"
+#USAGE flag "--auto-mirror" help="Flip the icon in right-to-left layouts"
+#USAGE flag "--weight <weight>" default="400"
+#USAGE flag "--grade <grade>" default="0"
+#USAGE flag "--size <size>" default="24" help="Optical size in dp"
+#USAGE flag "--style <style>" default="Outlined" help="Outlined, Rounded or Sharp"
+set -euo pipefail
+fill=0
+suffix=""
+if [ "${usage_fill:-false}" = true ]; then
+  fill=1
+  suffix=_filled
+fi
+out="app/src/main/res/drawable/ic_${usage_name}${suffix}_${usage_size}dp.xml"
+curl -fsS --compressed -o "$out" \
+  "https://fonts.gstatic.com/render/v1/Material+Symbols+$usage_style/${usage_size}dp/$usage_name.xml?var=opsz,wght,FILL,GRAD@$usage_size,$usage_weight,$fill,$usage_grade"
+if [ "${usage_auto_mirror:-false}" = true ]; then
+  xq -x -i --xml-short-empty-elements '.vector."@android:autoMirrored" = "true"' "$out"
+fi
