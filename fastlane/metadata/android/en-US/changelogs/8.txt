@@ -1,0 +1,3 @@
+- Tweak various icons
+- Change icons used in algorithm selection and hybrid flow account picker rows to be more useful
+- Biometric prompt stability improvements
