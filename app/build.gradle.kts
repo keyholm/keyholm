@@ -84,8 +84,8 @@ android {
         applicationId = "app.keyholm"
         minSdk = 35
         targetSdk = 37
-        versionCode = 7
-        versionName = "0.2.0"
+        versionCode = 8
+        versionName = "0.2.1"
         ndk {
             abiFilters += "arm64-v8a"
         }
