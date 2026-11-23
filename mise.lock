@@ -28,7 +28,7 @@ url = "https://github.com/gradle/gradle-distributions/releases/download/v9.9.2/g
 url_api = "https://api.github.com/repos/gradle/gradle-distributions/releases/assets/769089888"
 
 [[tools.java]]
-version = "temurin-25.0.5+8.0.LTS"
+version = "temurin-25.0.5+100000002.0.LTS"
 backend = "core:java"
 specifiers = ["temurin-25"]
 
