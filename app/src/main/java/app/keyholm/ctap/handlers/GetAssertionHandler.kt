@@ -1,5 +1,7 @@
 package app.keyholm.ctap.handlers
 
+import android.content.Context
+import androidx.biometric.AuthenticationRequest
 import androidx.biometric.BiometricPrompt
 import app.keyholm.authenticator.AssertionKeyMaterial
 import app.keyholm.authenticator.KeyAccess
@@ -13,13 +15,18 @@ import app.keyholm.ctap.PUBLIC_KEY_TYPE
 import app.keyholm.ctap.RpId
 import app.keyholm.ctap.requests.GetAssertionRequest
 import app.keyholm.ctap.requests.parseGetAssertion
+import app.keyholm.keystore.AuthenticatorPolicy
 import app.keyholm.settings.Settings
 import app.keyholm.store.PasskeyRecord
 import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.readStore
 import app.keyholm.store.writeStore
+import app.keyholm.ui.common.AuthenticatorsResolution
 import app.keyholm.ui.common.PromptResult
+import app.keyholm.ui.common.UNLOCK_PASSKEYS_DESCRIPTION
+import app.keyholm.ui.common.UNLOCK_PASSKEYS_TITLE
 import app.keyholm.ui.common.promptContent
+import app.keyholm.ui.common.resolveCreateAuthenticators
 import app.keyholm.ui.pxp.AccountChoicePrompt
 import app.keyholm.ui.pxp.AccountChooser
 import app.keyholm.ui.pxp.CtapUi
@@ -38,6 +45,7 @@ private const val GA_RESPONSE_USER_SELECTED = 6
 private const val GA_RESPONSE_UNSIGNED_EXTENSION_OUTPUTS = 8
 
 internal class GetAssertionHandler(
+    private val context: Context,
     private val settings: Settings,
     private val passkeyRepo: PasskeyRepository,
     private val ui: CtapUi,
@@ -55,6 +63,7 @@ internal class GetAssertionHandler(
         }
 
     private suspend fun respond(request: GetAssertionRequest): Ctap2Response {
+        if (settings.requireUnlock && !unlock()) return Ctap2Response(Ctap2Status.OPERATION_DENIED)
         val stored = readStore { passkeyRepo.activePasskeys.first() }
         val matching = stored?.let { matchingRecords(it, request.rpId, request.allowIds) }
         return when {
@@ -78,6 +87,22 @@ internal class GetAssertionHandler(
             }
         }
     }
+
+    private suspend fun unlock(): Boolean =
+        when (val resolution = resolveCreateAuthenticators(context, AuthenticatorPolicy.Either)) {
+            is AuthenticatorsResolution.Unavailable -> {
+                log.w { resolution.message }
+                false
+            }
+
+            is AuthenticatorsResolution.Ready -> {
+                ui.prompts.confirm(
+                    title = UNLOCK_PASSKEYS_TITLE,
+                    allowedAuthenticators = resolution.value,
+                    content = AuthenticationRequest.BodyContent.PlainText(UNLOCK_PASSKEYS_DESCRIPTION),
+                )
+            }
+        }
 
     private fun matchingRecords(
         stored: List<PasskeyRecord>,

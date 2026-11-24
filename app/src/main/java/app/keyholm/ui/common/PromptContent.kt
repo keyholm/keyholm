@@ -8,6 +8,9 @@ import app.keyholm.ctap.RelyingParty
 import app.keyholm.store.PasskeyRecord
 import java.time.Instant
 
+internal const val UNLOCK_PASSKEYS_TITLE = "Unlock Keyholm"
+internal const val UNLOCK_PASSKEYS_DESCRIPTION = "Confirm your identity to see your passkeys for this site."
+
 internal fun promptContent(
     description: String,
     lastUsedAt: Instant?,

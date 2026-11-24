@@ -19,7 +19,7 @@ internal class CtapAuthenticator(
     dispatcher: CoroutineDispatcher,
 ) : PxpAuthenticator {
     private val makeCredential = MakeCredentialHandler(context, settings, passkeyRepo, ui, dispatcher)
-    private val getAssertion = GetAssertionHandler(settings, passkeyRepo, ui, dispatcher)
+    private val getAssertion = GetAssertionHandler(context, settings, passkeyRepo, ui, dispatcher)
 
     // Clients time getInfo out quickly, so it can't wait for the user.
     override suspend fun getInfo(): ByteArray =

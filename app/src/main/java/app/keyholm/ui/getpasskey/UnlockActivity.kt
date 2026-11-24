@@ -16,6 +16,8 @@ import app.keyholm.store.PasskeyRepository
 import app.keyholm.store.readStore
 import app.keyholm.ui.common.AuthenticatorsResolution
 import app.keyholm.ui.common.CryptoPrompt
+import app.keyholm.ui.common.UNLOCK_PASSKEYS_DESCRIPTION
+import app.keyholm.ui.common.UNLOCK_PASSKEYS_TITLE
 import app.keyholm.ui.common.WorkingIndicator
 import app.keyholm.ui.common.resolveCreateAuthenticators
 import app.keyholm.ui.theme.KeyholmTheme
@@ -24,9 +26,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-private const val UNLOCK_TITLE = "Unlock Keyholm"
-private const val UNLOCK_DESCRIPTION = "Confirm your identity to see your passkeys for this site."
 
 class UnlockActivity internal constructor(
     private val dispatcher: CoroutineDispatcher,
@@ -60,9 +59,9 @@ class UnlockActivity internal constructor(
 
                     is AuthenticatorsResolution.Ready -> {
                         cryptoPrompt.confirm(
-                            title = UNLOCK_TITLE,
+                            title = UNLOCK_PASSKEYS_TITLE,
                             allowedAuthenticators = authenticators.value,
-                            content = AuthenticationRequest.BodyContent.PlainText(UNLOCK_DESCRIPTION),
+                            content = AuthenticationRequest.BodyContent.PlainText(UNLOCK_PASSKEYS_DESCRIPTION),
                         )
                     }
                 }
