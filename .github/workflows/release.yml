@@ -205,6 +205,8 @@ jobs:
           echo "OK: signed release matches the unsigned reproducible build"
       - name: Show signer certificate
         run: apksigner verify --print-certs -v dist/keyholm.apk
+      - name: Signer certificates are linked from the package domain's assetlinks.json
+        run: gradle verifyAssetLinks --apk dist/keyholm.apk
       - uses: sigstore/cosign-installer@881c63bd87e38389154debd8331404ce7ca8a3ab # v4.1.4
       - name: Cosign the signed APK (keyless)
         env:

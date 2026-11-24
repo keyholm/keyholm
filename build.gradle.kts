@@ -35,3 +35,5 @@ spotless {
             )
     }
 }
+
+apply(from = "verify-apk-sig.gradle.kts")
