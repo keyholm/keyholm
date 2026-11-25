@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 buildscript {
     repositories { google() }
-    dependencies { classpath("com.android.tools.build:apksig:9.5.2") }
+    dependencies { classpath("com.android.tools.build:apksig:9.5.3") }
 }
 
 abstract class VerifyAssetLinks : DefaultTask() {
