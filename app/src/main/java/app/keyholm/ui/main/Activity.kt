@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -230,7 +231,7 @@ private fun MainContent(importEntries: List<MigrationExportEntry>) {
         viewModel.pendingDeletes.resume()
         viewModel.placeholderDeletes.resume()
     }
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.lockIfIdle() }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP, ProcessLifecycleOwner.get()) { viewModel.lockIfIdle() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
 
     // Launchers must be registered unconditionally
