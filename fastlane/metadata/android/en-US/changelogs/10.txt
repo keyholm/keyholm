@@ -1,0 +1,2 @@
+- Require unlock with sign in over PXP
+- Don't lock screen on rotation
