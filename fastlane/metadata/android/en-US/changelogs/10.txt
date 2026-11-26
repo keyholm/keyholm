@@ -1,2 +1,2 @@
-- Require unlock with sign in over PXP
+- Enforce require unlock to see passkeys over PXP
 - Don't lock screen on rotation
