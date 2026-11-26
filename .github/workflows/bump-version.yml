@@ -1,5 +1,7 @@
 name: Bump version
 
+run-name: Bump ${{ inputs.release }} version
+
 on:
   workflow_dispatch:
     inputs:
