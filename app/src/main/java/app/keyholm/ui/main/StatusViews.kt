@@ -104,8 +104,8 @@ internal fun EmptyPasskeysMessage(modifier: Modifier = Modifier) {
 }
 
 internal const val LOAD_ERROR = "Failed to load data."
-private const val UNRECOGNIZED_DATA = "This version of Keyholm can't load the app data."
-private const val STORE_KEY_LOST = "Keyholm's data cannot be decrypted, clear app data."
+private const val UNRECOGNIZED_DATA = "Error reading Keyholm's data with this version of Keyholm."
+private const val STORE_KEY_LOST = "Error decrypting Keyholm's data."
 
 internal fun loadErrorMessage(vararg stored: Stored<*>): String =
     when {
