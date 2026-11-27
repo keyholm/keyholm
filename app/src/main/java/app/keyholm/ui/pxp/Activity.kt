@@ -76,6 +76,11 @@ class Activity : FragmentActivity() {
         start(intent)
     }
 
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) finish()
+    }
+
     private fun start(intent: Intent?) {
         viewModel.intentHandled = true
         val decoded = PxpQrPayload.decode(intent?.dataString.orEmpty())
