@@ -7,7 +7,7 @@ idiomatic_version_file_enable_tools = ["rust"]
 
 [tools]
 android-sdk = "latest"
-gradle = "9.9.2"
+gradle = "9.9.3"
 java = "temurin-25"
 "cargo:cargo-ndk" = "latest"
 uv = "latest"
