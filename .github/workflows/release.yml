@@ -88,17 +88,13 @@ jobs:
 
           | | |
           |-|-|
-          | \`keyholm.apk\` | the release APK, signed with the release key |
-          | \`keyholm-unsigned.apk\` | the reproducible build output, before signing |
-          | \`keyholm-unsigned.apk.sigstore.json\` | keyless Sigstore bundles proving the APK was produced by this workflow |
-          | \`keyholm.apk.sigstore.json\` | keyless Sigstore bundles proving the APK was verified by this workflow |
-
-          The signed APK's ZIP payload is byte-identical to \`keyholm-unsigned.apk\`.
-          Only the APK Signing Block differs. See the workflow run for the recorded SHA-256 of each.
+          | \`keyholm.apk\` | the signed release build |
+          | \`keyholm-unsigned.apk\` | the reproducible, unsigned build |
+          | \`*.sigstore.json\` | Sigstore bundles attesting how the file was built |
 
           ## Verify provenance
 
-          Install [cosign](https://docs.sigstore.dev/cosign/installation/):
+          Install [gh](https://github.com/cli/cli) and [cosign](https://docs.sigstore.dev/cosign/installation/):
 
           \`\`\`bash
           SHA=${SHA}
@@ -140,6 +136,12 @@ jobs:
 
           \`\`\`bash
           apksigner verify --print-certs -v keyholm.apk
+          \`\`\`
+
+          ## Verify that the signed APK is the reproducible build
+
+          \`\`\`bash
+          apksigcopier compare keyholm.apk keyholm-unsigned.apk --unsigned
           \`\`\`
 
           ## Verify reproducibility
